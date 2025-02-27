@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User  # Using built-in User model
 
 class Car(models.Model):
-    """Model representing a car available for sale or rent"""
+    """Model representing an giavailable car for sale or rent"""
     name = models.CharField(max_length=255)
     brand = models.CharField(max_length=255)
     price = models.DecimalField(max_digits=10, decimal_places=2)
