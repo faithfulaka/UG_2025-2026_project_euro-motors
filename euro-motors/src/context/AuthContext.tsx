@@ -62,9 +62,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       setUser(data.user);
       router.push('/dashboard');
-    } catch (error: any) {
-      throw new Error(error.message || 'Login failed');
-    } finally {
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+          throw new Error(error.message);
+        } else {
+          throw new Error('Login failed');
+        }
+      }finally {
       setLoading(false);
     }
   };
@@ -84,9 +88,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       router.push('/login');
-    } catch (error: any) {
-      throw new Error(error.message || 'Registration failed');
-    } finally {
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+          throw new Error(error.message);
+        } else {
+          throw new Error('Regisetrtaion failed');
+        }
+      }finally {
       setLoading(false);
     }
   };
