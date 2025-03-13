@@ -2,35 +2,38 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 export default function HomePage() {
-  // Sample car data
-  const featuredCars = [
-    { id: 1, make: 'Ferrari', model: 'SF90', color: 'Red', image: '/api/placeholder/400/300' },
-    { id: 2, make: 'McLaren', model: '720S', color: 'Blue', image: '/api/placeholder/400/300' },
-    { id: 3, make: 'Lamborghini', model: 'Aventador', color: 'Green', image: '/api/placeholder/400/300' },
-    { id: 4, make: 'Porsche', model: '911 GT3', color: 'Black', image: '/api/placeholder/400/300' },
-    { id: 5, make: 'Aston Martin', model: 'DBS', color: 'Silver', image: '/api/placeholder/400/300' },
-    { id: 6, make: 'Bentley', model: 'Continental GT', color: 'White', image: '/api/placeholder/400/300' },
-    { id: 7, make: 'Range Rover', model: 'SV Autobiography', color: 'Black', image: '/api/placeholder/400/300' },
-    { id: 8, make: 'Mercedes', model: 'G63 AMG', color: 'Black', image: '/api/placeholder/400/300' },
-    { id: 9, make: 'BMW', model: 'M8 Competition', color: 'Red', image: '/api/placeholder/400/300' },
-  ];
-
   // Brand logos
   const brands = [
     'Ferrari', 'Lamborghini', 'Land Rover', 'Mercedes', 'Porsche', 
     'Rolls Royce', 'Aston Martin', 'Audi', 'BMW'
   ];
 
+  // Gallery images
+  const galleryImages = [
+    { id: 1, src: '/images/gallery/component1.jpg', alt: 'McLaren 570S' },
+    { id: 2, src: '/images/gallery/component2.jpg', alt: 'Ferrari SF90' },
+    { id: 3, src: '/images/gallery/component3.jpg', alt: 'Porsche 911 GT3' },
+    { id: 4, src: '/images/gallery/component4.jpg', alt: 'Lamborghini Urus' },
+    { id: 5, src: '/images/gallery/component5.jpg', alt: 'Rolls Royce Cullinan' },
+    { id: 6, src: '/images/gallery/component6.jpg', alt: 'Aston Martin DBX' },
+    { id: 7, src: '/images/gallery/component7.jpg', alt: 'BMW X7' },
+    { id: 8, src: '/images/gallery/component8.jpg', alt: 'Range Rover' },
+    { id: 9, src: '/images/gallery/component9.jpg', alt: 'Bentley Flying Spur' },
+    { id: 10, src: '/images/gallery/component10.jpg', alt: 'Audi Q8' },
+    { id: 11, src: '/images/gallery/component11.jpg', alt: 'Lexus RX' },
+    { id: 12, src: '/images/gallery/component12.jpg', alt: 'BMW M8' }
+  ];
+
   return (
     <div>
       {/* Hero Section */}
       <section className="relative h-[600px]">
-        {/* Replace with your actual hero image */}
+        {/* Hero image */}
         <div className="absolute inset-0 z-0">
           <div className="relative w-full h-full">
             <Image 
-              src="/api/placeholder/1600/800" 
-              alt="Ferrari" 
+              src="/images/gallery/component2.jpg" 
+              alt="Ferrari SF90" 
               fill
               className="object-cover"
               priority
@@ -45,7 +48,7 @@ export default function HomePage() {
               Euro Motors - Luxury Automobiles
             </h1>
             <p className="text-xl text-white mb-8">
-              Euro Motors is one of the leading luxury car dealers in Europe specializing in the most exclusive and desirable luxury cars for sale.
+              Euro Motors is one of leading luxury car dealers in Europe specializing in the most exclusive and desirable luxury cars for sale.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link href="/buy" className="bg-black text-white px-6 py-3 rounded text-center hover:bg-gray-900 transition duration-300">
@@ -77,20 +80,16 @@ export default function HomePage() {
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-3xl font-bold mb-12 text-center uppercase">Gallery</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {featuredCars.map((car) => (
-              <div key={car.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition duration-300">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {galleryImages.map((image) => (
+              <div key={image.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition duration-300">
                 <div className="relative h-64">
                   <Image 
-                    src={car.image} 
-                    alt={`${car.make} ${car.model}`} 
+                    src={image.src} 
+                    alt={image.alt} 
                     fill
                     className="object-cover"
                   />
-                </div>
-                <div className="p-4">
-                  <h3 className="text-xl font-semibold">{car.make} {car.model}</h3>
-                  <p className="text-gray-600">{car.color}</p>
                 </div>
               </div>
             ))}

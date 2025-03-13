@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-//import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 
 export default function Navbar() {
@@ -11,6 +10,16 @@ export default function Navbar() {
 
   const isActive = (path: string) => {
     return pathname === path ? 'text-red-600' : 'text-gray-800';
+  };
+
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      // If not on homepage, navigate to homepage and then scroll
+      window.location.href = `/#${id}`;
+    }
   };
 
   return (
@@ -32,14 +41,20 @@ export default function Navbar() {
           <Link href="/rent" className={`${isActive('/rent')} hover:text-red-600 transition duration-300`}>
             Rent
           </Link>
-          <Link href="/contact-us" className={`${isActive('/contact-us')} hover:text-red-600 transition duration-300`}>
+          <button 
+            onClick={() => scrollToSection('contact-us')} 
+            className="text-gray-800 hover:text-red-600 transition duration-300"
+          >
             Contact Us
-          </Link>
+          </button>
+          <button 
+            onClick={() => scrollToSection('locations')} 
+            className="text-gray-800 hover:text-red-600 transition duration-300"
+          >
+            Locations
+          </button>
           <Link href="/about-us" className={`${isActive('/about-us')} hover:text-red-600 transition duration-300`}>
             About Us
-          </Link>
-          <Link href="/locations" className={`${isActive('/locations')} hover:text-red-600 transition duration-300`}>
-            Locations
           </Link>
         </div>
 
@@ -85,26 +100,30 @@ export default function Navbar() {
           >
             Rent
           </Link>
-          <Link 
-            href="/contact-us" 
-            className="block text-gray-800 hover:text-red-600"
-            onClick={() => setMobileMenuOpen(false)}
+          <button 
+            onClick={() => {
+              scrollToSection('contact-us');
+              setMobileMenuOpen(false);
+            }}
+            className="block text-gray-800 hover:text-red-600 text-left w-full"
           >
             Contact Us
-          </Link>
+          </button>
+          <button 
+            onClick={() => {
+              scrollToSection('locations');
+              setMobileMenuOpen(false);
+            }}
+            className="block text-gray-800 hover:text-red-600 text-left w-full"
+          >
+            Locations
+          </button>
           <Link 
             href="/about-us" 
             className="block text-gray-800 hover:text-red-600"
             onClick={() => setMobileMenuOpen(false)}
           >
             About Us
-          </Link>
-          <Link 
-            href="/locations" 
-            className="block text-gray-800 hover:text-red-600"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            Locations
           </Link>
           <Link 
             href="/login" 
