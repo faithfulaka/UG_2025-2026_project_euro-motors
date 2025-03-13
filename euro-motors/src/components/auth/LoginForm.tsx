@@ -31,9 +31,13 @@ export default function LoginForm() {
 
       // Redirect to dashboard on success
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during login');
-    } finally {
+    }catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('An error occurred during login');
+        }
+      }finally {
       setIsLoading(false);
     }
   };

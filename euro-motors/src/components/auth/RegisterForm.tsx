@@ -45,9 +45,13 @@ export default function RegisterForm() {
 
       // Redirect to login page on success
       router.push('/login');
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during registration');
-    } finally {
+    } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('An error occurred during registration');
+        }
+      }finally {
       setIsLoading(false);
     }
   };
