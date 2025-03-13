@@ -51,7 +51,7 @@ export default function BuyPage() {
         // const response = await fetch('/api/cars');
         // const data = await response.json();
         // setCars(data);
-        setCars(mockCars);
+        // For now using mock data directly in the return statement
       } catch (error) {
         if (error instanceof Error) {
           setError(error.message);

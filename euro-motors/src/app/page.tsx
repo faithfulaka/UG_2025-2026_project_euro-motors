@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import GalleryFixed from '@/components/ui/Gallery';
 
 export default function HomePage() {
   // Brand logos
@@ -32,7 +33,7 @@ export default function HomePage() {
         <div className="absolute inset-0 z-0">
           <div className="relative w-full h-full">
             <Image 
-              src="/images/gallery/component2.jpg" 
+              src="/images/gallery/component2.jpg"
               alt="Ferrari SF90" 
               fill
               className="object-cover"
@@ -48,7 +49,7 @@ export default function HomePage() {
               Euro Motors - Luxury Automobiles
             </h1>
             <p className="text-xl text-white mb-8">
-              Euro Motors is one of leading luxury car dealers in Europe specializing in the most exclusive and desirable luxury cars for sale.
+              Euro Motors is one of the leading luxury car dealers in Europe specializing in the most exclusive and desirable luxury cars for sale.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link href="/buy" className="bg-black text-white px-6 py-3 rounded text-center hover:bg-gray-900 transition duration-300">
@@ -77,24 +78,8 @@ export default function HomePage() {
       </section>
 
       {/* Gallery Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-12 text-center uppercase">Gallery</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {galleryImages.map((image) => (
-              <div key={image.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition duration-300">
-                <div className="relative h-64">
-                  <Image 
-                    src={image.src} 
-                    alt={image.alt} 
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      <section className="py-8 bg-white">
+        <GalleryFixed images={galleryImages} />
       </section>
     </div>
   );
