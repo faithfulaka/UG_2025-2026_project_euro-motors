@@ -10,18 +10,19 @@ interface GalleryProps {
   images: GalleryImage[];
 }
 
-export default function GalleryFixed({ images }: GalleryProps) {
+export default function Gallery({ images }: GalleryProps) {
+  // This ensures we display exactly 12 images in a 3x4 grid like the reference
+  const displayImages = images.slice(0, 12);
+  
   return (
-    <div className="w-full max-w-[1200px] mx-auto">
-      <h2 className="text-4xl font-bold mb-6 px-2">GALLERY</h2>
+    <div className="max-w-[1240px] mx-auto px-4 py-10">
+      <h2 className="text-6xl font-semibold mb-6 text-black">GALLERY</h2>
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-        {images.map((image) => (
-          <div 
-            key={image.id} 
-            className="relative h-56 overflow-hidden"
-          >
-            <Image 
-              src={image.src} 
+        {displayImages.map((image) => (
+          <div key={image.id} className="relative aspect-[3/2]">
+            <Image
+              src={image.src}
               alt={image.alt}
               fill
               sizes="(max-width: 768px) 100vw, 33vw"
