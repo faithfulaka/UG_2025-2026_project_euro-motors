@@ -1,6 +1,6 @@
 import Image from 'next/image';
-import Link from 'next/link';
-import GalleryFixed from '@/components/ui/Gallery';
+//import Link from 'next/link';
+import HomeSlideshow from '@/components/ui/HomeSlideshow';
 
 export default function HomePage() {
   // Brand logos
@@ -27,41 +27,8 @@ export default function HomePage() {
 
   return (
     <div>
-      {/* Hero Section */}
-      <section className="relative h-[600px]">
-        {/* Hero image */}
-        <div className="absolute inset-0 z-0">
-          <div className="relative w-full h-full">
-            <Image 
-              src="/images/gallery/component2.jpg"
-              alt="Ferrari SF90" 
-              fill
-              className="object-cover"
-              priority
-            />
-            <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-          </div>
-        </div>
-        
-        <div className="relative z-10 max-w-7xl mx-auto h-full flex items-center px-4">
-          <div className="max-w-xl">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-              Euro Motors - Luxury Automobiles
-            </h1>
-            <p className="text-xl text-white mb-8">
-              Euro Motors is one of the leading luxury car dealers in Europe specializing in the most exclusive and desirable luxury cars for sale.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/buy" className="bg-black text-white px-6 py-3 rounded text-center hover:bg-gray-900 transition duration-300">
-                VIEW STOCK
-              </Link>
-              <Link href="/rent" className="bg-black text-white px-6 py-3 rounded text-center hover:bg-gray-900 transition duration-300">
-                VIEW RENTALS
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Section with Slideshow */}
+      <HomeSlideshow />
 
       {/* Brand Logos */}
       <section className="py-10 bg-white">
@@ -78,8 +45,22 @@ export default function HomePage() {
       </section>
 
       {/* Gallery Section */}
-      <section className="py-8 bg-white">
-        <GalleryFixed images={galleryImages} />
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4">
+          <h2 className="text-4xl font-bold mb-12 text-center text-black">GALLERY</h2>
+          <div className="grid grid-cols-3 gap-4">
+            {galleryImages.map((image) => (
+              <div key={image.id} className="aspect-[4/3] relative overflow-hidden">
+                <Image 
+                  src={image.src} 
+                  alt={image.alt} 
+                  fill
+                  className="object-cover hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
     </div>
   );

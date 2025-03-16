@@ -11,11 +11,13 @@ export default function RegisterForm() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setSuccess('');
 
     // Password strength validation
     if (password.length < 8) {
@@ -43,15 +45,20 @@ export default function RegisterForm() {
         throw new Error(data.message || 'Registration failed');
       }
 
-      // Redirect to login page on success
-      router.push('/login');
-    } catch (err: unknown) {
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError('An error occurred during registration');
-        }
-      }finally {
+      // Show success message
+      setSuccess('Registration successful! Redirecting to login page...');
+      
+      // Redirect to login page after a short delay
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An error occurred during registration');
+      }
+    } finally {
       setIsLoading(false);
     }
   };
@@ -68,7 +75,7 @@ export default function RegisterForm() {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-black"
             placeholder="Value"
             required
           />
@@ -83,7 +90,7 @@ export default function RegisterForm() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-black"
             placeholder="Value"
             required
           />
@@ -98,7 +105,7 @@ export default function RegisterForm() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-black"
             placeholder="Value"
             required
           />
@@ -108,6 +115,7 @@ export default function RegisterForm() {
         </div>
 
         {error && <div className="mb-4 text-red-500 text-sm">{error}</div>}
+        {success && <div className="mb-4 text-green-500 text-sm">{success}</div>}
 
         <button
           type="submit"
