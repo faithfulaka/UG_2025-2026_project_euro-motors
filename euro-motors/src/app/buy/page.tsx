@@ -19,7 +19,7 @@ export default function BuyPage() {
       color: 'Red',
       mileage: 1200,
       price: 450000,
-      mainImage: '/sample-images/car1.jpg'
+      mainImage: '/images/gallery/component2.jpg'
     },
     {
       id: '2',
@@ -29,7 +29,7 @@ export default function BuyPage() {
       color: 'Green',
       mileage: 2500,
       price: 380000,
-      mainImage: '/sample-images/car2.jpg'
+      mainImage: '/images/gallery/component4.jpg'
     },
     {
       id: '3',
@@ -39,7 +39,7 @@ export default function BuyPage() {
       color: 'Silver',
       mileage: 1800,
       price: 320000,
-      mainImage: '/sample-images/car3.jpg'
+      mainImage: '/images/gallery/component6.jpg'
     }
   ];
 
@@ -51,7 +51,7 @@ export default function BuyPage() {
         // const response = await fetch('/api/cars');
         // const data = await response.json();
         // setCars(data);
-        // For now using mock data directly in the return statement
+        setCars(mockCars);
       } catch (error) {
         if (error instanceof Error) {
           setError(error.message);
