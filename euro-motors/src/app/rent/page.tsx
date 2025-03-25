@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
+import CarSlideshow from '@/components/ui/CarSlideshow';
 
 export default function RentPage() {
   const [cars, setCars] = useState([]);
@@ -20,7 +20,6 @@ export default function RentPage() {
       hourlyRate: 120,
       dailyRate: 1200,
       weeklyRate: 7000,
-      mainImage: '/sample-images/rental1.jpg'
     },
     {
       id: '2',
@@ -31,7 +30,6 @@ export default function RentPage() {
       hourlyRate: 100,
       dailyRate: 1000,
       weeklyRate: 6000,
-      mainImage: '/sample-images/rental2.jpg'
     },
     {
       id: '3',
@@ -42,7 +40,6 @@ export default function RentPage() {
       hourlyRate: 150,
       dailyRate: 1500,
       weeklyRate: 9000,
-      mainImage: '/sample-images/rental3.jpg'
     }
   ];
 
@@ -93,15 +90,9 @@ export default function RentPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {mockCars.map((car) => (
             <div key={car.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
-              <div className="relative h-64">
-                <Image 
-                  src={car.mainImage} 
-                  alt={`${car.make} ${car.model}`}
-                  fill
-                  className="object-cover"
-                  priority={car.id === '1'}
-                />
-              </div>
+              {/* Replace static image with slideshow component */}
+              <CarSlideshow carId={car.id} make={car.make} model={car.model} type="rent" />
+              
               <div className="p-4">
                 <h2 className="text-xl font-semibold mb-2">{car.make} {car.model}</h2>
                 <div className="flex justify-between mb-4">
