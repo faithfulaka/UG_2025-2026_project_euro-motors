@@ -32,10 +32,11 @@ export default function Gallery({ images }: GalleryProps) {
   const displayImages = (images || galleryImages).slice(0, 12);
   
   return (
-    <div className="max-w-[1240px] mx-auto px-4 pt-20 pb-16 bg-white">
-      <h2 className="text-6xl font-semibold mb-6 text-black">GALLERY</h2>
+    <section className="w-full bg-white pt-24 pb-36">
+      <div className="max-w-[1240px] mx-auto px-4">
+        <h2 className="text-6xl font-semibold mb-6 text-black">GALLERY</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
         {displayImages.map((image) => (
           <div key={image.id} className="relative aspect-[3/2] overflow-hidden">
             <Image
@@ -48,6 +49,7 @@ export default function Gallery({ images }: GalleryProps) {
           </div>
         ))}
       </div>
-    </div>
+      </div>
+    </section>
   );
 }

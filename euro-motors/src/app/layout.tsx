@@ -19,11 +19,15 @@ export default function RootLayout({
   const isAuthPage = pathname === '/login' || pathname === '/register';
 
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        {!isAuthPage && <Navbar />}
-        <main>{children}</main>
-        {!isAuthPage && <Footer />}
+    <html lang="en" className="scroll-smooth">
+      <body className={`${inter.className} overflow-x-hidden`}>
+        <div className="flex flex-col min-h-screen">
+          {!isAuthPage && <Navbar />}
+          <main className="flex-1 w-full max-w-[100vw] mx-auto overflow-x-hidden">
+            {children}
+          </main>
+          {!isAuthPage && <Footer />}
+        </div>
       </body>
     </html>
   );
