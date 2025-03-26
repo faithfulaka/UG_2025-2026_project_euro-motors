@@ -1,6 +1,6 @@
-import Image from 'next/image';
-//import Link from 'next/link';
 import HomeSlideshow from '@/components/ui/HomeSlideshow';
+import Gallery from '@/components/ui/Gallery';
+
 
 export default function HomePage() {
   // Brand logos
@@ -9,25 +9,9 @@ export default function HomePage() {
     'Rolls Royce', 'Aston Martin', 'Audi', 'BMW'
   ];
 
-  // Gallery images
-  const galleryImages = [
-    { id: 1, src: '/images/gallery/component1.jpg', alt: 'McLaren 570S' },
-    { id: 2, src: '/images/gallery/component2.jpg', alt: 'Ferrari SF90' },
-    { id: 3, src: '/images/gallery/component3.jpg', alt: 'Porsche 911 GT3' },
-    { id: 4, src: '/images/gallery/component4.jpg', alt: 'Lamborghini Urus' },
-    { id: 5, src: '/images/gallery/component5.jpg', alt: 'Rolls Royce Cullinan' },
-    { id: 6, src: '/images/gallery/component6.jpg', alt: 'Aston Martin DBX' },
-    { id: 7, src: '/images/gallery/component7.jpg', alt: 'BMW X7' },
-    { id: 8, src: '/images/gallery/component8.jpg', alt: 'Range Rover' },
-    { id: 9, src: '/images/gallery/component9.jpg', alt: 'Bentley Flying Spur' },
-    { id: 10, src: '/images/gallery/component10.jpg', alt: 'Audi Q8' },
-    { id: 11, src: '/images/gallery/component11.jpg', alt: 'Lexus RX' },
-    { id: 12, src: '/images/gallery/component12.jpg', alt: 'BMW M8' }
-  ];
-
   return (
     <div>
-      {/* Section with Slideshow */}
+      {/* Hero Slideshow */}
       <HomeSlideshow />
 
       {/* Brand Logos */}
@@ -44,24 +28,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Gallery Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-4xl font-bold mb-12 text-center text-black">GALLERY</h2>
-          <div className="grid grid-cols-3 gap-4">
-            {galleryImages.map((image) => (
-              <div key={image.id} className="aspect-[4/3] relative overflow-hidden">
-                <Image 
-                  src={image.src} 
-                  alt={image.alt} 
-                  fill
-                  className="object-cover hover:scale-105 transition-transform duration-300"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Gallery Section - using the Gallery component with internal images */}
+      <Gallery />
     </div>
   );
 }
