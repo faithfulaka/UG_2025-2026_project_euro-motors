@@ -7,31 +7,31 @@ interface CarSlideshowProps {
   carId: string;
   make: string;
   model: string;
-  type: 'buy' | 'rent';
   imageCount?: number;
 }
 
-export default function CarSlideshow({ carId, make, model, type, imageCount = 11 }: CarSlideshowProps) {
+export default function CarSlideshow({ carId, make, model, imageCount = 11 }: CarSlideshowProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isManual, setIsManual] = useState(false);
 
-  // Create image paths array
+  // Create image paths array - using the car folder structure:
+  // public/car1/pov1.jpg through public/car1/pov11.jpg
   const imagePaths = Array.from({ length: imageCount }, (_, i) => 
-    `/images/${type}${carId}/${i + 1}.jpg`
+    `/car${carId}/pov${i + 1}.jpg`
   );
 
-  // Auto slide functionality with pause when clicking manually - exactly like HomeSlideshow
+  // Auto slide functionality with pause when clicking manually
   useEffect(() => {
     if (isManual) return; // Pause auto-slide when user manually navigates
 
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % imagePaths.length);
-    }, 5000); // Auto-slide every 5 seconds, same as HomeSlideshow
+    }, 5000); // Auto-slide every 5 seconds
 
     return () => clearInterval(interval);
   }, [imagePaths.length, isManual]);
 
-  // Functions to handle navigation - same logic as HomeSlideshow
+  // Functions to handle navigation
   const goToNextSlide = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsManual(true);
@@ -54,7 +54,7 @@ export default function CarSlideshow({ carId, make, model, type, imageCount = 11
 
   return (
     <div className="relative w-full h-64 overflow-hidden rounded-t-lg">
-      {/* Slides - Using same transition duration and effect as HomeSlideshow */}
+      {/* Slides */}
       <div className="h-full relative">
         {imagePaths.map((src, index) => (
           <div
@@ -76,7 +76,7 @@ export default function CarSlideshow({ carId, make, model, type, imageCount = 11
         ))}
       </div>
 
-      {/* Navigation Arrows - Exactly matching HomeSlideshow */}
+      {/* Navigation Arrows */}
       <button
         onClick={goToPrevSlide}
         className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-transparent p-2 z-40 cursor-pointer"
@@ -97,7 +97,7 @@ export default function CarSlideshow({ carId, make, model, type, imageCount = 11
         </div>
       </button>
 
-      {/* Slide Indicators - Exactly matching HomeSlideshow */}
+      {/* Slide Indicators */}
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-3 z-40">
         {imagePaths.map((_, index) => (
           <button

@@ -60,8 +60,8 @@ export default function Navbar() {
             <Image 
               src="/logos/logo.svg" 
               alt="Euro Motors Logo" 
-              width={160}  // Increased size
-              height={55}  // Increased size
+              width={240}  // Increased size
+              height={110}  // Increased size
               onError={() => setImageError(true)}
               priority
             />
