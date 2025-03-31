@@ -4,6 +4,7 @@ import './globals.css';
 import { Inter } from 'next/font/google';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import Gallery from '@/components/ui/Gallery';
 import { usePathname } from 'next/navigation';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -15,7 +16,7 @@ export default function RootLayout({
 }) {
   const pathname = usePathname();
   
-  // Don't show navbar on login or registration pages
+  // Don't show navbar, gallery, or footer on login or registration pages
   const isAuthPage = pathname === '/login' || pathname === '/register';
 
   return (
@@ -26,6 +27,7 @@ export default function RootLayout({
           <main className="flex-1 w-full max-w-[100vw] mx-auto overflow-x-hidden">
             {children}
           </main>
+          {!isAuthPage && <Gallery />}
           {!isAuthPage && <Footer />}
         </div>
       </body>

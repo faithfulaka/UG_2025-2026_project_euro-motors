@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import CarSlideshow from '@/components/ui/CarSlideshow';
+import CarDetailSlideshow from '@/components/ui/CarDetailSlideshow';
 
 export default function CarDetailsPage() {
   const { id } = useParams();
@@ -12,7 +12,38 @@ export default function CarDetailsPage() {
   const [error, setError] = useState('');
   const [showTradeInModal, setShowTradeInModal] = useState(false);
   const [activeSection, setActiveSection] = useState('features');
-
+  const [cashDeposit, setCashDeposit] = useState('');
+  const [monthlyPayment, setMonthlyPayment] = useState('');
+  const [canInputMonthly, setCanInputMonthly] = useState(false);
+  
+  // Functions to validate and handle numeric input
+  const handleCashDepositChange = (e) => {
+    // Allow only numbers and decimal points
+    const value = e.target.value.replace(/[^0-9.]/g, '');
+    
+    // Ensure only one decimal point
+    const parts = value.split('.');
+    if (parts.length > 2) {
+      return;
+    }
+    
+    setCashDeposit(value);
+    setCanInputMonthly(value.length > 0);
+  };
+  
+  const handleMonthlyPaymentChange = (e) => {
+    // Allow only numbers and decimal points
+    const value = e.target.value.replace(/[^0-9.]/g, '');
+    
+    // Ensure only one decimal point
+    const parts = value.split('.');
+    if (parts.length > 2) {
+      return;
+    }
+    
+    setMonthlyPayment(value);
+  };
+  
   useEffect(() => {
     async function fetchCarDetails() {
       setLoading(true);
@@ -88,8 +119,8 @@ export default function CarDetailsPage() {
 
         {/* Car header with slideshow */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-          <div className="relative h-[500px]">
-            <CarSlideshow 
+          <div className="relative h-[650px] w-full">
+            <CarDetailSlideshow
               carId={car.id} 
               make={car.make} 
               model={car.model} 
@@ -223,11 +254,17 @@ export default function CarDetailsPage() {
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
                     </svg>
                   </div>
-                  <div className="text-gray-500">Cash Deposit</div>
+                  <input 
+                    type="text" 
+                    value={cashDeposit} 
+                    onChange={handleCashDepositChange} 
+                    className="flex-1 w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-500"
+                    placeholder="Cash Deposit"
+                  />
                 </div>
               </div>
             </div>
-
+            
             <div>
               <div className="bg-gray-50 border border-gray-300 p-3 rounded-md">
                 <div className="flex items-center">
@@ -237,10 +274,18 @@ export default function CarDetailsPage() {
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
                     </svg>
                   </div>
-                  <div className="text-gray-500">Monthly Payment</div>
+                  <input 
+                    type="text" 
+                    value={monthlyPayment} 
+                    onChange={handleMonthlyPaymentChange} 
+                    className="flex-1 w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-500"
+                    placeholder="Monthly Payment"
+                    disabled={!canInputMonthly}
+                  />
                 </div>
               </div>
             </div>
+  
 
             <div className="space-y-4">
               <div className="flex justify-between items-center">

@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import CarSlideshow from '@/components/ui/CarSlideshow';
-import Gallery from '@/components/ui/Gallery';
 
 export default function RentPage() {
   // Using the same mock cars as the buy page, but with rental rates added
@@ -117,9 +116,6 @@ export default function RentPage() {
           </div>
         </div>
       </div>
-
-      {/* Gallery Section */}
-      <Gallery />
     </div>
   );
 }
