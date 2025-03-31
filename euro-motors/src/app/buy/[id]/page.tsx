@@ -93,7 +93,6 @@ export default function CarDetailsPage() {
               carId={car.id} 
               make={car.make} 
               model={car.model} 
-              type="buy" 
             />
           </div>
 
@@ -275,40 +274,34 @@ export default function CarDetailsPage() {
 
         {/* Tabbed content */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="flex border-b border-gray-200">
+          <div className="flex border-b border-gray-200 overflow-x-auto">
             <button 
               onClick={() => setActiveSection('features')} 
-              className={`px-6 py-3 font-medium ${activeSection === 'features' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700'}`}
+              className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'features' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700'}`}
             >
               Features
             </button>
             <button 
               onClick={() => setActiveSection('equipment')} 
-              className={`px-6 py-3 font-medium ${activeSection === 'equipment' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700'}`}
+              className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'equipment' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700'}`}
             >
               Standard Equipment
             </button>
             <button 
               onClick={() => setActiveSection('options')} 
-              className={`px-6 py-3 font-medium ${activeSection === 'options' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700'}`}
+              className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'options' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700'}`}
             >
               Added Options
             </button>
             <button 
               onClick={() => setActiveSection('suspension')} 
-              className={`px-6 py-3 font-medium ${activeSection === 'suspension' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700'}`}
+              className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'suspension' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700'}`}
             >
               Engine/Drivetrain/Suspension
             </button>
             <button 
-              onClick={() => setActiveSection('inspection')} 
-              className={`px-6 py-3 font-medium ${activeSection === 'inspection' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700'}`}
-            >
-              123 Point Inspection
-            </button>
-            <button 
               onClick={() => setActiveSection('finance')} 
-              className={`px-6 py-3 font-medium ${activeSection === 'finance' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700'}`}
+              className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'finance' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700'}`}
             >
               Finance Example
             </button>
@@ -477,85 +470,6 @@ export default function CarDetailsPage() {
               </div>
             )}
 
-            {activeSection === 'inspection' && (
-              <div>
-                <h2 className="text-2xl font-bold mb-8">123 Point Approved Inspection</h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="border-b border-gray-200 py-4 px-3 flex items-center">
-                    <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                    </svg>
-                    <span>Driver Comfort</span>
-                  </div>
-                  <div className="border-b border-gray-200 py-4 px-3 flex items-center">
-                    <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                    </svg>
-                    <span>Bodywork / Cosmetics</span>
-                  </div>
-                  <div className="border-b border-gray-200 py-4 px-3 flex items-center">
-                    <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                    </svg>
-                    <span>Lights</span>
-                  </div>
-                  <div className="border-b border-gray-200 py-4 px-3 flex items-center">
-                    <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                    </svg>
-                    <span>Safety & Security</span>
-                  </div>
-                  <div className="border-b border-gray-200 py-4 px-3 flex items-center">
-                    <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                    </svg>
-                    <span>Suspension</span>
-                  </div>
-                  <div className="border-b border-gray-200 py-4 px-3 flex items-center">
-                    <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                    </svg>
-                    <span>Underneath Vehicle</span>
-                  </div>
-                  <div className="border-b border-gray-200 py-4 px-3 flex items-center">
-                    <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                    </svg>
-                    <span>Brakes, Wheels & Tyres</span>
-                  </div>
-                  <div className="border-b border-gray-200 py-4 px-3 flex items-center">
-                    <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                    </svg>
-                    <span>Under Bonnet</span>
-                  </div>
-                  <div className="border-b border-gray-200 py-4 px-3 flex items-center">
-                    <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                    </svg>
-                    <span>Service History</span>
-                  </div>
-                  <div className="border-b border-gray-200 py-4 px-3 flex items-center">
-                    <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                    </svg>
-                    <span>Road Test</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {activeSection === 'finance' && (
               <div>
                 <h2 className="text-2xl font-bold mb-6">Representative Example</h2>
@@ -611,89 +525,196 @@ export default function CarDetailsPage() {
             )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
 
-        {/* You may also like */}
-        <div className="mt-12">
-          <h2 className="text-2xl font-bold mb-6">You may also like</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="relative h-64">
-                <img 
-                  src="/images/gallery/component4.jpg" 
-                  alt="Bentley Continental GT V8" 
-                  className="object-cover w-full h-full"
-                />
-              </div>
-              <div className="p-4">
-                <h3 className="text-lg font-bold mb-1">Bentley Continental GT V8</h3>
-                <p className="text-gray-600 mb-2">2022 | 4,500 miles</p>
-                <p className="text-lg font-bold mb-3">£156,990</p>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center">
-                    <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="currentColor"/>
-                    </svg>
-                    <span>Birmingham</span>
-                  </div>
-                  <div>
-                    <Link href="#" className="text-blue-600 hover:underline">View details</Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="relative h-64">
-                <img 
-                  src="/images/gallery/component5.jpg" 
-                  alt="Bentley Bentayga V8" 
-                  className="object-cover w-full h-full"
-                />
-              </div>
-              <div className="p-4">
-                <h3 className="text-lg font-bold mb-1">Bentley Bentayga V8</h3>
-                <p className="text-gray-600 mb-2">2023 | 1,200 miles</p>
-                <p className="text-lg font-bold mb-3">£175,990</p>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center">
-                    <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="currentColor"/>
-                    </svg>
-                    <span>Birmingham</span>
-                  </div>
-                  <div>
-                    <Link href="#" className="text-blue-600 hover:underline">View details</Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="relative h-64">
-                <img 
-                  src="/images/gallery/component6.jpg" 
-                  alt="Mercedes GLS" 
-                  className="object-cover w-full h-full"
-                />
-              </div>
-              <div className="p-4">
-                <h3 className="text-lg font-bold mb-1">Mercedes GLS</h3>
-                <p className="text-gray-600 mb-2">2022 | 8,500 miles</p>
-                <p className="text-lg font-bold mb-3">£89,990</p>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center">
-                    <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" fill="currentColor"/>
-                    </svg>
-                    <span>Birmingham</span>
-                  </div>
-                  <div>
-                    <Link href="#" className="text-blue-600 hover:underline">View details</Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        }
+// Mock data function
+function getMockCarById(id: string) {
+  const mockCars = [
+    {
+      id: '1',
+      make: 'Bentley',
+      model: 'Bentayga V8',
+      trim: 'BLACK EDITION',
+      year: 2022,
+      isNew: true,
+      color: 'Pearl White',
+      interiorColor: 'Red/Black',
+      mileage: 0,
+      fuelType: 'Petrol',
+      transmission: 'Automatic',
+      price: 169990,
+      engine: '6.0 L V8 Biturbo',
+      horsePower: 542,
+      torque: '770 NM',
+      topSpeed: '290 KM/H',
+      acceleration100: 'APPROXIMATELY 4.0 S',
+      acceleration60: 'APPROXIMATELY 1.9 S',
+      bodyType: 'SUV',
+      driveType: 'All Wheel Drive',
+      seats: 5,
+      doors: 4,
+      wheelSize: '22 Inch Ten Spoke',
+      brakeColor: 'Red',
+      weight: '2410 KG',
+      wheelbase: '2.995 M',
+      powerKW: '404 kW',
+      powerPS: '549 PS',
+      standardEquipment: [
+        'Engine start/stop button',
+        'Bentley Online services',
+        'Bentley Teleservices',
+        'Brake force display',
+        'Digital Radio',
+        'Oil level indicator',
+        'Bentley Rear Entertainment',
+        'On board diagnostics',
+        'Temperature Display',
+        'Hands Free Tailgate'
+      ],
+      addedOptions: [
+        'Touring Specification',
+        'Bentley Dynamic Ride',
+        'Five Seat Comfort Specification',
+        'Sports Exhaust',
+        'Naim For Bentley',
+        'Embroidered Bentley Emblems',
+        'Heated, Acoustic, IR Front Screen',
+        'Jewel Fuel Filler Cap',
+        'Heated, Duo Tone, 3 Spoke, Hide Trimmed Steering Wheel',
+        'Deep Pile Overmats to Front and Rear'
+      ],
+      mainImage: '/images/gallery/component5.jpg',
+      features: {
+        interior: ['Leather Seats', 'Climate Control', 'Navigation System'],
+        exterior: ['Alloy Wheels', 'LED Headlights', 'Parking Sensors'],
+        safety: ['ABS', 'Airbags', 'Traction Control']
+      },
+      description: 'The Bentley Bentayga V8 BLACK EDITION offers an unparalleled luxury SUV experience with its powerful 6.0L V8 Biturbo engine, delivering 542 horsepower and a top speed of 290 km/h. This brand new 2022 model features pearl white exterior with a striking red/black interior and comes with premium options including the Touring Specification and Naim audio system.'
+    },
+    {
+      id: '2',
+      make: 'Rolls Royce',
+      model: 'Cullinan V12',
+      trim: 'BLACK BADGE',
+      year: 2022,
+      isNew: true,
+      color: 'Dark Grey',
+      interiorColor: 'Black',
+      mileage: 0,
+      fuelType: 'Petrol',
+      transmission: 'Automatic',
+      price: 380000,
+      engine: '6.75L V12',
+      horsePower: 591,
+      torque: '900 NM',
+      topSpeed: '250 KM/H',
+      acceleration100: 'APPROXIMATELY 4.9 S',
+      bodyType: 'SUV',
+      driveType: 'All Wheel Drive',
+      seats: 5,
+      doors: 4,
+      wheelSize: '22 Inch Forged Alloy',
+      brakeColor: 'Black',
+      weight: '2753 KG',
+      wheelbase: '3.295 M',
+      powerKW: '441 kW',
+      powerPS: '591 PS',
+      standardEquipment: [
+        'Engine start/stop button',
+        'Rolls-Royce Connect',
+        'Satellite Navigation',
+        'Head-up Display',
+        'Digital Radio',
+        'Oil level indicator',
+        'Rear Entertainment System',
+        'On board diagnostics',
+        'Temperature Display',
+        'Hands Free Tailgate'
+      ],
+      addedOptions: [
+        'Bespoke Audio System',
+        'Dynamic Package',
+        'Viewing Suite',
+        'Starlight Headliner',
+        'Night Vision',
+        'Black Badge Styling Package',
+        'Heated & Ventilated Seats',
+        'Panoramic Glass Roof',
+        'Illuminated Treadplates',
+        'Deep Pile Carpets'
+      ],
+      mainImage: '/images/gallery/component4.jpg',
+      features: {
+        interior: ['Leather Seats', 'Climate Control', 'Navigation System'],
+        exterior: ['Alloy Wheels', 'LED Headlights', 'Parking Sensors'],
+        safety: ['ABS', 'Airbags', 'Traction Control']
+      },
+      description: 'The Rolls-Royce Cullinan Black Badge offers unprecedented luxury in the SUV market. With a potent 6.75L V12 engine, this commanding vehicle delivers 591 horsepower and is finished in stunning Dark Grey with black interior detailing. The Black Badge edition includes distinctive styling elements and enhanced performance features.'
+    },
+    {
+      id: '3',
+      make: 'Bentley',
+      model: 'Continental GT V8',
+      trim: 'Continental GT V8',
+      year: 2022,
+      isNew: true,
+      color: 'Blue',
+      interiorColor: 'Cream',
+      mileage: 0,
+      fuelType: 'Petrol',
+      transmission: 'Automatic',
+      price: 175000,
+      engine: '4.0L V8 Twin-Turbo',
+      horsePower: 542,
+      torque: '770 NM',
+      topSpeed: '318 KM/H',
+      acceleration100: 'APPROXIMATELY 3.9 S',
+      bodyType: 'Coupe',
+      driveType: 'All Wheel Drive',
+      seats: 4,
+      doors: 2,
+      wheelSize: '21 Inch Five-Spoke',
+      brakeColor: 'Red',
+      weight: '2165 KG',
+      wheelbase: '2.851 M',
+      powerKW: '404 kW',
+      powerPS: '542 PS',
+      standardEquipment: [
+        'Engine start/stop button',
+        'Bentley Online services',
+        'Bentley Teleservices',
+        'Brake force display',
+        'Digital Radio',
+        'Oil level indicator',
+        'Bentley Rear Entertainment',
+        'On board diagnostics',
+        'Temperature Display',
+        'Adaptive Cruise Control'
+      ],
+      addedOptions: [
+        'Touring Specification',
+        'Bentley Dynamic Ride',
+        'Sports Exhaust',
+        'Naim For Bentley',
+        'Rotating Display',
+        'Mood Lighting',
+        'City Specification',
+        'Front Seat Comfort Specification',
+        'Contrast Stitching',
+        'Deep Pile Overmats'
+      ],
+      mainImage: '/images/gallery/component6.jpg',
+      features: {
+        interior: ['Leather Seats', 'Climate Control', 'Navigation System'],
+        exterior: ['Alloy Wheels', 'LED Headlights', 'Parking Sensors'],
+        safety: ['ABS', 'Airbags', 'Traction Control']
+      },
+      description: 'The Bentley Continental GT V8 is the perfect grand tourer, combining breathtaking performance with exquisite luxury and cutting-edge technology. This 2022 model features a stunning blue exterior finish and a cream leather interior, delivering an unmatched driving experience with its powerful 4.0L V8 Twin-Turbo engine and sophisticated all-wheel drive system.'
+    }
+  ];
+  
+  return mockCars.find(car => car.id === id);
+}
