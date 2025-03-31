@@ -1,36 +1,29 @@
-'use client';
+import HomeSlideshow from '@/components/ui/HomeSlideshow';
+import Image from 'next/image';
 
-import './globals.css';
-import { Inter } from 'next/font/google';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
-import Gallery from '@/components/ui/Gallery';
-import { usePathname } from 'next/navigation';
-
-const inter = Inter({ subsets: ['latin'] });
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const pathname = usePathname();
-  
-  // Don't show navbar, gallery, or footer on login or registration pages
-  const isAuthPage = pathname === '/login' || pathname === '/register';
-
+export default function HomePage() {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body className={`${inter.className} overflow-x-hidden`}>
-        <div className="flex flex-col min-h-screen">
-          {!isAuthPage && <Navbar />}
-          <main className="flex-1 w-full max-w-[100vw] mx-auto overflow-x-hidden">
-            {children}
-          </main>
-          {!isAuthPage && <Gallery />}
-          {!isAuthPage && <Footer />}
+    <div>
+      {/* Hero Slideshow */}
+      <HomeSlideshow />
+
+      {/* Brand Logos - Single Image */}
+      <section className="py-10 bg-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex justify-center">
+            <div className="w-full max-w-4xl">
+              <Image 
+                src="/images/brands.jpg" 
+                alt="Luxury Car Brands" 
+                width={1200} 
+                height={200} 
+                className="w-full object-contain"
+                priority
+              />
+            </div>
+          </div>
         </div>
-      </body>
-    </html>
+      </section>
+    </div>
   );
 }

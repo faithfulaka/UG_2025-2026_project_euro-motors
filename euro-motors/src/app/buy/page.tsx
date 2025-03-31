@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import CarSlideshow from '@/components/ui/CarSlideshow';
-import Gallery from '@/components/ui/Gallery';
 
 export default function BuyPage() {
   // Updated with accurate car information and correct order
@@ -173,8 +172,6 @@ export default function BuyPage() {
         </div>
       </div>
 
-      {/* Gallery Section */}
-      <Gallery />
     </div>
   );
 }
