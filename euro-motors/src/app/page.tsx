@@ -15,8 +15,8 @@ export default function HomePage() {
               <Image 
                 src="/images/brands.jpg" 
                 alt="Luxury Car Brands" 
-                width={1200} 
-                height={200} 
+                width={3000} 
+                height={600} 
                 className="w-full object-contain"
                 priority
               />
