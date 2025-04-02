@@ -163,7 +163,7 @@ export default function CarDetailsPage() {
                   <circle cx="17" cy="17" r="2"></circle>
                 </svg>
               </div>
-              <p className="text-sm text-gray-500">Body Type</p>
+              <p className="text-sm text-black">Body Type</p>
               <p className="font-semibold">{car.bodyType}</p>
             </div>
             
@@ -174,7 +174,7 @@ export default function CarDetailsPage() {
                   <path d="M7 12h10"></path>
                 </svg>
               </div>
-              <p className="text-sm text-gray-500">Transmission</p>
+              <p className="text-sm text-black">Transmission</p>
               <p className="font-semibold">{car.transmission}</p>
             </div>
             
@@ -187,7 +187,7 @@ export default function CarDetailsPage() {
                   <path d="M9 13h6"></path>
                 </svg>
               </div>
-              <p className="text-sm text-gray-500">Horse Power</p>
+              <p className="text-sm text-black">Horse Power</p>
               <p className="font-semibold">{car.horsePower}hp</p>
             </div>
             
@@ -203,7 +203,7 @@ export default function CarDetailsPage() {
                   <path d="M3.95 6.06l11.47 5.94"></path>
                 </svg>
               </div>
-              <p className="text-sm text-gray-500">Engine</p>
+              <p className="text-sm text-black">Engine</p>
               <p className="font-semibold">{car.engine}</p>
             </div>
             
@@ -215,7 +215,7 @@ export default function CarDetailsPage() {
                   <path d="M16 19h2a2 2 0 002-2v-3"></path>
                 </svg>
               </div>
-              <p className="text-sm text-gray-500">Mileage</p>
+              <p className="text-sm text-black">Mileage</p>
               <p className="font-semibold">{car.mileage.toLocaleString()} miles</p>
             </div>
             
@@ -228,7 +228,7 @@ export default function CarDetailsPage() {
                   <path d="M2 9a4 4 0 014-4h12a4 4 0 014 4v6a4 4 0 01-4 4H6a4 4 0 01-4-4V9z"></path>
                 </svg>
               </div>
-              <p className="text-sm text-gray-500">Fuel Type</p>
+              <p className="text-sm text-black">Fuel Type</p>
               <p className="font-semibold">{car.fuelType}</p>
             </div>
           </div>
@@ -239,16 +239,16 @@ export default function CarDetailsPage() {
           <h2 className="text-2xl font-bold mb-4">How would you like to pay?</h2>
           
           <div className="flex flex-wrap gap-4 mb-6">
-            <button className="px-6 py-3 border border-gray-800 rounded-md font-medium hover:bg-gray-100">Cash</button>
-            <button className="px-6 py-3 border border-gray-800 rounded-md font-medium hover:bg-gray-100">Finance</button>
             <button className="px-6 py-3 border border-gray-800 rounded-md font-medium hover:bg-gray-100 bg-gray-50">Trade in</button>
+            <button className="px-6 py-3 border border-gray-800 rounded-md font-medium hover:bg-gray-100">Cash</button>
+            <button className="px-6 py-3 border border-gray-800 rounded-md font-medium hover:bg-gray-100">Finance</button>    
           </div>
 
           <div className="space-y-6">
             <div>
               <div className="bg-gray-50 border border-gray-300 p-3 rounded-md">
                 <div className="flex items-center">
-                  <div className="text-gray-500 mr-2">
+                  <div className="text-black mr-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
@@ -258,7 +258,7 @@ export default function CarDetailsPage() {
                     type="text" 
                     value={cashDeposit} 
                     onChange={handleCashDepositChange} 
-                    className="flex-1 w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-500"
+                    className="flex-1 w-full bg-transparent border-none outline-none text-gray-700 placeholder-black"
                     placeholder="Cash Deposit"
                   />
                 </div>
@@ -268,7 +268,7 @@ export default function CarDetailsPage() {
             <div>
               <div className="bg-gray-50 border border-gray-300 p-3 rounded-md">
                 <div className="flex items-center">
-                  <div className="text-gray-500 mr-2">
+                  <div className="text-black mr-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
@@ -278,7 +278,7 @@ export default function CarDetailsPage() {
                     type="text" 
                     value={monthlyPayment} 
                     onChange={handleMonthlyPaymentChange} 
-                    className="flex-1 w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-500"
+                    className="flex-1 w-full bg-transparent border-none outline-none text-gray-700 placeholder-black"
                     placeholder="Monthly Payment"
                     disabled={!canInputMonthly}
                   />
