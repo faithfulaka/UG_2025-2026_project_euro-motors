@@ -5,19 +5,64 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import CarDetailSlideshow from '@/components/ui/CarDetailSlideshow';
 
-export default function CarDetailsPage() {
-  const { id } = useParams();
-  const [car, setCar] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [showTradeInModal, setShowTradeInModal] = useState(false);
-  const [activeSection, setActiveSection] = useState('features');
-  const [cashDeposit, setCashDeposit] = useState('');
-  const [monthlyPayment, setMonthlyPayment] = useState('');
-  const [canInputMonthly, setCanInputMonthly] = useState(false);
+interface Car {
+  id: string;
+  make: string;
+  model: string;
+  trim?: string;
+  year: number;
+  isNew: boolean;
+  color: string;
+  interiorColor: string;
+  mileage: number;
+  fuelType: string;
+  transmission: string;
+  price: number;
+  engine: string;
+  horsePower: number;
+  torque: string;
+  topSpeed: string;
+  acceleration100: string;
+  acceleration60?: string;
+  bodyType: string;
+  driveType: string;
+  seats: number;
+  doors: number;
+  wheelSize: string;
+  brakeColor: string;
+  weight: string;
+  wheelbase: string;
+  powerKW: string;
+  powerPS: string;
+  steeringType?: string;
+  standardEquipment: string[];
+  addedOptions: string[];
+  mainImage: string;
+  features: {
+    interior: string[];
+    exterior: string[];
+    safety: string[];
+  };
+  description?: string; // Made description optional
+}
+
+export default function CarDetailsPage(): JSX.Element {
+  const params = useParams();
+  const carId = params?.id as string;
+  
+  const [car, setCar] = useState<Car | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
+  const [showTradeInModal, setShowTradeInModal] = useState<boolean>(false);
+  const [activeSection, setActiveSection] = useState<string>('features');
+  const [cashDeposit, setCashDeposit] = useState<string>('');
+  const [monthlyPayment, setMonthlyPayment] = useState<string>('');
+  const [canInputMonthly, setCanInputMonthly] = useState<boolean>(false);
+  const [termMonths, setTermMonths] = useState<number>(12);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
   
   // Functions to validate and handle numeric input
-  const handleCashDepositChange = (e) => {
+  const handleCashDepositChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     // Allow only numbers and decimal points
     const value = e.target.value.replace(/[^0-9.]/g, '');
     
@@ -31,7 +76,7 @@ export default function CarDetailsPage() {
     setCanInputMonthly(value.length > 0);
   };
   
-  const handleMonthlyPaymentChange = (e) => {
+  const handleMonthlyPaymentChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     // Allow only numbers and decimal points
     const value = e.target.value.replace(/[^0-9.]/g, '');
     
@@ -43,12 +88,52 @@ export default function CarDetailsPage() {
     
     setMonthlyPayment(value);
   };
+
+  // Calculate slider position percentage based on term months
+  const getSliderPosition = (): number => {
+    const monthOptions = [12, 24, 36, 48, 60];
+    const index = monthOptions.indexOf(termMonths);
+    return index !== -1 ? (index / (monthOptions.length - 1)) * 100 : 0;
+  };
+  
+  // Helper function to get the closest term month based on slider position
+  const getClosestMonth = (position: number): number => {
+    const monthOptions = [12, 24, 36, 48, 60];
+    const index = Math.round((position / 100) * (monthOptions.length - 1));
+    return monthOptions[Math.max(0, Math.min(monthOptions.length - 1, index))];
+  };
+  
+  const handleTermChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const value = parseFloat(e.target.value);
+    // Get closest month from the slider position
+    const newTerm = getClosestMonth(value);
+    setTermMonths(newTerm);
+  };
+  
+  const handleSliderMouseDown = (): void => {
+    setIsDragging(true);
+  };
+  
+  const handleSliderMouseUp = (): void => {
+    setIsDragging(false);
+  };
   
   useEffect(() => {
-    async function fetchCarDetails() {
+    // Add event listeners for mouse up event to handle case when mouse is released outside the slider
+    document.addEventListener('mouseup', handleSliderMouseUp);
+    document.addEventListener('touchend', handleSliderMouseUp);
+    
+    return () => {
+      document.removeEventListener('mouseup', handleSliderMouseUp);
+      document.removeEventListener('touchend', handleSliderMouseUp);
+    };
+  }, []);
+  
+  useEffect(() => {
+    async function fetchCarDetails(): Promise<void> {
       setLoading(true);
       try {
-        const response = await fetch(`/api/cars/${id}`);
+        const response = await fetch(`/api/cars/${carId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch car details');
         }
@@ -65,12 +150,12 @@ export default function CarDetailsPage() {
       }
     }
 
-    if (id) {
+    if (carId) {
       // In a real app, you would fetch data from API
       // fetchCarDetails();
       
       // For demo purposes, use mock data
-      const mockCar = getMockCarById(id as string);
+      const mockCar = getMockCarById(carId);
       if (mockCar) {
         setCar(mockCar);
         setLoading(false);
@@ -79,7 +164,7 @@ export default function CarDetailsPage() {
         setLoading(false);
       }
     }
-  }, [id]);
+  }, [carId]);
 
   if (loading) {
     return (
@@ -128,22 +213,22 @@ export default function CarDetailsPage() {
           </div>
 
           {/* Car basic information */}
-          <div className="p-6 border-b border-gray-200">
+          <div className="p-6 border-b border-black">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
               <div>
                 <h1 className="text-3xl font-bold">{car.make} {car.model}</h1>
-                <p className="text-lg text-gray-600 mt-1">Model: {car.trim || car.model}</p>
-                <p className="text-lg text-gray-600">Year: {car.year} {car.isNew ? '(Brand new)' : ''}</p>
+                <p className="text-lg text-black mt-1">Model: {car.trim || car.model}</p>
+                <p className="text-lg text-black">Year: {car.year} {car.isNew ? '(Brand new)' : ''}</p>
                 <div className="flex items-center mt-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-black mr-1" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-gray-600 mr-4">Birmingham</span>
+                  <span className="text-black mr-4">Birmingham</span>
                   
                   <div className="flex items-center">
                     <span className="w-1.5 h-1.5 bg-black rounded-full mr-1"></span>
                     <span className="w-1.5 h-1.5 bg-black rounded-full mr-1"></span>
-                    <span className="text-gray-600">Home delivery available</span>
+                    <span className="text-black">Home delivery available</span>
                   </div>
                 </div>
               </div>
@@ -154,7 +239,7 @@ export default function CarDetailsPage() {
           </div>
 
           {/* Quick specs */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 p-6 border-b border-gray-200">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 p-6 border-b border-black">
             <div className="flex flex-col items-center">
               <div className="flex items-center justify-center w-12 h-12 mb-2">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -239,14 +324,14 @@ export default function CarDetailsPage() {
           <h2 className="text-2xl font-bold mb-4">How would you like to pay?</h2>
           
           <div className="flex flex-wrap gap-4 mb-6">
-            <button className="px-6 py-3 border border-gray-800 rounded-md font-medium hover:bg-gray-100 bg-gray-50">Trade in</button>
-            <button className="px-6 py-3 border border-gray-800 rounded-md font-medium hover:bg-gray-100">Cash</button>
-            <button className="px-6 py-3 border border-gray-800 rounded-md font-medium hover:bg-gray-100">Finance</button>    
+            <button className="px-6 py-3 border border-black rounded-md font-medium hover:bg-gray-100 bg-gray-50">Trade in</button>
+            <button className="px-6 py-3 border border-black rounded-md font-medium hover:bg-gray-100">Cash</button>
+            <button className="px-6 py-3 border border-black rounded-md font-medium hover:bg-gray-100">Finance</button>    
           </div>
 
           <div className="space-y-6">
             <div>
-              <div className="bg-gray-50 border border-gray-300 p-3 rounded-md">
+              <div className="bg-gray-50 border border-black p-3 rounded-md">
                 <div className="flex items-center">
                   <div className="text-black mr-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -258,7 +343,7 @@ export default function CarDetailsPage() {
                     type="text" 
                     value={cashDeposit} 
                     onChange={handleCashDepositChange} 
-                    className="flex-1 w-full bg-transparent border-none outline-none text-gray-700 placeholder-black"
+                    className="flex-1 w-full bg-transparent border-none outline-none text-black placeholder-black"
                     placeholder="Cash Deposit"
                   />
                 </div>
@@ -266,7 +351,7 @@ export default function CarDetailsPage() {
             </div>
             
             <div>
-              <div className="bg-gray-50 border border-gray-300 p-3 rounded-md">
+              <div className="bg-gray-50 border border-black p-3 rounded-md">
                 <div className="flex items-center">
                   <div className="text-black mr-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -278,7 +363,7 @@ export default function CarDetailsPage() {
                     type="text" 
                     value={monthlyPayment} 
                     onChange={handleMonthlyPaymentChange} 
-                    className="flex-1 w-full bg-transparent border-none outline-none text-gray-700 placeholder-black"
+                    className="flex-1 w-full bg-transparent border-none outline-none text-black placeholder-black"
                     placeholder="Monthly Payment"
                     disabled={!canInputMonthly}
                   />
@@ -286,26 +371,67 @@ export default function CarDetailsPage() {
               </div>
             </div>
   
-
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <div className="font-medium">Term:</div>
-                <div className="font-semibold">12 Months</div>
+                <div className="font-medium text-black">Term:</div>
+                <div className="font-semibold text-black">{termMonths} Months</div>
               </div>
               
-              <div className="relative w-full h-1.5 bg-gray-200 rounded-full">
-                <div className="absolute h-1.5 bg-gray-200 rounded-full" style={{width: '50%'}}></div>
-                <div className="absolute w-5 h-5 bg-red-600 rounded-full -mt-1.5" style={{left: '50%'}}></div>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <div className="font-medium">Annual Mileage:</div>
-                <div className="font-semibold">1000 Miles</div>
-              </div>
-              
-              <div className="relative w-full h-1.5 bg-gray-200 rounded-full">
-                <div className="absolute h-1.5 bg-red-600 rounded-full" style={{width: '70%'}}></div>
-                <div className="absolute w-5 h-5 bg-red-600 rounded-full -mt-1.5" style={{left: '70%'}}></div>
+              <div className="relative w-full h-16 flex items-center cursor-pointer my-4">
+                {/* Track background */}
+                <div className="absolute w-full h-2 bg-black rounded-full top-1/2 transform -translate-y-1/2"></div>
+                
+                {/* Filled track */}
+                <div className="absolute h-2 bg-black rounded-full top-1/2 transform -translate-y-1/2" style={{width: `${getSliderPosition()}%`}}></div>
+                
+                {/* Month labels and markers */}
+                {[0, 25, 50, 75, 100].map((position, index) => (
+                  <div 
+                    key={index}
+                    className="absolute flex flex-col items-center"
+                    style={{left: `${position}%`}}
+                  >
+                    {/* Marker line */}
+                    <div className="w-1 h-4 bg-black"></div>
+                    
+                    {/* Month label */}
+                    <div className="text-xs font-medium mt-1 transform -translate-x-1/2 pt-1">
+                      {[12, 24, 36, 48, 60][index]} 
+                    </div>
+                    
+                    {/* Clickable area for each month */}
+                    <button 
+                      className="absolute w-8 h-8 opacity-0" 
+                      style={{top: '-10px'}}
+                      onClick={() => setTermMonths([12, 24, 36, 48, 60][index])}
+                    />
+                  </div>
+                ))}
+                
+                {/* Slider handle with larger touch target */}
+                <div 
+                  className={`absolute w-8 h-8 bg-red-600 rounded-full top-1/2 transform -translate-y-1/2 -translate-x-1/2 transition-shadow ${isDragging ? 'shadow-lg cursor-grabbing' : 'cursor-grab hover:shadow-md'}`}
+                  style={{
+                    left: `${getSliderPosition()}%`,
+                  }}
+                  onMouseDown={handleSliderMouseDown}
+                  onTouchStart={handleSliderMouseDown}
+                ></div>
+                
+                {/* Actual slider input - with a much larger touch target */}
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={getSliderPosition()}
+                  onChange={handleTermChange}
+                  className="absolute w-full h-full opacity-0 cursor-pointer z-10"
+                  onMouseDown={handleSliderMouseDown}
+                  onTouchStart={handleSliderMouseDown}
+                  onMouseUp={handleSliderMouseUp}
+                  onTouchEnd={handleSliderMouseUp}
+                />
               </div>
             </div>
 
@@ -319,34 +445,34 @@ export default function CarDetailsPage() {
 
         {/* Tabbed content */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="flex border-b border-gray-200 overflow-x-auto">
+          <div className="flex border-b border-black overflow-x-auto">
             <button 
               onClick={() => setActiveSection('features')} 
-              className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'features' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700'}`}
+              className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'features' ? 'text-red-600 border-b-2 border-red-600' : 'text-black'}`}
             >
               Features
             </button>
             <button 
               onClick={() => setActiveSection('equipment')} 
-              className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'equipment' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700'}`}
+              className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'equipment' ? 'text-red-600 border-b-2 border-red-600' : 'text-black'}`}
             >
               Standard Equipment
             </button>
             <button 
               onClick={() => setActiveSection('options')} 
-              className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'options' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700'}`}
+              className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'options' ? 'text-red-600 border-b-2 border-red-600' : 'text-black'}`}
             >
               Added Options
             </button>
             <button 
               onClick={() => setActiveSection('suspension')} 
-              className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'suspension' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700'}`}
+              className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'suspension' ? 'text-red-600 border-b-2 border-red-600' : 'text-black'}`}
             >
               Engine/Drivetrain/Suspension
             </button>
             <button 
               onClick={() => setActiveSection('finance')} 
-              className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'finance' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-700'}`}
+              className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'finance' ? 'text-red-600 border-b-2 border-red-600' : 'text-black'}`}
             >
               Finance Example
             </button>
@@ -358,67 +484,67 @@ export default function CarDetailsPage() {
                 <h2 className="text-2xl font-bold mb-8">Features</h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="border-b border-gray-200 pb-3">
+                  <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">Drive Type:</div>
                     <div>{car.driveType || 'All Wheel Drive'}</div>
                   </div>
-                  <div className="border-b border-gray-200 pb-3">
+                  <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">Steering Type:</div>
                     <div>{car.steeringType || 'Left Hand Drive (LHD)'}</div>
                   </div>
-                  <div className="border-b border-gray-200 pb-3">
+                  <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">Exterior Colour:</div>
                     <div>{car.color}</div>
                   </div>
-                  <div className="border-b border-gray-200 pb-3">
+                  <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">Interior Colour:</div>
                     <div>{car.interiorColor || 'Red/Black'}</div>
                   </div>
-                  <div className="border-b border-gray-200 pb-3">
+                  <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">Doors:</div>
                     <div>{car.doors || '4'}</div>
                   </div>
-                  <div className="border-b border-gray-200 pb-3">
+                  <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">Seats:</div>
                     <div>{car.seats || '5'}</div>
                   </div>
-                  <div className="border-b border-gray-200 pb-3">
+                  <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">Wheels:</div>
                     <div>{car.wheelSize || '22 Inch Ten Spoke'}</div>
                   </div>
-                  <div className="border-b border-gray-200 pb-3">
+                  <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">Brake Calipers:</div>
                     <div>{car.brakeColor || 'Red'}</div>
                   </div>
-                  <div className="border-b border-gray-200 pb-3">
+                  <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">DRY WEIGHT:</div>
                     <div>{car.weight || '2410 KG'}</div>
                   </div>
-                  <div className="border-b border-gray-200 pb-3">
+                  <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">WHEELBASE:</div>
                     <div>{car.wheelbase || '2.995 M'}</div>
                   </div>
-                  <div className="border-b border-gray-200 pb-3">
+                  <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">MAXIMUM TORQUE:</div>
                     <div>{car.torque || '770 NM'}</div>
                   </div>
-                  <div className="border-b border-gray-200 pb-3">
+                  <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">MAXIMUM SPEED:</div>
                     <div>{car.topSpeed || '290 KM/H'}</div>
                   </div>
-                  <div className="border-b border-gray-200 pb-3">
+                  <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">0-100 KM/H:</div>
                     <div>{car.acceleration100 || 'APPROXIMATELY 4.0 S'}</div>
                   </div>
-                  <div className="border-b border-gray-200 pb-3">
+                  <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">0-60KM/H:</div>
                     <div>{car.acceleration60 || 'APPROXIMATELY 1.9 S'}</div>
                   </div>
-                  <div className="border-b border-gray-200 pb-3">
+                  <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">Power (kW):</div>
                     <div>{car.powerKW || '404 kW'}</div>
                   </div>
-                  <div className="border-b border-gray-200 pb-3">
+                  <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">Power (PS):</div>
                     <div>{car.powerPS || '549 PS'}</div>
                   </div>
@@ -432,34 +558,34 @@ export default function CarDetailsPage() {
                 
                 <h3 className="text-xl font-bold mb-4">Driver Convenience</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Engine start/stop button
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Bentley Online services
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Bentley Teleservices
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Brake force display
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Digital Radio
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Oil level indicator
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Bentley Rear Entertainment
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     On board diagnostics
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Temperature Display
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Hands Free Tailgate
                   </div>
                 </div>
@@ -471,34 +597,34 @@ export default function CarDetailsPage() {
                 <h2 className="text-2xl font-bold mb-8">Added Options</h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Touring Specification
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Embroidered Bentley Emblems
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Bentley Dynamic Ride
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Gloss Black Matrix Style Grille to Lower Bumper Apertures
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Five Seat Comfort Specification
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Heated, Acoustic, IR Front Screen
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Sports Exhaust
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Jewel Fuel Filler Cap
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Naim For Bentley
                   </div>
-                  <div className="border-b border-gray-200 py-4 px-3">
+                  <div className="border-b border-black py-4 px-3">
                     Heated, Duo Tone, 3 Spoke, Hide Trimmed Steering Wheel
                   </div>
                 </div>
@@ -509,7 +635,7 @@ export default function CarDetailsPage() {
               <div>
                 <h2 className="text-2xl font-bold mb-8">Engine/Drivetrain/Suspension</h2>
                 
-                <div className="border-b border-gray-200 py-4 px-3">
+                <div className="border-b border-black py-4 px-3">
                   Drive Performance Control
                 </div>
               </div>
@@ -576,8 +702,8 @@ export default function CarDetailsPage() {
 }
 
 // Mock data function
-function getMockCarById(id: string) {
-  const mockCars = [
+function getMockCarById(id: string): Car | null {
+  const mockCars: Car[] = [
     {
       id: '1',
       make: 'Bentley',
@@ -617,7 +743,7 @@ function getMockCarById(id: string) {
         'Bentley Rear Entertainment',
         'On board diagnostics',
         'Temperature Display',
-        'Hands Free Tailgate'
+        'Hands Free Tailgate',
       ],
       addedOptions: [
         'Touring Specification',
@@ -629,75 +755,14 @@ function getMockCarById(id: string) {
         'Heated, Acoustic, IR Front Screen',
         'Jewel Fuel Filler Cap',
         'Heated, Duo Tone, 3 Spoke, Hide Trimmed Steering Wheel',
-        'Deep Pile Overmats to Front and Rear'
+        'Deep Pile Overmats to Front and Rear',
       ],
       mainImage: '/images/gallery/component5.jpg',
       features: {
         interior: ['Leather Seats', 'Climate Control', 'Navigation System'],
         exterior: ['Alloy Wheels', 'LED Headlights', 'Parking Sensors'],
-        safety: ['ABS', 'Airbags', 'Traction Control']
+        safety: ['ABS', 'Airbags', 'Traction Control'],
       },
-      description: 'The Bentley Bentayga V8 BLACK EDITION offers an unparalleled luxury SUV experience with its powerful 6.0L V8 Biturbo engine, delivering 542 horsepower and a top speed of 290 km/h. This brand new 2022 model features pearl white exterior with a striking red/black interior and comes with premium options including the Touring Specification and Naim audio system.'
-    },
-    {
-      id: '2',
-      make: 'Rolls Royce',
-      model: 'Cullinan V12',
-      trim: 'BLACK BADGE',
-      year: 2022,
-      isNew: true,
-      color: 'Dark Grey',
-      interiorColor: 'Black',
-      mileage: 0,
-      fuelType: 'Petrol',
-      transmission: 'Automatic',
-      price: 380000,
-      engine: '6.75L V12',
-      horsePower: 591,
-      torque: '900 NM',
-      topSpeed: '250 KM/H',
-      acceleration100: 'APPROXIMATELY 4.9 S',
-      bodyType: 'SUV',
-      driveType: 'All Wheel Drive',
-      seats: 5,
-      doors: 4,
-      wheelSize: '22 Inch Forged Alloy',
-      brakeColor: 'Black',
-      weight: '2753 KG',
-      wheelbase: '3.295 M',
-      powerKW: '441 kW',
-      powerPS: '591 PS',
-      standardEquipment: [
-        'Engine start/stop button',
-        'Rolls-Royce Connect',
-        'Satellite Navigation',
-        'Head-up Display',
-        'Digital Radio',
-        'Oil level indicator',
-        'Rear Entertainment System',
-        'On board diagnostics',
-        'Temperature Display',
-        'Hands Free Tailgate'
-      ],
-      addedOptions: [
-        'Bespoke Audio System',
-        'Dynamic Package',
-        'Viewing Suite',
-        'Starlight Headliner',
-        'Night Vision',
-        'Black Badge Styling Package',
-        'Heated & Ventilated Seats',
-        'Panoramic Glass Roof',
-        'Illuminated Treadplates',
-        'Deep Pile Carpets'
-      ],
-      mainImage: '/images/gallery/component4.jpg',
-      features: {
-        interior: ['Leather Seats', 'Climate Control', 'Navigation System'],
-        exterior: ['Alloy Wheels', 'LED Headlights', 'Parking Sensors'],
-        safety: ['ABS', 'Airbags', 'Traction Control']
-      },
-      description: 'The Rolls-Royce Cullinan Black Badge offers unprecedented luxury in the SUV market. With a potent 6.75L V12 engine, this commanding vehicle delivers 591 horsepower and is finished in stunning Dark Grey with black interior detailing. The Black Badge edition includes distinctive styling elements and enhanced performance features.'
     },
     {
       id: '3',
@@ -737,7 +802,7 @@ function getMockCarById(id: string) {
         'Bentley Rear Entertainment',
         'On board diagnostics',
         'Temperature Display',
-        'Adaptive Cruise Control'
+        'Adaptive Cruise Control',
       ],
       addedOptions: [
         'Touring Specification',
@@ -749,17 +814,18 @@ function getMockCarById(id: string) {
         'City Specification',
         'Front Seat Comfort Specification',
         'Contrast Stitching',
-        'Deep Pile Overmats'
+        'Deep Pile Overmats',
       ],
       mainImage: '/images/gallery/component6.jpg',
       features: {
         interior: ['Leather Seats', 'Climate Control', 'Navigation System'],
         exterior: ['Alloy Wheels', 'LED Headlights', 'Parking Sensors'],
-        safety: ['ABS', 'Airbags', 'Traction Control']
+        safety: ['ABS', 'Airbags', 'Traction Control'],
       },
-      description: 'The Bentley Continental GT V8 is the perfect grand tourer, combining breathtaking performance with exquisite luxury and cutting-edge technology. This 2022 model features a stunning blue exterior finish and a cream leather interior, delivering an unmatched driving experience with its powerful 4.0L V8 Twin-Turbo engine and sophisticated all-wheel drive system.'
-    }
+      description:
+        'The Bentley Continental GT V8 is the perfect grand tourer, combining breathtaking performance with exquisite luxury and cutting-edge technology. This 2022 model features a stunning blue exterior finish and a cream leather interior, delivering an unmatched driving experience with its powerful 4.0L V8 Twin-Turbo engine and sophisticated all-wheel drive system.',
+    },
   ];
-  
-  return mockCars.find(car => car.id === id);
+
+  return mockCars.find((car) => car.id === id) || null;
 }
