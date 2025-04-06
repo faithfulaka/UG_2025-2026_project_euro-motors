@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import CarDetailSlideshow from '@/components/ui/CarDetailSlideshow';
+import TermSlider from '@/components/ui/TermSlider';
+
 
 interface Car {
   id: string;
@@ -43,7 +45,7 @@ interface Car {
     exterior: string[];
     safety: string[];
   };
-  description?: string; // Made description optional
+  description: string;
 }
 
 export default function CarDetailsPage(): JSX.Element {
@@ -59,7 +61,7 @@ export default function CarDetailsPage(): JSX.Element {
   const [monthlyPayment, setMonthlyPayment] = useState<string>('');
   const [canInputMonthly, setCanInputMonthly] = useState<boolean>(false);
   const [termMonths, setTermMonths] = useState<number>(12);
-  const [isDragging, setIsDragging] = useState<boolean>(false);
+  
   
   // Functions to validate and handle numeric input
   const handleCashDepositChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -88,67 +90,8 @@ export default function CarDetailsPage(): JSX.Element {
     
     setMonthlyPayment(value);
   };
-
-  // Calculate slider position percentage based on term months
-  const getSliderPosition = (): number => {
-    const monthOptions = [12, 24, 36, 48, 60];
-    const index = monthOptions.indexOf(termMonths);
-    return index !== -1 ? (index / (monthOptions.length - 1)) * 100 : 0;
-  };
-  
-  // Helper function to get the closest term month based on slider position
-  const getClosestMonth = (position: number): number => {
-    const monthOptions = [12, 24, 36, 48, 60];
-    const index = Math.round((position / 100) * (monthOptions.length - 1));
-    return monthOptions[Math.max(0, Math.min(monthOptions.length - 1, index))];
-  };
-  
-  const handleTermChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const value = parseFloat(e.target.value);
-    // Get closest month from the slider position
-    const newTerm = getClosestMonth(value);
-    setTermMonths(newTerm);
-  };
-  
-  const handleSliderMouseDown = (): void => {
-    setIsDragging(true);
-  };
-  
-  const handleSliderMouseUp = (): void => {
-    setIsDragging(false);
-  };
-  
+ 
   useEffect(() => {
-    // Add event listeners for mouse up event to handle case when mouse is released outside the slider
-    document.addEventListener('mouseup', handleSliderMouseUp);
-    document.addEventListener('touchend', handleSliderMouseUp);
-    
-    return () => {
-      document.removeEventListener('mouseup', handleSliderMouseUp);
-      document.removeEventListener('touchend', handleSliderMouseUp);
-    };
-  }, []);
-  
-  useEffect(() => {
-    async function fetchCarDetails(): Promise<void> {
-      setLoading(true);
-      try {
-        const response = await fetch(`/api/cars/${carId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch car details');
-        }
-        const data = await response.json();
-        setCar(data);
-      } catch (error) {
-        if (error instanceof Error) {
-          setError(error.message);
-        } else {
-          setError('An error occurred while fetching car details');
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
 
     if (carId) {
       // In a real app, you would fetch data from API
@@ -371,69 +314,7 @@ export default function CarDetailsPage(): JSX.Element {
               </div>
             </div>
   
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <div className="font-medium text-black">Term:</div>
-                <div className="font-semibold text-black">{termMonths} Months</div>
-              </div>
-              
-              <div className="relative w-full h-16 flex items-center cursor-pointer my-4">
-                {/* Track background */}
-                <div className="absolute w-full h-2 bg-black rounded-full top-1/2 transform -translate-y-1/2"></div>
-                
-                {/* Filled track */}
-                <div className="absolute h-2 bg-black rounded-full top-1/2 transform -translate-y-1/2" style={{width: `${getSliderPosition()}%`}}></div>
-                
-                {/* Month labels and markers */}
-                {[0, 25, 50, 75, 100].map((position, index) => (
-                  <div 
-                    key={index}
-                    className="absolute flex flex-col items-center"
-                    style={{left: `${position}%`}}
-                  >
-                    {/* Marker line */}
-                    <div className="w-1 h-4 bg-black"></div>
-                    
-                    {/* Month label */}
-                    <div className="text-xs font-medium mt-1 transform -translate-x-1/2 pt-1">
-                      {[12, 24, 36, 48, 60][index]} 
-                    </div>
-                    
-                    {/* Clickable area for each month */}
-                    <button 
-                      className="absolute w-8 h-8 opacity-0" 
-                      style={{top: '-10px'}}
-                      onClick={() => setTermMonths([12, 24, 36, 48, 60][index])}
-                    />
-                  </div>
-                ))}
-                
-                {/* Slider handle with larger touch target */}
-                <div 
-                  className={`absolute w-8 h-8 bg-red-600 rounded-full top-1/2 transform -translate-y-1/2 -translate-x-1/2 transition-shadow ${isDragging ? 'shadow-lg cursor-grabbing' : 'cursor-grab hover:shadow-md'}`}
-                  style={{
-                    left: `${getSliderPosition()}%`,
-                  }}
-                  onMouseDown={handleSliderMouseDown}
-                  onTouchStart={handleSliderMouseDown}
-                ></div>
-                
-                {/* Actual slider input - with a much larger touch target */}
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={getSliderPosition()}
-                  onChange={handleTermChange}
-                  className="absolute w-full h-full opacity-0 cursor-pointer z-10"
-                  onMouseDown={handleSliderMouseDown}
-                  onTouchStart={handleSliderMouseDown}
-                  onMouseUp={handleSliderMouseUp}
-                  onTouchEnd={handleSliderMouseUp}
-                />
-              </div>
-            </div>
+            <TermSlider termMonths={termMonths} setTermMonths={setTermMonths} />
 
             <div className="flex justify-center mt-8">
               <button className="px-8 py-3 bg-black text-white rounded-md font-medium hover:bg-gray-800">
@@ -763,6 +644,8 @@ function getMockCarById(id: string): Car | null {
         exterior: ['Alloy Wheels', 'LED Headlights', 'Parking Sensors'],
         safety: ['ABS', 'Airbags', 'Traction Control'],
       },
+      description:
+        'The Bentley Bentayga V8 BLACK EDITION offers an unparalleled luxury SUV experience with its powerful 6.0L V8 Biturbo engine, delivering 542 horsepower and a top speed of 290 km/h. This brand new 2022 model features pearl white exterior with a striking red/black interior and comes with premium options including the Touring Specification and Naim audio system.',
     },
     {
       id: '3',
