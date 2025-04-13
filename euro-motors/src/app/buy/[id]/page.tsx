@@ -55,7 +55,7 @@ export default function CarDetailsPage(): JSX.Element {
   const [car, setCar] = useState<Car | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
-  const [showTradeInModal, setShowTradeInModal] = useState<boolean>(false);
+  //const [showTradeInModal, setShowTradeInModal] = useState<boolean>(false);
   const [activeSection, setActiveSection] = useState<string>('features');
   const [cashDeposit, setCashDeposit] = useState<string>('');
   const [monthlyPayment, setMonthlyPayment] = useState<string>('');
@@ -156,7 +156,7 @@ export default function CarDetailsPage(): JSX.Element {
           </div>
 
           {/* Car basic information */}
-          <div className="p-6 border-b border-black">
+          <div className="p-6 border-b border-black text-black ">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
               <div>
                 <h1 className="text-3xl font-bold">{car.make} {car.model}</h1>
@@ -166,7 +166,7 @@ export default function CarDetailsPage(): JSX.Element {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-black mr-1" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-black mr-4">Birmingham</span>
+                  <span className="text-black mr-4">Leicester</span>
                   
                   <div className="flex items-center">
                     <span className="w-1.5 h-1.5 bg-black rounded-full mr-1"></span>
@@ -182,7 +182,7 @@ export default function CarDetailsPage(): JSX.Element {
           </div>
 
           {/* Quick specs */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 p-6 border-b border-black">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 p-6 border-b border-black text-black ">
             <div className="flex flex-col items-center">
               <div className="flex items-center justify-center w-12 h-12 mb-2">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -263,13 +263,13 @@ export default function CarDetailsPage(): JSX.Element {
         </div>
 
         {/* Payment options */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6 text-black">
           <h2 className="text-2xl font-bold mb-4">How would you like to pay?</h2>
           
           <div className="flex flex-wrap gap-4 mb-6">
-            <button className="px-6 py-3 border border-black rounded-md font-medium hover:bg-gray-100 bg-gray-50">Trade in</button>
-            <button className="px-6 py-3 border border-black rounded-md font-medium hover:bg-gray-100">Cash</button>
-            <button className="px-6 py-3 border border-black rounded-md font-medium hover:bg-gray-100">Finance</button>    
+            <button className="px-6 py-3 border border-black rounded-md font-medium hover:bg-gray-200  hover:text-black ">Trade in</button>
+            <button className="px-6 py-3 border border-black rounded-md font-medium hover:bg-gray-200  hover:text-black ">Cash</button>
+            <button className="px-6 py-3 border border-black rounded-md font-medium hover:bg-gray-200  hover:text-black ">Finance</button>    
           </div>
 
           <div className="space-y-6">
