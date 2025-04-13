@@ -1,0 +1,13 @@
+# Ignore virtual environment
+#myenv/
+#venv/
+
+# Ignore database and compiled files
+#db.sqlite3
+#__pycache__/
+#*.pyc
+#*.pyo
+
+# Ignore logs
+#debug.log source myenv/bin/activate
+

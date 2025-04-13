@@ -1,0 +1,250 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String           @id @default(cuid())
+  name            String?
+  email           String           @unique
+  emailVerified   DateTime?
+  password        String
+  image           String?
+  role            Role             @default(USER)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  accounts        Account[]
+  orders          Order[]
+  rentals         Rental[]
+  sessions        Session[]
+  tradeInRequests TradeInRequest[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId], map: "Account_userId_fkey")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "Session_userId_fkey")
+}
+
+model SaleCar {
+  id           String         @id @default(cuid())
+  make         String
+  model        String
+  year         Int
+  color        String
+  mileage      Int
+  fuelType     String
+  transmission String
+  price        Float
+  isAvailable  Boolean        @default(true)
+  features     Json
+  description  String         @db.Text
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  orders       Order[]
+  images       SaleCarImage[]
+}
+
+model SaleCarImage {
+  id        String   @id @default(cuid())
+  url       String
+  carId     String
+  isMain    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  saleCar   SaleCar  @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@index([carId], map: "SaleCarImage_carId_fkey")
+}
+
+model RentalCar {
+  id              String           @id @default(cuid())
+  make            String
+  model           String
+  year            Int
+  color           String
+  mileage         Int
+  fuelType        String
+  transmission    String
+  rentalPriceHour Float
+  rentalPriceDay  Float
+  rentalPriceWeek Float
+  isAvailable     Boolean          @default(true)
+  features        Json
+  description     String           @db.Text
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rentals         Rental[]
+  images          RentalCarImage[]
+}
+
+model RentalCarImage {
+  id        String    @id @default(cuid())
+  url       String
+  carId     String
+  isMain    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  rentalCar RentalCar @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@index([carId], map: "RentalCarImage_carId_fkey")
+}
+
+model Order {
+  id              String          @id @default(cuid())
+  userId          String
+  carId           String
+  amount          Float
+  paymentStatus   PaymentStatus   @default(PENDING)
+  orderStatus     OrderStatus     @default(PROCESSING)
+  paymentMethod   String?
+  paymentIntentId String?         @unique
+  financingOption Boolean         @default(false)
+  financingTerm   Int?
+  tradeInIncluded Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  car             SaleCar         @relation(fields: [carId], references: [id])
+  user            User            @relation(fields: [userId], references: [id])
+  tradeInRequest  TradeInRequest?
+
+  @@index([carId], map: "Order_carId_fkey")
+  @@index([userId], map: "Order_userId_fkey")
+}
+
+model Rental {
+  id              String         @id @default(cuid())
+  userId          String
+  carId           String
+  startDate       DateTime
+  endDate         DateTime
+  rentalDuration  RentalDuration
+  totalAmount     Float
+  paymentStatus   PaymentStatus  @default(PENDING)
+  rentalStatus    RentalStatus   @default(RESERVED)
+  paymentMethod   String?
+  paymentIntentId String?        @unique
+  isSplitPayment  Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  coRenters       CoRenter[]
+  car             RentalCar      @relation(fields: [carId], references: [id])
+  user            User           @relation(fields: [userId], references: [id])
+
+  @@index([carId], map: "Rental_carId_fkey")
+  @@index([userId], map: "Rental_userId_fkey")
+}
+
+model CoRenter {
+  id              String        @id @default(cuid())
+  rentalId        String
+  email           String
+  name            String?
+  paymentAmount   Float
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentIntentId String?       @unique
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  rental          Rental        @relation(fields: [rentalId], references: [id], onDelete: Cascade)
+
+  @@index([rentalId], map: "CoRenter_rentalId_fkey")
+}
+
+model TradeInRequest {
+  id              String         @id @default(cuid())
+  orderId         String         @unique
+  userId          String
+  make            String
+  model           String
+  year            Int
+  color           String
+  mileage         Int
+  condition       String
+  estimatedValue  Float?
+  actualValue     Float?
+  status          TradeInStatus  @default(PENDING)
+  previousOwners  Int?
+  accidentHistory Boolean?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  images          TradeInImage[]
+  order           Order          @relation(fields: [orderId], references: [id])
+  user            User           @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "TradeInRequest_userId_fkey")
+}
+
+model TradeInImage {
+  id             String         @id @default(cuid())
+  url            String
+  tradeInId      String
+  createdAt      DateTime       @default(now())
+  tradeInRequest TradeInRequest @relation(fields: [tradeInId], references: [id], onDelete: Cascade)
+
+  @@index([tradeInId], map: "TradeInImage_tradeInId_fkey")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum OrderStatus {
+  PROCESSING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum RentalStatus {
+  RESERVED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum RentalDuration {
+  HOURLY
+  DAILY
+  WEEKLY
+}
+
+enum TradeInStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
