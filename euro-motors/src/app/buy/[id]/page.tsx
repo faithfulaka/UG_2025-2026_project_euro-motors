@@ -8,45 +8,64 @@ import TermSlider from '@/components/ui/TermSlider';
 
 
 interface Car {
-  id: string;
-  make: string;
-  model: string;
-  trim?: string;
-  year: number;
-  isNew: boolean;
-  color: string;
-  interiorColor: string;
-  mileage: number;
-  fuelType: string;
-  transmission: string;
-  price: number;
-  engine: string;
-  horsePower: number;
-  torque: string;
-  topSpeed: string;
-  acceleration100: string;
-  acceleration60?: string;
-  bodyType: string;
-  driveType: string;
-  seats: number;
-  doors: number;
-  wheelSize: string;
-  brakeColor: string;
-  weight: string;
-  wheelbase: string;
-  powerKW: string;
-  powerPS: string;
-  steeringType?: string;
-  standardEquipment: string[];
-  addedOptions: string[];
-  mainImage: string;
-  features: {
-    interior: string[];
-    exterior: string[];
-    safety: string[];
-  };
-  description: string;
-}
+    id: string;
+    make: string;
+    model: string;
+    trim?: string;
+    year: number;
+    price: number; // This will be the average dealer price from scraper
+    
+    // Enhanced specifications from scraper data
+    specifications: {
+      // Basic info
+      color: string;
+      interiorColor: string;
+      mileage: number;
+      colorOptions?: number; // Number of standard color options available
+      
+      // Powertrain
+      engine: string;
+      horsePower: number;
+      torque: string;
+      fuelType: string;
+      transmission: string;
+      driveType: string;
+      fuelEconomy?: string; // Added from scraper data
+      
+      // Performance
+      topSpeed: string;
+      acceleration100: string;
+      acceleration60?: string;
+      powerKW: string;
+      powerPS: string;
+      powerRPM?: string; // RPM at which max power is achieved
+      torqueRange?: string; // RPM range for max torque
+      
+      // Dimensions
+      bodyType: string;
+      seats: number;
+      doors: number;
+      weight: string;
+      wheelbase: string;
+      
+      // Additional specs
+      wheelSize: string;
+      brakeColor: string;
+      steeringType?: string;
+    };
+    
+    features: {
+      interior: string[];
+      exterior: string[];
+      safety: string[];
+    };
+    
+    standardEquipment: string[];
+    addedOptions: string[];
+    
+    mainImage: string;
+    description: string;
+  }
 
 export default function CarDetailsPage(): JSX.Element {
   const params = useParams();
@@ -56,7 +75,7 @@ export default function CarDetailsPage(): JSX.Element {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [showTradeInModal, setShowTradeInModal] = useState<boolean>(false);
-  const [activeSection, setActiveSection] = useState<string>('features');
+  const [activeSection, setActiveSection] = useState<string>('specifications'); 
   const [cashDeposit, setCashDeposit] = useState<string>('');
   const [monthlyPayment, setMonthlyPayment] = useState<string>('');
   const [canInputMonthly, setCanInputMonthly] = useState<boolean>(false);
@@ -161,7 +180,7 @@ export default function CarDetailsPage(): JSX.Element {
               <div>
                 <h1 className="text-3xl font-bold">{car.make} {car.model}</h1>
                 <p className="text-lg text-black mt-1">Model: {car.trim || car.model}</p>
-                <p className="text-lg text-black">Year: {car.year} {car.isNew ? '(Brand new)' : ''}</p>
+                <p className="text-lg text-black">Year: {car.year}</p>
                 <div className="flex items-center mt-2">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-black mr-1" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
@@ -192,7 +211,7 @@ export default function CarDetailsPage(): JSX.Element {
                 </svg>
               </div>
               <p className="text-sm text-black">Body Type</p>
-              <p className="font-semibold">{car.bodyType}</p>
+              <p className="font-semibold">{car.specifications.bodyType}</p>
             </div>
             
             <div className="flex flex-col items-center">
@@ -203,7 +222,7 @@ export default function CarDetailsPage(): JSX.Element {
                 </svg>
               </div>
               <p className="text-sm text-black">Transmission</p>
-              <p className="font-semibold">{car.transmission}</p>
+              <p className="font-semibold">{car.specifications.transmission}</p>
             </div>
             
             <div className="flex flex-col items-center">
@@ -216,7 +235,7 @@ export default function CarDetailsPage(): JSX.Element {
                 </svg>
               </div>
               <p className="text-sm text-black">Horse Power</p>
-              <p className="font-semibold">{car.horsePower}hp</p>
+              <p className="font-semibold">{car.specifications.horsePower}hp</p>
             </div>
             
             <div className="flex flex-col items-center">
@@ -232,7 +251,7 @@ export default function CarDetailsPage(): JSX.Element {
                 </svg>
               </div>
               <p className="text-sm text-black">Engine</p>
-              <p className="font-semibold">{car.engine}</p>
+              <p className="font-semibold">{car.specifications.engine}</p>
             </div>
             
             <div className="flex flex-col items-center">
@@ -244,7 +263,7 @@ export default function CarDetailsPage(): JSX.Element {
                 </svg>
               </div>
               <p className="text-sm text-black">Mileage</p>
-              <p className="font-semibold">{car.mileage.toLocaleString()} miles</p>
+              <p className="font-semibold">{car.specifications.mileage.toLocaleString()} miles</p>
             </div>
             
             <div className="flex flex-col items-center">
@@ -257,7 +276,7 @@ export default function CarDetailsPage(): JSX.Element {
                 </svg>
               </div>
               <p className="text-sm text-black">Fuel Type</p>
-              <p className="font-semibold">{car.fuelType}</p>
+              <p className="font-semibold">{car.specifications.fuelType}</p>
             </div>
           </div>
         </div>
@@ -327,30 +346,34 @@ export default function CarDetailsPage(): JSX.Element {
         {/* Tabbed content */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="flex border-b border-black overflow-x-auto">
+          <button 
+             onClick={() => setActiveSection('specifications')} 
+             className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'specifications' ? 'text-red-600 border-b-2 border-red-600' : 'text-black'}`}
+            >
+              Specifications
+            </button>
+
             <button 
               onClick={() => setActiveSection('features')} 
               className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'features' ? 'text-red-600 border-b-2 border-red-600' : 'text-black'}`}
             >
               Features
             </button>
+
             <button 
               onClick={() => setActiveSection('equipment')} 
               className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'equipment' ? 'text-red-600 border-b-2 border-red-600' : 'text-black'}`}
             >
               Standard Equipment
             </button>
+
             <button 
               onClick={() => setActiveSection('options')} 
               className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'options' ? 'text-red-600 border-b-2 border-red-600' : 'text-black'}`}
             >
               Added Options
             </button>
-            <button 
-              onClick={() => setActiveSection('suspension')} 
-              className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'suspension' ? 'text-red-600 border-b-2 border-red-600' : 'text-black'}`}
-            >
-              Engine/Drivetrain/Suspension
-            </button>
+            
             <button 
               onClick={() => setActiveSection('finance')} 
               className={`px-6 py-3 font-medium whitespace-nowrap ${activeSection === 'finance' ? 'text-red-600 border-b-2 border-red-600' : 'text-black'}`}
@@ -360,81 +383,205 @@ export default function CarDetailsPage(): JSX.Element {
           </div>
 
           <div className="p-6">
-            {activeSection === 'features' && (
+            {activeSection === 'specifications' && (
               <div>
-                <h2 className="text-2xl font-bold mb-8">Features</h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="border-b border-black pb-3">
-                    <div className="font-bold text-lg">Drive Type:</div>
-                    <div>{car.driveType || 'All Wheel Drive'}</div>
-                  </div>
-                  <div className="border-b border-black pb-3">
-                    <div className="font-bold text-lg">Steering Type:</div>
-                    <div>{car.steeringType || 'Left Hand Drive (LHD)'}</div>
-                  </div>
+                <h2 className="text-2xl font-bold mb-8">Specifications</h2>
+                    
+                {/* Basic Info */}
+                <h3 className="text-xl font-semibold mb-4 border-b border-black pb-2">Basic Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">Exterior Colour:</div>
-                    <div>{car.color}</div>
+                    <div>{car.specifications.color}</div>
                   </div>
                   <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">Interior Colour:</div>
-                    <div>{car.interiorColor || 'Red/Black'}</div>
+                    <div>{car.specifications.interiorColor}</div>
                   </div>
                   <div className="border-b border-black pb-3">
-                    <div className="font-bold text-lg">Doors:</div>
-                    <div>{car.doors || '4'}</div>
+                    <div className="font-bold text-lg">Mileage:</div>
+                    <div>{car.specifications.mileage.toLocaleString()} miles</div>
                   </div>
                   <div className="border-b border-black pb-3">
-                    <div className="font-bold text-lg">Seats:</div>
-                    <div>{car.seats || '5'}</div>
+                    <div className="font-bold text-lg">Steering Type:</div>
+                    <div>{car.specifications.steeringType || 'Left Hand Drive (LHD)'}</div>
+                  </div>
+                  {car.specifications.colorOptions && (
+                    <div className="border-b border-black pb-3">
+                      <div className="font-bold text-lg">Standard Color Options:</div>
+                      <div>{car.specifications.colorOptions}</div>
+                    </div>
+                  )}
+                </div>
+              
+                {/* Powertrain */}
+                <h3 className="text-xl font-semibold mb-4 border-b border-black pb-2">Powertrain</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  <div className="border-b border-black pb-3">
+                    <div className="font-bold text-lg">Engine:</div>
+                    <div>{car.specifications.engine}</div>
                   </div>
                   <div className="border-b border-black pb-3">
-                    <div className="font-bold text-lg">Wheels:</div>
-                    <div>{car.wheelSize || '22 Inch Ten Spoke'}</div>
+                    <div className="font-bold text-lg">Horsepower:</div>
+                    <div>{car.specifications.horsePower} HP {car.specifications.powerRPM ? `@ ${car.specifications.powerRPM}` : ''}</div>
                   </div>
                   <div className="border-b border-black pb-3">
-                    <div className="font-bold text-lg">Brake Calipers:</div>
-                    <div>{car.brakeColor || 'Red'}</div>
+                    <div className="font-bold text-lg">Torque:</div>
+                    <div>{car.specifications.torque} {car.specifications.torqueRange ? `@ ${car.specifications.torqueRange}` : ''}</div>
                   </div>
                   <div className="border-b border-black pb-3">
-                    <div className="font-bold text-lg">DRY WEIGHT:</div>
-                    <div>{car.weight || '2410 KG'}</div>
+                    <div className="font-bold text-lg">Transmission:</div>
+                    <div>{car.specifications.transmission}</div>
                   </div>
                   <div className="border-b border-black pb-3">
-                    <div className="font-bold text-lg">WHEELBASE:</div>
-                    <div>{car.wheelbase || '2.995 M'}</div>
+                    <div className="font-bold text-lg">Fuel Type:</div>
+                    <div>{car.specifications.fuelType}</div>
                   </div>
                   <div className="border-b border-black pb-3">
-                    <div className="font-bold text-lg">MAXIMUM TORQUE:</div>
-                    <div>{car.torque || '770 NM'}</div>
+                    <div className="font-bold text-lg">Drive Type:</div>
+                    <div>{car.specifications.driveType}</div>
                   </div>
+                  {car.specifications.fuelEconomy && (
+                    <div className="border-b border-black pb-3">
+                      <div className="font-bold text-lg">Fuel Economy:</div>
+                      <div>{car.specifications.fuelEconomy}</div>
+                    </div>
+                  )}
+                </div>
+              
+                {/* Performance */}
+                <h3 className="text-xl font-semibold mb-4 border-b border-black pb-2">Performance</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div className="border-b border-black pb-3">
-                    <div className="font-bold text-lg">MAXIMUM SPEED:</div>
-                    <div>{car.topSpeed || '290 KM/H'}</div>
+                    <div className="font-bold text-lg">Top Speed:</div>
+                    <div>{car.specifications.topSpeed}</div>
                   </div>
                   <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">0-100 KM/H:</div>
-                    <div>{car.acceleration100 || 'APPROXIMATELY 4.0 S'}</div>
+                    <div>{car.specifications.acceleration100}</div>
                   </div>
-                  <div className="border-b border-black pb-3">
-                    <div className="font-bold text-lg">0-60KM/H:</div>
-                    <div>{car.acceleration60 || 'APPROXIMATELY 1.9 S'}</div>
-                  </div>
+                  {car.specifications.acceleration60 && (
+                    <div className="border-b border-black pb-3">
+                      <div className="font-bold text-lg">0-60 KM/H:</div>
+                      <div>{car.specifications.acceleration60}</div>
+                    </div>
+                  )}
                   <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">Power (kW):</div>
-                    <div>{car.powerKW || '404 kW'}</div>
+                    <div>{car.specifications.powerKW}</div>
                   </div>
                   <div className="border-b border-black pb-3">
                     <div className="font-bold text-lg">Power (PS):</div>
-                    <div>{car.powerPS || '549 PS'}</div>
+                    <div>{car.specifications.powerPS}</div>
+                  </div>
+                </div>
+              
+                {/* Dimensions */}
+                <h3 className="text-xl font-semibold mb-4 border-b border-black pb-2">Dimensions & Structure</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  <div className="border-b border-black pb-3">
+                    <div className="font-bold text-lg">Body Type:</div>
+                    <div>{car.specifications.bodyType}</div>
+                  </div>
+                  <div className="border-b border-black pb-3">
+                    <div className="font-bold text-lg">Doors:</div>
+                    <div>{car.specifications.doors}</div>
+                  </div>
+                  <div className="border-b border-black pb-3">
+                    <div className="font-bold text-lg">Seats:</div>
+                    <div>{car.specifications.seats}</div>
+                  </div>
+                  <div className="border-b border-black pb-3">
+                    <div className="font-bold text-lg">Weight:</div>
+                    <div>{car.specifications.weight}</div>
+                  </div>
+                  <div className="border-b border-black pb-3">
+                    <div className="font-bold text-lg">Wheelbase:</div>
+                    <div>{car.specifications.wheelbase}</div>
+                  </div>
+                  <div className="border-b border-black pb-3">
+                    <div className="font-bold text-lg">Wheels:</div>
+                    <div>{car.specifications.wheelSize}</div>
+                  </div>
+                  <div className="border-b border-black pb-3">
+                    <div className="font-bold text-lg">Brake Calipers:</div>
+                    <div>{car.specifications.brakeColor}</div>
                   </div>
                 </div>
               </div>
             )}
 
-            {activeSection === 'equipment' && (
+            {activeSection === 'features' && (
               <div>
+                <h2 className="text-2xl font-bold mb-8">Features</h2>
+
+                {/* Features Description - using the car's main description */}
+                <div className="mb-8 bg-gray-50 p-6 rounded-lg border border-gray-200">
+                  <h3 className="text-xl font-semibold mb-4 border-b border-black pb-2">Features Overview</h3>
+                  <p className="text-black leading-relaxed">
+                    {car.description}
+                  </p>
+                </div>
+
+                {/* Feature Categories */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Interior Features */}
+                  <div>
+                    <h3 className="text-xl font-semibold border-b border-black pb-2 mb-4">Interior Features</h3>
+                    <ul className="space-y-3">
+                      {car.features.interior.map((feature, index) => (
+                        <li key={`interior-${index}`} className="flex items-start">
+                          <span className="text-red-600 mr-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          </span>
+                          <span className="text-black">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  
+                  {/* Exterior Features */}
+                  <div>
+                    <h3 className="text-xl font-semibold border-b border-black pb-2 mb-4">Exterior Features</h3>
+                    <ul className="space-y-3">
+                      {car.features.exterior.map((feature, index) => (
+                        <li key={`exterior-${index}`} className="flex items-start">
+                          <span className="text-red-600 mr-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          </span>
+                          <span className="text-black">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  
+                  {/* Safety Features */}
+                  <div>
+                    <h3 className="text-xl font-semibold border-b border-black pb-2 mb-4">Safety Features</h3>
+                    <ul className="space-y-3">
+                      {car.features.safety.map((feature, index) => (
+                        <li key={`safety-${index}`} className="flex items-start">
+                          <span className="text-red-600 mr-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          </span>
+                          <span className="text-black">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
+
+            {activeSection === 'equipment' && (
+              <div className="text-black">
                 <h2 className="text-2xl font-bold mb-8">Standard Equipment</h2>
                 
                 <h3 className="text-xl font-bold mb-4">Driver Convenience</h3>
@@ -508,22 +655,30 @@ export default function CarDetailsPage(): JSX.Element {
                   <div className="border-b border-black py-4 px-3">
                     Heated, Duo Tone, 3 Spoke, Hide Trimmed Steering Wheel
                   </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === 'suspension' && (
-              <div>
-                <h2 className="text-2xl font-bold mb-8">Engine/Drivetrain/Suspension</h2>
-                
-                <div className="border-b border-black py-4 px-3">
-                  Drive Performance Control
+                  <div className="border-b border-black py-4 px-3">
+                    Mood Lighting
+                  </div>
+                  <div className="border-b border-black py-4 px-3">
+                    Comfort Headrests to Rear Outer Seats
+                  </div>
+                  <div className="border-b border-black py-4 px-3">
+                    LED Welcome Lamps
+                  </div>
+                  <div className="border-b border-black py-4 px-3">
+                    Deep Pile Overmats to Front and Rear
+                  </div>
+                  <div className="border-b border-black py-4 px-3">
+                    Top View Camera
+                  </div>
+                  <div className="border-b border-black py-4 px-3">
+                    Electrically Operated Blinds for Rear Side Windows
+                  </div>
                 </div>
               </div>
             )}
 
             {activeSection === 'finance' && (
-              <div>
+              <div className="text-black">
                 <h2 className="text-2xl font-bold mb-6">Representative Example</h2>
                 
                 <div className="space-y-0.5 mb-8">
@@ -582,133 +737,255 @@ export default function CarDetailsPage(): JSX.Element {
   );
 }
 
-// Mock data function
 function getMockCarById(id: string): Car | null {
-  const mockCars: Car[] = [
-    {
-      id: '1',
-      make: 'Bentley',
-      model: 'Bentayga V8',
-      trim: 'BLACK EDITION',
-      year: 2022,
-      isNew: true,
-      color: 'Pearl White',
-      interiorColor: 'Red/Black',
-      mileage: 0,
-      fuelType: 'Petrol',
-      transmission: 'Automatic',
-      price: 169990,
-      engine: '6.0 L V8 Biturbo',
-      horsePower: 542,
-      torque: '770 NM',
-      topSpeed: '290 KM/H',
-      acceleration100: 'APPROXIMATELY 4.0 S',
-      acceleration60: 'APPROXIMATELY 1.9 S',
-      bodyType: 'SUV',
-      driveType: 'All Wheel Drive',
-      seats: 5,
-      doors: 4,
-      wheelSize: '22 Inch Ten Spoke',
-      brakeColor: 'Red',
-      weight: '2410 KG',
-      wheelbase: '2.995 M',
-      powerKW: '404 kW',
-      powerPS: '549 PS',
-      standardEquipment: [
-        'Engine start/stop button',
-        'Bentley Online services',
-        'Bentley Teleservices',
-        'Brake force display',
-        'Digital Radio',
-        'Oil level indicator',
-        'Bentley Rear Entertainment',
-        'On board diagnostics',
-        'Temperature Display',
-        'Hands Free Tailgate',
-      ],
-      addedOptions: [
-        'Touring Specification',
-        'Bentley Dynamic Ride',
-        'Five Seat Comfort Specification',
-        'Sports Exhaust',
-        'Naim For Bentley',
-        'Embroidered Bentley Emblems',
-        'Heated, Acoustic, IR Front Screen',
-        'Jewel Fuel Filler Cap',
-        'Heated, Duo Tone, 3 Spoke, Hide Trimmed Steering Wheel',
-        'Deep Pile Overmats to Front and Rear',
-      ],
-      mainImage: '/images/gallery/component5.jpg',
-      features: {
-        interior: ['Leather Seats', 'Climate Control', 'Navigation System'],
-        exterior: ['Alloy Wheels', 'LED Headlights', 'Parking Sensors'],
-        safety: ['ABS', 'Airbags', 'Traction Control'],
+    const mockCars: Car[] = [
+      {
+        id: '1',
+        make: 'Bentley',
+        model: 'Bentayga V8',
+        trim: 'BLACK EDITION',
+        year: 2022,
+        price: 169990, // Average dealer price directly
+        
+        specifications: {
+          color: 'Pearl White',
+          interiorColor: 'Red/Black',
+          mileage: 0,
+          colorOptions:3, // From scraper data
+          
+          engine: '6.0 L V8 Biturbo',
+          horsePower: 542,
+          torque: '770 NM',
+          fuelType: 'Petrol',
+          transmission: 'Automatic',
+          driveType: 'All Wheel Drive',
+          fuelEconomy: '21.7 mpg combined', // From scraper data
+          
+          topSpeed: '290 KM/H',
+          acceleration100: 'APPROXIMATELY 4.0 S',
+          acceleration60: 'APPROXIMATELY 1.9 S',
+          powerKW: '404 kW',
+          powerPS: '549 PS',
+          powerRPM: '6,000 rpm', // From scraper data
+          torqueRange: '1,960-4,500 rpm', // From scraper data
+          
+          bodyType: 'SUV',
+          seats: 5,
+          doors: 4,
+          weight: '2410 KG',
+          wheelbase: '2.995 M',
+          
+          wheelSize: '22 Inch Ten Spoke',
+          brakeColor: 'Red',
+          steeringType: 'Left Hand Drive (LHD)',
+        },
+        
+        features: {
+          interior: ['Leather Seats', 'Climate Control', 'Navigation System', 'Heated Seats', 'Ventilated Seats', 'Panoramic Roof'],
+          exterior: ['Alloy Wheels', 'LED Headlights', 'Parking Sensors', 'Power Tailgate', 'Roof Rails', 'Privacy Glass'],
+          safety: ['ABS', 'Airbags', 'Traction Control', 'Lane Departure Warning', 'Blind Spot Monitor', 'Adaptive Cruise Control'],
+        },
+        
+        standardEquipment: [
+          'Engine start/stop button',
+          'Bentley Online services',
+          'Bentley Teleservices',
+          'Brake force display',
+          'Digital Radio',
+          'Oil level indicator',
+          'Bentley Rear Entertainment',
+          'On board diagnostics',
+          'Temperature Display',
+          'Hands Free Tailgate',
+        ],
+        
+        addedOptions: [
+          'Touring Specification',
+          'Embroidered Bentley Emblems',
+          'Bentley Dynamic Ride',
+          'Gloss Black Matrix Style Grille to Lower Bumper Apertures',
+          'Five Seat Comfort Specification',
+          'Heated, Acoustic, IR Front Screen',
+          'Sports Exhaust',
+          'Jewel Fuel Filler Cap',
+          'Naim For Bentley',
+          'Heated, Duo Tone, 3 Spoke, Hide Trimmed Steering Wheel',
+          'Mood Lighting',
+          'Comfort Headrests to Rear Outer Seats',
+          'LED Welcome Lamps',
+          'Deep Pile Overmats to Front and Rear',
+          'Top View Camera',
+          'Electrically Operated Blinds for Rear Side Windows'
+        ],
+        
+        mainImage: '/images/gallery/component5.jpg',
+        description: 'The Bentley Bentayga V8 BLACK EDITION offers an unparalleled luxury SUV experience with its powerful 6.0L V8 Biturbo engine, delivering 542 horsepower and a top speed of 290 km/h. This brand new 2022 model features pearl white exterior with a striking red/black interior and comes with premium options including the Touring Specification and Naim audio system.',
       },
-      description:
-        'The Bentley Bentayga V8 BLACK EDITION offers an unparalleled luxury SUV experience with its powerful 6.0L V8 Biturbo engine, delivering 542 horsepower and a top speed of 290 km/h. This brand new 2022 model features pearl white exterior with a striking red/black interior and comes with premium options including the Touring Specification and Naim audio system.',
-    },
-    {
-      id: '3',
-      make: 'Bentley',
-      model: 'Continental GT V8',
-      trim: 'Continental GT V8',
-      year: 2022,
-      isNew: true,
-      color: 'Blue',
-      interiorColor: 'Cream',
-      mileage: 0,
-      fuelType: 'Petrol',
-      transmission: 'Automatic',
-      price: 175000,
-      engine: '4.0L V8 Twin-Turbo',
-      horsePower: 542,
-      torque: '770 NM',
-      topSpeed: '318 KM/H',
-      acceleration100: 'APPROXIMATELY 3.9 S',
-      bodyType: 'Coupe',
-      driveType: 'All Wheel Drive',
-      seats: 4,
-      doors: 2,
-      wheelSize: '21 Inch Five-Spoke',
-      brakeColor: 'Red',
-      weight: '2165 KG',
-      wheelbase: '2.851 M',
-      powerKW: '404 kW',
-      powerPS: '542 PS',
-      standardEquipment: [
-        'Engine start/stop button',
-        'Bentley Online services',
-        'Bentley Teleservices',
-        'Brake force display',
-        'Digital Radio',
-        'Oil level indicator',
-        'Bentley Rear Entertainment',
-        'On board diagnostics',
-        'Temperature Display',
-        'Adaptive Cruise Control',
-      ],
-      addedOptions: [
-        'Touring Specification',
-        'Bentley Dynamic Ride',
-        'Sports Exhaust',
-        'Naim For Bentley',
-        'Rotating Display',
-        'Mood Lighting',
-        'City Specification',
-        'Front Seat Comfort Specification',
-        'Contrast Stitching',
-        'Deep Pile Overmats',
-      ],
-      mainImage: '/images/gallery/component6.jpg',
-      features: {
-        interior: ['Leather Seats', 'Climate Control', 'Navigation System'],
-        exterior: ['Alloy Wheels', 'LED Headlights', 'Parking Sensors'],
-        safety: ['ABS', 'Airbags', 'Traction Control'],
+      {
+        id: '2',
+        make: 'Rolls Royce',
+        model: 'Cullinan V12',
+        trim: 'BLACK BADGE',
+        year: 2022,
+        price: 380000, // Average dealer price directly
+        
+        specifications: {
+          color: 'Dark Grey',
+          interiorColor: 'Black',
+          mileage: 0,
+          colorOptions: 20, // From scraper data
+          
+          engine: '6.75L V12',
+          horsePower: 591,
+          torque: '900 NM',
+          fuelType: 'Petrol',
+          transmission: 'Automatic',
+          driveType: 'All Wheel Drive',
+          fuelEconomy: '18.8 mpg combined', // From scraper data
+          
+          topSpeed: '250 KM/H (limited)',
+          acceleration100: 'APPROXIMATELY 4.9 S',
+          acceleration60: 'APPROXIMATELY 2.5 S',
+          powerKW: '441 kW',
+          powerPS: '600 PS',
+          powerRPM: '5,250 rpm', // From scraper data
+          torqueRange: '1,700-4,500 rpm', // From scraper data
+          
+          bodyType: 'SUV',
+          seats: 5,
+          doors: 4,
+          weight: '2660 KG',
+          wheelbase: '3.295 M',
+          
+          wheelSize: '22 Inch Black Alloy',
+          brakeColor: 'Black',
+          steeringType: 'Right Hand Drive (RHD)',
+        },
+        
+        features: {
+          interior: ['Hand-Crafted Leather', 'Starlight Headliner', 'Bespoke Audio System', 'Refrigerator', 'Champagne Cooler', 'Lambswool Floor Mats'],
+          exterior: ['Pantheon Grille', 'Coach Doors', 'Illuminated Front Grille', 'Electric Retracting Spirit of Ecstasy', 'Self-leveling Wheel Centers', 'Bespoke Paint Finish'],
+          safety: ['Night Vision', 'Wildlife & Pedestrian Warning', 'Active Cruise Control', 'Collision Mitigation', 'Traffic Sign Recognition', 'Driver Alertness Monitoring'],
+        },
+        
+        standardEquipment: [
+          'Satellite Aided Transmission',
+          'Rolls-Royce Connect',
+          'Panoramic Glass Sunroof',
+          'Head-Up Display',
+          'Wifi Hotspot',
+          'Bespoke Clock',
+          'Spirit of Ecstasy Rotary Controller',
+          'Automatic Climate Control',
+          'Air Purification System',
+          'Rear Theatre Configuration',
+        ],
+        
+        addedOptions: [
+          'Black Badge Styling Package',
+          'Technical Fibre Trim',
+          'Contrast Stitching',
+          'Bespoke Interior Package',
+          'Extended Leather Headliner',
+          'Shooting Star Headliner',
+          'Night Vision Enhancement',
+          'Bespoke Audio System',
+          'Rear Entertainment System',
+          'Drink Cabinet with Whisky Glasses',
+          'Refrigerator Compartment',
+          'Lambswool Floor Mats',
+          'Umbrellas in Rear Door Storage',
+          'Bespoke Luggage Set',
+          'Rear Privacy Glass',
+          'Illuminated Treadplates'
+        ],
+        
+        mainImage: '/images/gallery/component4.jpg',
+        description: 'The Rolls-Royce Cullinan BLACK BADGE represents the pinnacle of luxury SUVs. With its powerful 6.75L V12 engine, this vehicle delivers effortless performance with 591 horsepower and sophisticated all-wheel drive. The 2022 model features dark grey exterior with black accent details and a hand-crafted interior that sets new standards for luxury and comfort.',
       },
-      description:
-        'The Bentley Continental GT V8 is the perfect grand tourer, combining breathtaking performance with exquisite luxury and cutting-edge technology. This 2022 model features a stunning blue exterior finish and a cream leather interior, delivering an unmatched driving experience with its powerful 4.0L V8 Twin-Turbo engine and sophisticated all-wheel drive system.',
-    },
-  ];
-
-  return mockCars.find((car) => car.id === id) || null;
-}
+      {
+        id: '3',
+        make: 'Bentley',
+        model: 'Continental GT V8',
+        trim: 'Continental GT V8',
+        year: 2022,
+        price: 174995, // Average dealer price directly
+        
+        specifications: {
+          color: 'Blue',
+          interiorColor: 'Cream',
+          mileage: 0,
+          colorOptions: 16, // From scraper data
+          
+          engine: '4.0L V8 Twin-Turbo',
+          horsePower: 542,
+          torque: '770 NM',
+          fuelType: 'Petrol',
+          transmission: '8-speed dual-clutch', // Updated from scraper data
+          driveType: 'All Wheel Drive',
+          fuelEconomy: '23.3 mpg combined', // From scraper data
+          
+          topSpeed: '318 KM/H',
+          acceleration100: 'APPROXIMATELY 3.9 S',
+          acceleration60: 'APPROXIMATELY 1.8 S',
+          powerKW: '404 kW',
+          powerPS: '542 PS',
+          powerRPM: '6,000 rpm', // From scraper data
+          torqueRange: '1,960-4,500 rpm', // From scraper data
+          
+          bodyType: 'Coupe',
+          seats: 4,
+          doors: 2,
+          weight: '2165 KG',
+          wheelbase: '2.851 M',
+          
+          wheelSize: '21 Inch Five-Spoke',
+          brakeColor: 'Red',
+          steeringType: 'Left Hand Drive (LHD)',
+        },
+        
+        features: {
+          interior: ['Leather Seats', 'Rotating Display', 'Panoramic Roof', 'Digital Dashboard', 'Ambient Lighting', 'Diamond Quilted Upholstery'],
+          exterior: ['Matrix LED Headlamps', 'Chrome Grille', 'Power Boot', 'Active Rear Spoiler', 'Elliptical Tail Lamps', 'Sports Exhaust'],
+          safety: ['360-degree Camera', 'Night Vision', 'Lane Assist', 'Traffic Sign Recognition', 'Pre-sense Safety System', 'Adaptive Cruise Control'],
+        },
+        
+        standardEquipment: [
+          'Engine start/stop button',
+          'Bentley Online services',
+          'Bentley Teleservices',
+          'Brake force display',
+          'Digital Radio',
+          'Oil level indicator',
+          'Bentley Rear Entertainment',
+          'On board diagnostics',
+          'Temperature Display',
+          'Adaptive Cruise Control',
+        ],
+        
+        addedOptions: [
+          'Touring Specification',
+          'Bentley Dynamic Ride',
+          'Sports Exhaust',
+          'Naim For Bentley',
+          'Rotating Display',
+          'Mood Lighting',
+          'City Specification',
+          'Front Seat Comfort Specification',
+          'Contrast Stitching',
+          'Deep Pile Overmats',
+          'LED Welcome Lamps',
+          'Heated 3-Spoke Steering Wheel',
+          'Bentley Signature Audio',
+          'Carbon Ceramic Brakes',
+          'Blackline Specification',
+          'Illuminated Door Sills'
+        ],
+        
+        mainImage: '/images/gallery/component6.jpg',
+        description: 'The Bentley Continental GT V8 is the perfect grand tourer, combining breathtaking performance with exquisite luxury and cutting-edge technology. This 2022 model features a stunning blue exterior finish with a cream leather interior, delivering an unmatched driving experience with its powerful 4.0L V8 Twin-Turbo engine producing 542 horsepower.',
+      }
+    ];
+    
+    return mockCars.find((car) => car.id === id) || null;
+  }

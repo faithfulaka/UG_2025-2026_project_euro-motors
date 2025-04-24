@@ -1,69 +1,20 @@
-'use client';
-
+// app/buy/page.tsx
 import Link from 'next/link';
 import CarSlideshow from '@/components/ui/CarSlideshow';
+import { getAllCars } from '@/lib/db/cars';
 
-export default function BuyPage() {
-  // Updated with accurate car information and correct order
-  const mockCars = [
-    {
-      id: '1',
-      make: 'Bentley',
-      model: 'Bentayga V8',
-      trim: 'BLACK EDITION',
-      year: 2022,
-      isNew: true,
-      color: 'Pearl White',
-      mileage: 0,
-      price: 169990,
-      bodyType: 'SUV',
-      transmission: 'Automatic',
-      horsePower: 542,
-      engine: '4.0L V8 Biturbo',
-      fuelType: 'Petrol'
-    },
-    {
-      id: '2',
-      make: 'Rolls Royce',
-      model: 'Cullinan V12',
-      trim: 'BLACK BADGE',
-      year: 2022,
-      isNew: true,
-      color: 'Dark Grey',
-      mileage: 0,
-      price: 380000,
-      bodyType: 'SUV',
-      transmission: 'Automatic',
-      horsePower: 591,
-      engine: '6.75L V12',
-      fuelType: 'Petrol'
-    },
-    {
-      id: '3',
-      make: 'Bentley',
-      model: 'Continental GT V8',
-      trim: 'Continental GT V8',
-      year: 2022,
-      isNew: true,
-      color: 'Blue',
-      mileage: 0,
-      price: 175000,
-      bodyType: 'Coupe',
-      transmission: 'Automatic',
-      horsePower: 542,
-      engine: '4.0L V8 Twin-Turbo',
-      fuelType: 'Petrol'
-    }
-  ];
+export default async function BuyPage() {
+  // Fetch cars from database instead of using mock data
+  const cars = await getAllCars();
 
   return (
     <div className="bg-white">
-      <div className="py-12 bg-white  pt-20 pb-36">
+      <div className="py-12 bg-white pt-20 pb-36">
         <div className="max-w-7xl mx-auto px-4">
           <h1 className="text-3xl font-bold mb-8 text-black">Luxury Cars For Sale</h1>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockCars.map((car) => (
+            {cars.map((car) => (
               <div key={car.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
                 {/* CarSlideshow with simplified props */}
                 <CarSlideshow 
@@ -76,8 +27,8 @@ export default function BuyPage() {
                   <h2 className="text-xl font-semibold mb-2 text-black">{car.make} {car.model}</h2>
                   <p className="text-gray-600 text-sm mb-2">{car.trim}</p>
                   <div className="flex justify-between mb-4">
-                    <span className="text-black">{car.year} {car.isNew ? '(Brand new)' : ''}</span>
-                    <span className="text-black">{car.mileage > 0 ? `${car.mileage.toLocaleString()} miles` : 'New'}</span>
+                    <span className="text-black">{car.year} {car.specifications.mileage === 0 ? '(Brand new)' : ''}</span>
+                    <span className="text-black">{car.specifications.mileage > 0 ? `${car.specifications.mileage.toLocaleString()} miles` : 'New'}</span>
                   </div>
                   
                   {/* Specifications using icon layout */}
@@ -90,7 +41,7 @@ export default function BuyPage() {
                       </span>
                       <div>
                         <div className="text-xs text-black">Body Type</div>
-                        <div className="text-sm font-medium text-black">{car.bodyType}</div>
+                        <div className="text-sm font-medium text-black">{car.specifications.bodyType}</div>
                       </div>
                     </div>
                     
@@ -102,7 +53,7 @@ export default function BuyPage() {
                       </span>
                       <div>
                         <div className="text-xs text-black">Transmission</div>
-                        <div className="text-sm font-medium text-black">{car.transmission}</div>
+                        <div className="text-sm font-medium text-black">{car.specifications.transmission}</div>
                       </div>
                     </div>
                     
@@ -114,7 +65,7 @@ export default function BuyPage() {
                       </span>
                       <div>
                         <div className="text-xs text-black">Horse Power</div>
-                        <div className="text-sm font-medium text-black">{car.horsePower}hp</div>
+                        <div className="text-sm font-medium text-black">{car.specifications.horsePower}hp</div>
                       </div>
                     </div>
                     
@@ -126,7 +77,7 @@ export default function BuyPage() {
                       </span>
                       <div>
                         <div className="text-xs text-black">Engine</div>
-                        <div className="text-sm font-medium text-black">{car.engine}</div>
+                        <div className="text-sm font-medium text-black">{car.specifications.engine}</div>
                       </div>
                     </div>
                     
@@ -139,7 +90,7 @@ export default function BuyPage() {
                       </span>
                       <div>
                         <div className="text-xs text-black">Color</div>
-                        <div className="text-sm font-medium text-black">{car.color}</div>
+                        <div className="text-sm font-medium text-black">{car.specifications.color}</div>
                       </div>
                     </div>
                     
@@ -151,7 +102,7 @@ export default function BuyPage() {
                       </span>
                       <div>
                         <div className="text-xs text-black">Fuel Type</div>
-                        <div className="text-sm font-medium text-black">{car.fuelType}</div>
+                        <div className="text-sm font-medium text-black">{car.specifications.fuelType}</div>
                       </div>
                     </div>
                   </div>
@@ -171,7 +122,6 @@ export default function BuyPage() {
           </div>
         </div>
       </div>
-
     </div>
   );
 }
