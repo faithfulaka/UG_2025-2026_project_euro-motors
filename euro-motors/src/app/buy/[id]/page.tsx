@@ -287,8 +287,6 @@ export default function CarDetailsPage(): JSX.Element {
           
           <div className="flex flex-wrap gap-4 mb-6">
             <button className="px-6 py-3 border border-black rounded-md font-medium hover:bg-gray-200  hover:text-black ">Trade in</button>
-            <button className="px-6 py-3 border border-black rounded-md font-medium hover:bg-gray-200  hover:text-black ">Cash</button>
-            <button className="px-6 py-3 border border-black rounded-md font-medium hover:bg-gray-200  hover:text-black ">Finance</button>    
           </div>
 
           <div className="space-y-6">
