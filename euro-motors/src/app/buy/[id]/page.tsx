@@ -5,66 +5,6 @@ import CarDetailSlideshow from '@/components/ui/CarDetailSlideshow';
 import TermSlider from '@/components/ui/TermSlider';
 
 
-interface Car {
-    id: string;
-    make: string;
-    model: string;
-    trim?: string;
-    year: number;
-    price: number; // This will be the average dealer price from scraper
-    
-    // Enhanced specifications from scraper data
-    specifications: {
-      // Basic info
-      color: string;
-      interiorColor: string;
-      mileage: number;
-      colorOptions?: number; // Number of standard color options available
-      
-      // Powertrain
-      engine: string;
-      horsePower: number;
-      torque: string;
-      fuelType: string;
-      transmission: string;
-      driveType: string;
-      fuelEconomy?: string; // Added from scraper data
-      
-      // Performance
-      topSpeed: string;
-      acceleration100: string;
-      acceleration60?: string;
-      powerKW: string;
-      powerPS: string;
-      powerRPM?: string; // RPM at which max power is achieved
-      torqueRange?: string; // RPM range for max torque
-      
-      // Dimensions
-      bodyType: string;
-      seats: number;
-      doors: number;
-      weight: string;
-      wheelbase: string;
-      
-      // Additional specs
-      wheelSize: string;
-      brakeColor: string;
-      steeringType?: string;
-    };
-    
-    features: {
-      interior: string[];
-      exterior: string[];
-      safety: string[];
-    };
-    
-    standardEquipment: string[];
-    addedOptions: string[];
-    
-    mainImage: string;
-    description: string;
-  }
-
 export default function CarDetailsPage(): JSX.Element {
   const params = useParams();
   const carId = params?.id as string;
@@ -109,23 +49,28 @@ export default function CarDetailsPage(): JSX.Element {
   };
  
   useEffect(() => {
-
     if (carId) {
-      // In a real app, you would fetch data from API
-      // fetchCarDetails();
-      
-      // For demo purposes, use mock data
-      const mockCar = getMockCarById(carId);
-      if (mockCar) {
-        setCar(mockCar);
-        setLoading(false);
-      } else {
-        setError('Car not found');
-        setLoading(false);
-      }
+      // Remove mock data fetching
+      // REPLACE with actual API call:
+      fetch(`/api/cars/${carId}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Car not found');
+          }
+          return response.json();
+        })
+        .then(data => {
+          setCar(data);
+          setLoading(false);
+        })
+        .catch(err => {
+          setError(err.message);
+          setLoading(false);
+        });
     }
   }, [carId]);
-
+  
+  
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -732,256 +677,3 @@ export default function CarDetailsPage(): JSX.Element {
     </div>
   );
 }
-
-function getMockCarById(id: string): Car | null {
-    const mockCars: Car[] = [
-      {
-        id: '1',
-        make: 'Bentley',
-        model: 'Bentayga V8',
-        trim: 'BLACK EDITION',
-        year: 2022,
-        price: 169990, // Average dealer price directly
-        
-        specifications: {
-          color: 'Pearl White',
-          interiorColor: 'Red/Black',
-          mileage: 0,
-          colorOptions:3, // From scraper data
-          
-          engine: '6.0 L V8 Biturbo',
-          horsePower: 542,
-          torque: '770 NM',
-          fuelType: 'Petrol',
-          transmission: 'Automatic',
-          driveType: 'All Wheel Drive',
-          fuelEconomy: '21.7 mpg combined', // From scraper data
-          
-          topSpeed: '290 KM/H',
-          acceleration100: 'APPROXIMATELY 4.0 S',
-          acceleration60: 'APPROXIMATELY 1.9 S',
-          powerKW: '404 kW',
-          powerPS: '549 PS',
-          powerRPM: '6,000 rpm', // From scraper data
-          torqueRange: '1,960-4,500 rpm', // From scraper data
-          
-          bodyType: 'SUV',
-          seats: 5,
-          doors: 4,
-          weight: '2410 KG',
-          wheelbase: '2.995 M',
-          
-          wheelSize: '22 Inch Ten Spoke',
-          brakeColor: 'Red',
-          steeringType: 'Left Hand Drive (LHD)',
-        },
-        
-        features: {
-          interior: ['Leather Seats', 'Climate Control', 'Navigation System', 'Heated Seats', 'Ventilated Seats', 'Panoramic Roof'],
-          exterior: ['Alloy Wheels', 'LED Headlights', 'Parking Sensors', 'Power Tailgate', 'Roof Rails', 'Privacy Glass'],
-          safety: ['ABS', 'Airbags', 'Traction Control', 'Lane Departure Warning', 'Blind Spot Monitor', 'Adaptive Cruise Control'],
-        },
-        
-        standardEquipment: [
-          'Engine start/stop button',
-          'Bentley Online services',
-          'Bentley Teleservices',
-          'Brake force display',
-          'Digital Radio',
-          'Oil level indicator',
-          'Bentley Rear Entertainment',
-          'On board diagnostics',
-          'Temperature Display',
-          'Hands Free Tailgate',
-        ],
-        
-        addedOptions: [
-          'Touring Specification',
-          'Embroidered Bentley Emblems',
-          'Bentley Dynamic Ride',
-          'Gloss Black Matrix Style Grille to Lower Bumper Apertures',
-          'Five Seat Comfort Specification',
-          'Heated, Acoustic, IR Front Screen',
-          'Sports Exhaust',
-          'Jewel Fuel Filler Cap',
-          'Naim For Bentley',
-          'Heated, Duo Tone, 3 Spoke, Hide Trimmed Steering Wheel',
-          'Mood Lighting',
-          'Comfort Headrests to Rear Outer Seats',
-          'LED Welcome Lamps',
-          'Deep Pile Overmats to Front and Rear',
-          'Top View Camera',
-          'Electrically Operated Blinds for Rear Side Windows'
-        ],
-        
-        mainImage: '/images/gallery/component5.jpg',
-        description: 'The Bentley Bentayga V8 BLACK EDITION offers an unparalleled luxury SUV experience with its powerful 6.0L V8 Biturbo engine, delivering 542 horsepower and a top speed of 290 km/h. This brand new 2022 model features pearl white exterior with a striking red/black interior and comes with premium options including the Touring Specification and Naim audio system.',
-      },
-      {
-        id: '2',
-        make: 'Rolls Royce',
-        model: 'Cullinan V12',
-        trim: 'BLACK BADGE',
-        year: 2022,
-        price: 380000, // Average dealer price directly
-        
-        specifications: {
-          color: 'Dark Grey',
-          interiorColor: 'Black',
-          mileage: 0,
-          colorOptions: 20, // From scraper data
-          
-          engine: '6.75L V12',
-          horsePower: 591,
-          torque: '900 NM',
-          fuelType: 'Petrol',
-          transmission: 'Automatic',
-          driveType: 'All Wheel Drive',
-          fuelEconomy: '18.8 mpg combined', // From scraper data
-          
-          topSpeed: '250 KM/H (limited)',
-          acceleration100: 'APPROXIMATELY 4.9 S',
-          acceleration60: 'APPROXIMATELY 2.5 S',
-          powerKW: '441 kW',
-          powerPS: '600 PS',
-          powerRPM: '5,250 rpm', // From scraper data
-          torqueRange: '1,700-4,500 rpm', // From scraper data
-          
-          bodyType: 'SUV',
-          seats: 5,
-          doors: 4,
-          weight: '2660 KG',
-          wheelbase: '3.295 M',
-          
-          wheelSize: '22 Inch Black Alloy',
-          brakeColor: 'Black',
-          steeringType: 'Right Hand Drive (RHD)',
-        },
-        
-        features: {
-          interior: ['Hand-Crafted Leather', 'Starlight Headliner', 'Bespoke Audio System', 'Refrigerator', 'Champagne Cooler', 'Lambswool Floor Mats'],
-          exterior: ['Pantheon Grille', 'Coach Doors', 'Illuminated Front Grille', 'Electric Retracting Spirit of Ecstasy', 'Self-leveling Wheel Centers', 'Bespoke Paint Finish'],
-          safety: ['Night Vision', 'Wildlife & Pedestrian Warning', 'Active Cruise Control', 'Collision Mitigation', 'Traffic Sign Recognition', 'Driver Alertness Monitoring'],
-        },
-        
-        standardEquipment: [
-          'Satellite Aided Transmission',
-          'Rolls-Royce Connect',
-          'Panoramic Glass Sunroof',
-          'Head-Up Display',
-          'Wifi Hotspot',
-          'Bespoke Clock',
-          'Spirit of Ecstasy Rotary Controller',
-          'Automatic Climate Control',
-          'Air Purification System',
-          'Rear Theatre Configuration',
-        ],
-        
-        addedOptions: [
-          'Black Badge Styling Package',
-          'Technical Fibre Trim',
-          'Contrast Stitching',
-          'Bespoke Interior Package',
-          'Extended Leather Headliner',
-          'Shooting Star Headliner',
-          'Night Vision Enhancement',
-          'Bespoke Audio System',
-          'Rear Entertainment System',
-          'Drink Cabinet with Whisky Glasses',
-          'Refrigerator Compartment',
-          'Lambswool Floor Mats',
-          'Umbrellas in Rear Door Storage',
-          'Bespoke Luggage Set',
-          'Rear Privacy Glass',
-          'Illuminated Treadplates'
-        ],
-        
-        mainImage: '/images/gallery/component4.jpg',
-        description: 'The Rolls-Royce Cullinan BLACK BADGE represents the pinnacle of luxury SUVs. With its powerful 6.75L V12 engine, this vehicle delivers effortless performance with 591 horsepower and sophisticated all-wheel drive. The 2022 model features dark grey exterior with black accent details and a hand-crafted interior that sets new standards for luxury and comfort.',
-      },
-      {
-        id: '3',
-        make: 'Bentley',
-        model: 'Continental GT V8',
-        trim: 'Continental GT V8',
-        year: 2022,
-        price: 174995, // Average dealer price directly
-        
-        specifications: {
-          color: 'Blue',
-          interiorColor: 'Cream',
-          mileage: 0,
-          colorOptions: 16, // From scraper data
-          
-          engine: '4.0L V8 Twin-Turbo',
-          horsePower: 542,
-          torque: '770 NM',
-          fuelType: 'Petrol',
-          transmission: '8-speed dual-clutch', // Updated from scraper data
-          driveType: 'All Wheel Drive',
-          fuelEconomy: '23.3 mpg combined', // From scraper data
-          
-          topSpeed: '318 KM/H',
-          acceleration100: 'APPROXIMATELY 3.9 S',
-          acceleration60: 'APPROXIMATELY 1.8 S',
-          powerKW: '404 kW',
-          powerPS: '542 PS',
-          powerRPM: '6,000 rpm', // From scraper data
-          torqueRange: '1,960-4,500 rpm', // From scraper data
-          
-          bodyType: 'Coupe',
-          seats: 4,
-          doors: 2,
-          weight: '2165 KG',
-          wheelbase: '2.851 M',
-          
-          wheelSize: '21 Inch Five-Spoke',
-          brakeColor: 'Red',
-          steeringType: 'Left Hand Drive (LHD)',
-        },
-        
-        features: {
-          interior: ['Leather Seats', 'Rotating Display', 'Panoramic Roof', 'Digital Dashboard', 'Ambient Lighting', 'Diamond Quilted Upholstery'],
-          exterior: ['Matrix LED Headlamps', 'Chrome Grille', 'Power Boot', 'Active Rear Spoiler', 'Elliptical Tail Lamps', 'Sports Exhaust'],
-          safety: ['360-degree Camera', 'Night Vision', 'Lane Assist', 'Traffic Sign Recognition', 'Pre-sense Safety System', 'Adaptive Cruise Control'],
-        },
-        
-        standardEquipment: [
-          'Engine start/stop button',
-          'Bentley Online services',
-          'Bentley Teleservices',
-          'Brake force display',
-          'Digital Radio',
-          'Oil level indicator',
-          'Bentley Rear Entertainment',
-          'On board diagnostics',
-          'Temperature Display',
-          'Adaptive Cruise Control',
-        ],
-        
-        addedOptions: [
-          'Touring Specification',
-          'Bentley Dynamic Ride',
-          'Sports Exhaust',
-          'Naim For Bentley',
-          'Rotating Display',
-          'Mood Lighting',
-          'City Specification',
-          'Front Seat Comfort Specification',
-          'Contrast Stitching',
-          'Deep Pile Overmats',
-          'LED Welcome Lamps',
-          'Heated 3-Spoke Steering Wheel',
-          'Bentley Signature Audio',
-          'Carbon Ceramic Brakes',
-          'Blackline Specification',
-          'Illuminated Door Sills'
-        ],
-        
-        mainImage: '/images/gallery/component6.jpg',
-        description: 'The Bentley Continental GT V8 is the perfect grand tourer, combining breathtaking performance with exquisite luxury and cutting-edge technology. This 2022 model features a stunning blue exterior finish with a cream leather interior, delivering an unmatched driving experience with its powerful 4.0L V8 Twin-Turbo engine producing 542 horsepower.',
-      }
-    ];
-    
-    return mockCars.find((car) => car.id === id) || null;
-  }
