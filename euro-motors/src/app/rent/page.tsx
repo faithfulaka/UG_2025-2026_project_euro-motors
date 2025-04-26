@@ -1,66 +1,21 @@
-'use client';
-
 import Link from 'next/link';
 import CarSlideshow from '@/components/ui/CarSlideshow';
+import { prisma } from '@/lib/prisma';
 
-export default function RentPage() {
-  // Using the same mock cars as the buy page, but with rental rates added
-  const mockCars = [
-    {
-      id: '1',
-      make: 'Bentley',
-      model: 'Bentayga V8',
-      trim: 'BLACK EDITION',
-      year: 2022,
-      isNew: true,
-      color: 'Pearl White',
-      mileage: 0,
-      hourlyRate: 150,
-      dailyRate: 1500,
-      weeklyRate: 9000,
-      bodyType: 'SUV',
-      transmission: 'Automatic',
-      horsePower: 542,
-      engine: '4.0L V8 Biturbo',
-      fuelType: 'Petrol'
-    },
-    {
-      id: '2',
-      make: 'Rolls Royce',
-      model: 'Cullinan V12',
-      trim: 'BLACK BADGE',
-      year: 2022,
-      isNew: true,
-      color: 'Dark Grey',
-      mileage: 0,
-      hourlyRate: 200,
-      dailyRate: 2000,
-      weeklyRate: 12000,
-      bodyType: 'SUV',
-      transmission: 'Automatic',
-      horsePower: 591,
-      engine: '6.75L V12',
-      fuelType: 'Petrol'
-    },
-    {
-      id: '3',
-      make: 'Bentley',
-      model: 'Continental GT V8',
-      trim: 'Continental GT V8',
-      year: 2022,
-      isNew: true,
-      color: 'Blue',
-      mileage: 0,
-      hourlyRate: 160,
-      dailyRate: 1600,
-      weeklyRate: 9600,
-      bodyType: 'Coupe',
-      transmission: 'Automatic',
-      horsePower: 542,
-      engine: '4.0L V8 Twin-Turbo',
-      fuelType: 'Petrol'
-    }
-  ];
+export default async function RentPage() {
+  // Fetch rental cars from database
+  const cars = await prisma.rentalCar.findMany({
+    where: { isAvailable: true },
+    include: { images: true }
+  });
+
+  // Parse JSON fields stored in database
+  const Cars = cars.map(car => ({
+    ...car,
+    specifications: JSON.parse(car.specifications as string),
+    features: JSON.parse(car.features as string)
+  }));
+
 
   return (
     <div className="bg-white">
@@ -69,7 +24,7 @@ export default function RentPage() {
           <h1 className="text-3xl font-bold mb-8 text-black">Luxury Cars For Rent</h1>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockCars.map((car) => (
+            {Cars.map((car) => (
               <div key={car.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
                 {/* CarSlideshow with simplified props */}
                 <CarSlideshow 
@@ -82,8 +37,8 @@ export default function RentPage() {
                   <h2 className="text-xl font-semibold mb-2 text-black">{car.make} {car.model}</h2>
                   <p className="text-gray-600 text-sm mb-2">{car.trim}</p>
                   <div className="flex justify-between mb-4">
-                    <span className="text-black">{car.year} {car.isNew ? '(Brand new)' : ''}</span>
-                    <span className="text-black">{car.mileage > 0 ? `${car.mileage.toLocaleString()} miles` : 'New'}</span>
+                    <span className="text-black">{car.year}</span>
+                    <span className="text-black">{car.specifications.mileage > 0 ? `${car.specifications.mileage.toLocaleString()} miles` : 'New'}</span>
                   </div>
                   
                   {/* Rental rates section - unique to the rent page */}

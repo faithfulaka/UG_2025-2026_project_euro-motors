@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useEffect, JSX } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
