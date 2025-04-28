@@ -10,8 +10,8 @@ export async function GET(
   
   try {
     const car = await prisma.buyCar.findUnique({
-      where: { id },
-      include: { images: true }
+      where: { id }
+      // No need to include images anymore since we're generating paths locally
     });
     
     if (!car) {

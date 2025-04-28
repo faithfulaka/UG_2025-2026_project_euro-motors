@@ -18,36 +18,8 @@ export default function CarDetailsPage(): JSX.Element {
   const [monthlyPayment, setMonthlyPayment] = useState<string>('');
   const [canInputMonthly, setCanInputMonthly] = useState<boolean>(false);
   const [termMonths, setTermMonths] = useState<number>(12);
-  
-  
-  // Functions to validate and handle numeric input
-  const handleCashDepositChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    // Allow only numbers and decimal points
-    const value = e.target.value.replace(/[^0-9.]/g, '');
-    
-    // Ensure only one decimal point
-    const parts = value.split('.');
-    if (parts.length > 2) {
-      return;
-    }
-    
-    setCashDeposit(value);
-    setCanInputMonthly(value.length > 0);
-  };
-  
-  const handleMonthlyPaymentChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    // Allow only numbers and decimal points
-    const value = e.target.value.replace(/[^0-9.]/g, '');
-    
-    // Ensure only one decimal point
-    const parts = value.split('.');
-    if (parts.length > 2) {
-      return;
-    }
-    
-    setMonthlyPayment(value);
-  };
- 
+
+
   useEffect(() => {
     if (carId) {
       // Remove mock data fetching
@@ -95,6 +67,36 @@ export default function CarDetailsPage(): JSX.Element {
     );
   }
 
+  
+  
+  // Functions to validate and handle numeric input
+  const handleCashDepositChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    // Allow only numbers and decimal points
+    const value = e.target.value.replace(/[^0-9.]/g, '');
+    
+    // Ensure only one decimal point
+    const parts = value.split('.');
+    if (parts.length > 2) {
+      return;
+    }
+    
+    setCashDeposit(value);
+    setCanInputMonthly(value.length > 0);
+  };
+  
+  const handleMonthlyPaymentChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    // Allow only numbers and decimal points
+    const value = e.target.value.replace(/[^0-9.]/g, '');
+    
+    // Ensure only one decimal point
+    const parts = value.split('.');
+    if (parts.length > 2) {
+      return;
+    }
+    
+    setMonthlyPayment(value);
+  };
+ 
   return (
     <div className="min-h-screen bg-gray-50 py-6">
       <div className="max-w-7xl mx-auto px-4">
