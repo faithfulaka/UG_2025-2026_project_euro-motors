@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
+// Yes, interfaces are needed for proper TypeScript usage
 interface CarDetailSlideshowProps {
   carId: string;
   make: string;
@@ -13,11 +14,15 @@ interface CarDetailSlideshowProps {
 export default function CarDetailSlideshow({ carId, make, model, imageCount = 11 }: CarDetailSlideshowProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isManual, setIsManual] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
+  // Extract the number from the carID (e.g., "car1" -> "1", "rental2" -> "2")
+  const carNumber = carId.replace(/\D/g, '');
+  
   // Create image paths array - using the car folder structure:
   // public/car1/pov1.jpg through public/car1/pov11.jpg
   const imagePaths = Array.from({ length: imageCount }, (_, i) => 
-    `/car${carId}/pov${i + 1}.jpg`
+    `/car${carNumber}/pov${i + 1}.jpg`
   );
 
   // Auto slide functionality with pause when clicking manually
@@ -52,6 +57,18 @@ export default function CarDetailSlideshow({ carId, make, model, imageCount = 11
     setTimeout(() => setIsManual(false), 5000); // Resume auto-slide after 5 sec
   };
 
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
+  if (imageError) {
+    return (
+      <div className="relative w-full h-full bg-gray-200 flex items-center justify-center">
+        <span className="text-gray-600">Image not available</span>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-full overflow-hidden">
       {/* Slides - making sure they fill both width and height */}
@@ -70,6 +87,7 @@ export default function CarDetailSlideshow({ carId, make, model, imageCount = 11
                 fill
                 className="object-cover w-full h-full"
                 priority={index === 0}
+                onError={handleImageError}
               />
             </div>
           </div>
@@ -83,7 +101,16 @@ export default function CarDetailSlideshow({ carId, make, model, imageCount = 11
         aria-label="Previous slide"
       >
         <div className="relative w-10 h-10">
-          <Image src="/images/homeslide/Left.svg" alt="Previous" width={40} height={40} />
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="white" 
+            strokeWidth="2" 
+            className="w-10 h-10"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
         </div>
       </button>
 
@@ -93,7 +120,16 @@ export default function CarDetailSlideshow({ carId, make, model, imageCount = 11
         aria-label="Next slide"
       >
         <div className="relative w-10 h-10">
-          <Image src="/images/homeslide/Right.svg" alt="Next" width={40} height={40} />
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="white" 
+            strokeWidth="2" 
+            className="w-10 h-10"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
         </div>
       </button>
 

@@ -1,18 +1,31 @@
-// components/ui/CarSlideshow.jsx or tsx
 'use client';
 
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 
-export default function CarSlideshow({ carId, make, model }) {
-  const [images, setImages] = useState([]);
+// Interfaces are recommended for type safety and code completion
+interface CarSlideshowProps {
+  carId: string;
+  make: string;
+  model: string;
+}
+
+export default function CarSlideshow({ carId, make, model }: CarSlideshowProps) {
+  const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [imageError, setImageError] = useState(false);
   
   useEffect(() => {
-    // Generate image paths based on car ID
     // Extract the number from the carID (e.g., "car1" -> "1", "rental2" -> "2")
     const carNumber = carId.replace(/\D/g, '');
+    
+    if (!carNumber) {
+      console.error('Invalid car ID format');
+      setLoading(false);
+      setImageError(true);
+      return;
+    }
     
     // Create an array of image paths for this car
     const carImages = Array.from({ length: 11 }, (_, i) => 
@@ -47,6 +60,16 @@ export default function CarSlideshow({ carId, make, model }) {
     );
   }
 
+  if (imageError || images.length === 0) {
+    return (
+      <div className="relative h-64 bg-gray-200">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-gray-600">Image not available</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-64 group">
       <Image
@@ -56,6 +79,7 @@ export default function CarSlideshow({ carId, make, model }) {
         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         className="object-cover"
         priority={currentIndex === 0}
+        onError={() => setImageError(true)}
       />
       
       {/* Navigation arrows */}

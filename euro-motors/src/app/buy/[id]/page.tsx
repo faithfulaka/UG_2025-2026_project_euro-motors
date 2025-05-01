@@ -20,27 +20,27 @@ export default function CarDetailsPage(): JSX.Element {
   const [termMonths, setTermMonths] = useState<number>(12);
 
 
-  useEffect(() => {
+// In your CarDetailsPage component:
+useEffect(() => {
+  const fetchCarData = async () => {
     if (carId) {
-      // Remove mock data fetching
-      // REPLACE with actual API call:
-      fetch(`/api/cars/${carId}`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Car not found');
-          }
-          return response.json();
-        })
-        .then(data => {
-          setCar(data);
-          setLoading(false);
-        })
-        .catch(err => {
-          setError(err.message);
-          setLoading(false);
-        });
+      try {
+        const response = await fetch(`/api/cars/${carId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch car data');
+        }
+        const data = await response.json();
+        setCar(data);
+        setLoading(false);
+      } catch (error) {
+        setError('Error fetching car details');
+        setLoading(false);
+      }
     }
-  }, [carId]);
+  };
+  
+  fetchCarData();
+}, [carId]);
   
   
   if (loading) {
