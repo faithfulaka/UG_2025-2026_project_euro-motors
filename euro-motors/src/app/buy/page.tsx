@@ -1,20 +1,23 @@
+// src/app/buy/page.tsx
 import Link from 'next/link';
 import CarSlideshow from '@/components/ui/CarSlideshow';
 import { prisma } from '@/lib/prisma';
+import { BuyCar } from '@/types';
 
-// Make this a server component by removing 'use client'
 export default async function BuyPage() {
-  // Fetch cars directly from the database
-  const dbCars = await prisma.buyCar.findMany({
+  // Fetch data from database
+  const carsData = await prisma.buyCar.findMany({
     where: { isAvailable: true },
     include: { images: true }
   });
 
-  // Parse JSON fields stored in the database
-  const cars = dbCars.map(car => ({
+  // Parse JSON fields
+  const cars: BuyCar[] = carsData.map(car => ({
     ...car,
     specifications: JSON.parse(car.specifications as string),
-    features: JSON.parse(car.features as string)
+    features: JSON.parse(car.features as string),
+    standardEquipment: car.standardEquipment ? JSON.parse(car.standardEquipment as string) : [],
+    addedOptions: car.addedOptions ? JSON.parse(car.addedOptions as string) : []
   }));
 
   return (

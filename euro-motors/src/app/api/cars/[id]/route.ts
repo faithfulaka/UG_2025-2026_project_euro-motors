@@ -1,4 +1,4 @@
-// app/api/cars/[id]/route.ts
+// src/app/api/cars/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
@@ -10,8 +10,8 @@ export async function GET(
   
   try {
     const car = await prisma.buyCar.findUnique({
-      where: { id }
-      // No need to include images anymore since we're generating paths locally
+      where: { id },
+      include: { images: true } // Include images relation
     });
     
     if (!car) {

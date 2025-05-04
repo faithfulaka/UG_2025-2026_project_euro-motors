@@ -1,46 +1,46 @@
-import { useState, useEffect, JSX } from 'react';
+'use client';
+
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import CarDetailSlideshow from '@/components/ui/CarDetailSlideshow';
 import TermSlider from '@/components/ui/TermSlider';
+import { Car } from '@/types';
 
-
-export default function CarDetailsPage(): JSX.Element {
+export default function CarDetailsPage() {
   const params = useParams();
   const carId = params?.id as string;
   
   const [car, setCar] = useState<Car | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
-  const [showTradeInModal, setShowTradeInModal] = useState<boolean>(false);
   const [activeSection, setActiveSection] = useState<string>('specifications'); 
   const [cashDeposit, setCashDeposit] = useState<string>('');
   const [monthlyPayment, setMonthlyPayment] = useState<string>('');
   const [canInputMonthly, setCanInputMonthly] = useState<boolean>(false);
   const [termMonths, setTermMonths] = useState<number>(12);
 
-
-// In your CarDetailsPage component:
-useEffect(() => {
-  const fetchCarData = async () => {
-    if (carId) {
-      try {
-        const response = await fetch(`/api/cars/${carId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch car data');
+  useEffect(() => {
+    const fetchCarData = async () => {
+      if (carId) {
+        try {
+          const response = await fetch(`/api/cars/${carId}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch car data');
+          }
+          const data = await response.json();
+          setCar(data);
+          setLoading(false);
+        } catch (err) {
+          setError('Error fetching car details');
+          setLoading(false);
         }
-        const data = await response.json();
-        setCar(data);
-        setLoading(false);
-      } catch (error) {
-        setError('Error fetching car details');
-        setLoading(false);
       }
-    }
-  };
-  
-  fetchCarData();
-}, [carId]);
+    };
+    
+    fetchCarData();
+  }, [carId]);
+
   
   
   if (loading) {
@@ -472,7 +472,7 @@ useEffect(() => {
                   <div>
                     <h3 className="text-xl font-semibold border-b border-black pb-2 mb-4">Interior Features</h3>
                     <ul className="space-y-3">
-                      {car.features.interior.map((feature, index) => (
+                       {car.features.interior.map((feature: string, index: number) => (
                         <li key={`interior-${index}`} className="flex items-start">
                           <span className="text-red-600 mr-2">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -481,7 +481,7 @@ useEffect(() => {
                           </span>
                           <span className="text-black">{feature}</span>
                         </li>
-                      ))}
+                       ))}
                     </ul>
                   </div>
                   
@@ -489,7 +489,7 @@ useEffect(() => {
                   <div>
                     <h3 className="text-xl font-semibold border-b border-black pb-2 mb-4">Exterior Features</h3>
                     <ul className="space-y-3">
-                      {car.features.exterior.map((feature, index) => (
+                      {car.features.exterior.map((feature: string, index: number) => (
                         <li key={`exterior-${index}`} className="flex items-start">
                           <span className="text-red-600 mr-2">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
