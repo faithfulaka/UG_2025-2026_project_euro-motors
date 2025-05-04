@@ -1,27 +1,26 @@
+// src/components/ui/CarDetailSlideshow.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
-// Yes, interfaces are needed for proper TypeScript usage
 interface CarDetailSlideshowProps {
   carId: string;
   make: string;
   model: string;
-  imageCount?: number;
+  imageUrls?: string[];
 }
 
-export default function CarDetailSlideshow({ carId, make, model, imageCount = 11 }: CarDetailSlideshowProps) {
+export default function CarDetailSlideshow({ carId, make, model, imageUrls }: CarDetailSlideshowProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isManual, setIsManual] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  // Extract the number from the carID (e.g., "car1" -> "1", "rental2" -> "2")
+  // Extract the number from the carID (e.g., "car1" -> "1")
   const carNumber = carId.replace(/\D/g, '');
   
-  // Create image paths array - using the car folder structure:
-  // public/car1/pov1.jpg through public/car1/pov11.jpg
-  const imagePaths = Array.from({ length: imageCount }, (_, i) => 
+  // If imageUrls are provided, use them; otherwise generate paths based on convention
+  const images = imageUrls || Array.from({ length: 11 }, (_, i) => 
     `/car${carNumber}/pov${i + 1}.jpg`
   );
 
@@ -30,24 +29,24 @@ export default function CarDetailSlideshow({ carId, make, model, imageCount = 11
     if (isManual) return; // Pause auto-slide when user manually navigates
 
     const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % imagePaths.length);
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
     }, 5000); // Auto-slide every 5 seconds
 
     return () => clearInterval(interval);
-  }, [imagePaths.length, isManual]);
+  }, [images.length, isManual]);
 
   // Functions to handle navigation
   const goToNextSlide = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsManual(true);
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % imagePaths.length);
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
     setTimeout(() => setIsManual(false), 5000); // Resume auto-slide after 5 sec
   };
 
   const goToPrevSlide = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsManual(true);
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + imagePaths.length) % imagePaths.length);
+    setCurrentIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
     setTimeout(() => setIsManual(false), 5000); // Resume auto-slide after 5 sec
   };
 
@@ -73,9 +72,9 @@ export default function CarDetailSlideshow({ carId, make, model, imageCount = 11
     <div className="relative w-full h-full overflow-hidden">
       {/* Slides - making sure they fill both width and height */}
       <div className="h-full relative">
-        {imagePaths.map((src, index) => (
+        {images.map((src, index) => (
           <div
-            key={src}
+            key={`${src}-${index}`}
             className={`absolute inset-0 transition-opacity duration-[1500ms] ease-in-out ${
               index === currentIndex ? 'opacity-100 z-20' : 'opacity-0 z-10'
             }`}
@@ -97,47 +96,43 @@ export default function CarDetailSlideshow({ carId, make, model, imageCount = 11
       {/* Navigation Arrows */}
       <button
         onClick={goToPrevSlide}
-        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-transparent p-2 z-40 cursor-pointer"
+        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 p-2 z-40 cursor-pointer rounded-full"
         aria-label="Previous slide"
       >
-        <div className="relative w-10 h-10">
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="white" 
-            strokeWidth="2" 
-            className="w-10 h-10"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-        </div>
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="white" 
+          strokeWidth="2" 
+          className="w-6 h-6"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
       </button>
 
       <button
         onClick={goToNextSlide}
-        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-transparent p-2 z-40 cursor-pointer"
+        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 p-2 z-40 cursor-pointer rounded-full"
         aria-label="Next slide"
       >
-        <div className="relative w-10 h-10">
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="white" 
-            strokeWidth="2" 
-            className="w-10 h-10"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
-        </div>
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="white" 
+          strokeWidth="2" 
+          className="w-6 h-6"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
       </button>
 
       {/* Slide Indicators */}
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-3 z-40">
-        {imagePaths.map((_, index) => (
+        {images.map((_, index) => (
           <button
-            key={index}
+            key={`indicator-${index}`}
             onClick={() => goToSlide(index)}
             className={`w-3 h-3 rounded-full cursor-pointer ${
               currentIndex === index ? 'bg-red-600' : 'bg-transparent border border-red-600'
