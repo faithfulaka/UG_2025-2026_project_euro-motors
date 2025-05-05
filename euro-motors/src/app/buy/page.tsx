@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import CarSlideshow from '@/components/ui/CarSlideshow';
 import { prisma } from '@/lib/prisma';
-import { BuyCar } from '@/types';
+import { BuyCar, CarSpecifications, CarFeatures } from '@/types';
 
 export default async function BuyPage() {
   // Fetch data from database
@@ -11,14 +11,21 @@ export default async function BuyPage() {
     include: { images: true }
   });
 
-  // Parse JSON fields
-  const cars: BuyCar[] = carsData.map(car => ({
+  // Parse JSON fields and convert null to undefined for type compatibility
+  const cars = carsData.map(car => ({
     ...car,
-    specifications: JSON.parse(car.specifications as string),
-    features: JSON.parse(car.features as string),
-    standardEquipment: car.standardEquipment ? JSON.parse(car.standardEquipment as string) : [],
-    addedOptions: car.addedOptions ? JSON.parse(car.addedOptions as string) : []
-  }));
+    trim: car.trim || undefined, // Convert null to undefined
+    specifications: JSON.parse(car.specifications as string) as CarSpecifications,
+    features: JSON.parse(car.features as string) as CarFeatures,
+    standardEquipment: car.standardEquipment 
+      ? JSON.parse(car.standardEquipment as string) as string[]
+      : [] as string[],
+    addedOptions: car.addedOptions 
+      ? JSON.parse(car.addedOptions as string) as string[]
+      : [] as string[],
+  })) as BuyCar[];
+
+  
 
   return (
     <div className="bg-white">

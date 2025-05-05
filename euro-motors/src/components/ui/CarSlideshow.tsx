@@ -1,65 +1,75 @@
-// src/components/ui/CarSlideshow.tsx
 'use client';
 
-import { useState, /*useEffect*/ } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 
 interface CarSlideshowProps {
   carId: string;
   make: string;
   model: string;
-  imageUrls?: string[];
 }
 
-export default function CarSlideshow({ carId, make, model, imageUrls }: CarSlideshowProps) {
+export default function CarSlideshow({ carId, make, model }: CarSlideshowProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [imageError, setImageError] = useState(false);
   
-  // Extract the number from the carID (e.g., "car1" -> "1")
+  // No matter what format the carId is in, we need the number
   const carNumber = carId.replace(/\D/g, '');
   
-  // If imageUrls are provided, use them; otherwise generate paths
-  const images = imageUrls || Array.from({ length: 11 }, (_, i) => `/car${carNumber}/pov${i + 1}.jpg`);
+  // Create a direct path to the image
+  const imagePath = `/car${carNumber}/pov${currentIndex + 1}.jpg`;
 
-  const nextSlide = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
+  const handleNextClick = () => {
+    setCurrentIndex((prev) => (prev + 1) % 11);
   };
 
-  const prevSlide = () => {
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
+  const handlePrevClick = () => {
+    setCurrentIndex((prev) => (prev - 1 + 11) % 11);
   };
+
+  if (imageError) {
+    return (
+      <div className="relative h-64 bg-gray-200 flex items-center justify-center">
+        <span className="text-gray-600">Image not available</span>
+      </div>
+    );
+  }
 
   return (
     <div className="relative h-64 w-full overflow-hidden">
-      {images.length > 0 && (
-        <Image
-          src={images[currentIndex]}
-          alt={`${make} ${model}`}
-          className="object-cover"
-          fill
-          priority
-        />
-      )}
+      <Image
+        src={imagePath}
+        alt={`${make} ${model}`}
+        fill
+        className="object-cover"
+        onError={() => setImageError(true)}
+      />
       
       {/* Navigation buttons */}
       <button
-        onClick={prevSlide}
-        className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 p-2 text-white"
+        onClick={handlePrevClick}
+        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 p-2 rounded-full text-white"
         aria-label="Previous image"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
         </svg>
       </button>
       
       <button
-        onClick={nextSlide}
-        className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 p-2 text-white"
+        onClick={handleNextClick}
+        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 p-2 rounded-full text-white"
         aria-label="Next image"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
         </svg>
       </button>
+      
+      {/* Image counter */}
+      <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
+        {currentIndex + 1} / 11
+      </div>
     </div>
   );
 }

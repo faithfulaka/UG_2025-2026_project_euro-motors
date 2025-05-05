@@ -17,7 +17,7 @@ export default function CarDetailSlideshow({ carId, make, model, imageUrls }: Ca
   const [imageError, setImageError] = useState(false);
 
   // Extract the number from the carID (e.g., "car1" -> "1")
-  const carNumber = carId.replace(/\D/g, '');
+  const carNumber = carId.replace(/\D/g, '') || '1'; // Fallback to '1' if extraction fails
   
   // If imageUrls are provided, use them; otherwise generate paths based on convention
   const images = imageUrls || Array.from({ length: 11 }, (_, i) => 
@@ -57,6 +57,7 @@ export default function CarDetailSlideshow({ carId, make, model, imageUrls }: Ca
   };
 
   const handleImageError = () => {
+    console.error(`Image failed to load: ${images[currentIndex]}`);
     setImageError(true);
   };
 
@@ -64,6 +65,13 @@ export default function CarDetailSlideshow({ carId, make, model, imageUrls }: Ca
     return (
       <div className="relative w-full h-full bg-gray-200 flex items-center justify-center">
         <span className="text-gray-600">Image not available</span>
+        {process.env.NODE_ENV === 'development' && (
+          <div className="text-xs text-gray-500 mt-2">
+            Path: {images[currentIndex]}
+            <br />
+            Car ID: {carId}
+          </div>
+        )}
       </div>
     );
   }
@@ -140,6 +148,11 @@ export default function CarDetailSlideshow({ carId, make, model, imageUrls }: Ca
             aria-label={`Go to slide ${index + 1}`}
           ></button>
         ))}
+      </div>
+      
+      {/* Image counter */}
+      <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
+        {currentIndex + 1} / {images.length}
       </div>
     </div>
   );

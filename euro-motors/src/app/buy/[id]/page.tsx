@@ -31,7 +31,8 @@ export default function CarDetailsPage() {
           const data = await response.json();
           setCar(data);
           setLoading(false);
-        } catch (err) {
+        } catch (error) {
+          // Use error here instead of defining a separate err variable
           setError('Error fetching car details');
           setLoading(false);
         }
@@ -40,8 +41,6 @@ export default function CarDetailsPage() {
     
     fetchCarData();
   }, [carId]);
-
-  
   
   if (loading) {
     return (
