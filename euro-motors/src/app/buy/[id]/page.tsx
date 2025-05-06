@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import CarDetailSlideshow from '@/components/ui/CarDetailSlideshow';
 import TermSlider from '@/components/ui/TermSlider';
-import { Car } from '@/types';
+import { Car } from '@/types/cars';
 
 export default function CarDetailsPage() {
   const params = useParams();

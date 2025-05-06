@@ -1,5 +1,5 @@
 // src/lib/utils.ts
-import { BuyCar, RentalCar } from '@/types';
+import { BuyCar, RentalCar } from '@/types/cars';
 
 export function parseJsonFields<T>(item: Record<string, any>, fields: string[]): T {
   const parsed = { ...item };

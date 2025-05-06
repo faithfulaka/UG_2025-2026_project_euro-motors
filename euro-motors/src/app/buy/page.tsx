@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import CarSlideshow from '@/components/ui/CarSlideshow';
 import { prisma } from '@/lib/prisma';
-import { BuyCar, CarSpecifications, CarFeatures } from '@/types';
+import { BuyCar, CarSpecifications, CarFeatures } from '@/types/cars';
 
 export default async function BuyPage() {
   // Fetch data from database
