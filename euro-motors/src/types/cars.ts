@@ -1,4 +1,4 @@
-// src/types/index.ts
+// src/types/cars.ts
 export interface CarSpecifications {
   color: string;
   interiorColor: string;
@@ -46,7 +46,7 @@ export interface BuyCar {
   id: string;
   make: string;
   model: string;
-  trim?: string;
+  trim?: string | null;
   year: number;
   price: number;
   specifications: CarSpecifications;
@@ -64,7 +64,7 @@ export interface RentalCar {
   id: string;
   make: string;
   model: string;
-  trim?: string;
+  trim?: string | null;
   year: number;
   hourlyRate: number;
   dailyRate: number;
@@ -73,7 +73,7 @@ export interface RentalCar {
   features: CarFeatures;
   description: string;
   isAvailable: boolean;
-  images: CarImage[];
+  images: CarImage[ ];
   createdAt?: Date;
   updatedAt?: Date;
 }

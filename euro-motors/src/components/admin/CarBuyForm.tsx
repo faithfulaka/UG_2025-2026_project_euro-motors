@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { BuyCar, CarSpecifications, CarFeatures } from '@/types';
+import { BuyCar, CarSpecifications, CarFeatures } from '@/types/cars';
+
 
 interface CarFormProps {
   car?: BuyCar;
   mode: 'add' | 'edit';
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: FormData) => Promise<void>;
   onCancel: () => void;
 }
 

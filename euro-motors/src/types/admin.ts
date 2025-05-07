@@ -19,11 +19,93 @@ export interface AdminCarListProps {
   onDelete: (id: string) => void;
 }
 
+export interface CarFormData {
+  id?: string;
+  make: string;
+  model: string;
+  trim?: string | null;
+  year: number;
+  price: number;
+  description: string;
+  isAvailable: boolean;
+  specifications: {
+    color: string;
+    interiorColor: string;
+    mileage: number;
+    engine: string;
+    horsePower: number;
+    torque: string;
+    fuelType: string;
+    transmission: string;
+    driveType: string;
+    bodyType: string;
+    doors: number;
+    seats: number;
+    topSpeed?: string;
+    acceleration100?: string;
+    powerKW?: string;
+    powerPS?: string;
+    weight?: string;
+    wheelbase?: string;
+    wheelSize?: string;
+    brakeColor?: string;
+    steeringType?: string;
+  };
+  features: {
+    interior: string[];
+    exterior: string[];
+    safety: string[];
+  };
+  standardEquipment: string[];
+  addedOptions: string[];
+}
+
+export interface RentalCarFormData {
+  id?: string;
+  make: string;
+  model: string;
+  trim?: string | null;
+  year: number;
+  hourlyRate: number;
+  dailyRate: number;
+  weeklyRate: number;
+  description: string;
+  isAvailable: boolean;
+  specifications: {
+    color: string;
+    interiorColor: string;
+    mileage: number;
+    engine: string;
+    horsePower: number;
+    torque: string;
+    fuelType: string;
+    transmission: string;
+    driveType: string;
+    bodyType: string;
+    doors: number;
+    seats: number;
+    topSpeed?: string;
+    acceleration100?: string;
+    powerKW?: string;
+    powerPS?: string;
+    weight?: string;
+    wheelbase?: string;
+    wheelSize?: string;
+    brakeColor?: string;
+    steeringType?: string;
+  };
+  features: {
+    interior: string[];
+    exterior: string[];
+    safety: string[];
+  };
+}
+
 export interface AdminCarFormProps {
   car?: BuyCar | RentalCar;
   type: 'buy' | 'rent';
   mode: 'add' | 'edit';
-  onSubmit: (data: any) => void;
+  onSubmit: (data: CarFormData | RentalCarFormData) => Promise<void>;
   onCancel: () => void;
 }
 
