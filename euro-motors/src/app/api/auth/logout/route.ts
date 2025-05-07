@@ -1,15 +1,7 @@
 import { NextResponse } from 'next/server';
 
 export async function POST() {
-  const response = NextResponse.json({ message: 'Logged out successfully' });
-  
-  // Clear the token cookie
-  response.cookies.set({
-    name: 'token',
-    value: '',
-    expires: new Date(0),
-    path: '/',
-  });
-  
-  return response;
+  // With localStorage approach, we don't need to do anything server-side
+  // The client will handle token removal
+  return NextResponse.json({ message: 'Logged out successfully' });
 }

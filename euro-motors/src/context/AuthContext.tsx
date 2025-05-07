@@ -13,22 +13,14 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   isAdmin: boolean;
   error: string | null;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
-  isAdmin: false,
-  login: async () => false,
-  register: async () => {},
-  logout: async () => {},
-  error: null,
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -40,14 +32,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function loadUserFromSession() {
       try {
-        const response = await fetch('/api/auth/me');
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+        
+        const response = await fetch('/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         
         if (response.ok) {
-          const data = await response.json();
-          setUser(data);
+          const userData = await response.json();
+          setUser(userData);
+        } else {
+          // Token is invalid or expired, clear it
+          localStorage.removeItem('token');
         }
       } catch (error) {
         console.error('Failed to load user session:', error);
+        localStorage.removeItem('token');
       } finally {
         setLoading(false);
       }
@@ -56,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadUserFromSession();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string) => {
     setLoading(true);
     setError(null);
     
@@ -69,28 +76,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        setError(errorData.message || 'Login failed');
-        return false;
+        throw new Error(errorData.message || 'Login failed');
       }
 
       const data = await response.json();
+      
+      // Save token to localStorage
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+      
       setUser(data.user);
       
-      // Redirect based on role
+      // Redirect based on user role
       if (data.user.role === 'ADMIN') {
         router.push('/admin');
       } else {
         router.push('/dashboard');
       }
-      
-      return true;
     } catch (error: unknown) {
       if (error instanceof Error) {
         setError(error.message);
       } else {
         setError('Login failed');
       }
-      return false;
     } finally {
       setLoading(false);
     }
@@ -119,7 +128,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setError('Registration failed');
       }
-      throw error;
     } finally {
       setLoading(false);
     }
@@ -128,7 +136,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     setLoading(true);
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      // Remove token from localStorage
+      localStorage.removeItem('token');
       setUser(null);
       router.push('/');
     } catch (error) {
@@ -138,8 +147,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const isAdmin = user?.role === 'ADMIN';
-
   return (
     <AuthContext.Provider
       value={{
@@ -148,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
-        isAdmin,
+        isAdmin: user?.role === 'ADMIN',
         error,
       }}
     >

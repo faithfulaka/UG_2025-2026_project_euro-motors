@@ -1,22 +1,28 @@
-// src/lib/auth.ts
 import { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
 export async function verifyToken(request: NextRequest) {
   try {
-    // Get token from cookies
-    const token = request.cookies.get('token')?.value;
-
-    if (!token) {
+    // Get token from Authorization header
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return null;
     }
+    
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     // Verify token
     const payload = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+
+    // Check if token has expired
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp && payload.exp < now) {
+      return null;
+    }
 
     // Get user from database
     const user = await prisma.user.findUnique({
@@ -48,4 +54,16 @@ export async function verifyAdmin(request: NextRequest) {
   }
   
   return true;
+}
+
+export async function hashPassword(password: string) {
+  return bcrypt.hash(password, 10);
+}
+
+export async function comparePasswords(plainPassword: string, hashedPassword: string) {
+  return bcrypt.compare(plainPassword, hashedPassword);
+}
+
+export function generateToken(payload: any) {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
 }

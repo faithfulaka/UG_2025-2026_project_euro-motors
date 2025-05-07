@@ -49,29 +49,6 @@ export async function GET(request: NextRequest) {
       }));
       
       return NextResponse.json(parsedCars);
-    } else if (type === 'rent') {
-      // Fetch rental cars
-      const cars = await prisma.rentalCar.findMany({
-        include: {
-          images: true
-        },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      });
-      
-      // Parse JSON fields
-      const parsedCars = cars.map(car => ({
-        ...car,
-        specifications: typeof car.specifications === 'string' 
-          ? JSON.parse(car.specifications as string) 
-          : car.specifications,
-        features: typeof car.features === 'string' 
-          ? JSON.parse(car.features as string) 
-          : car.features
-      }));
-      
-      return NextResponse.json(parsedCars);
     } else {
       return NextResponse.json(
         { error: 'Invalid car type' },
@@ -86,6 +63,7 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
 
 export async function POST(request: NextRequest) {
   // Verify admin user
