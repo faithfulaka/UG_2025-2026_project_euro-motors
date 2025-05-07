@@ -13,17 +13,27 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   isAdmin: boolean;
+  error: string | null;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  loading: true,
+  isAdmin: false,
+  login: async () => false,
+  register: async () => {},
+  logout: async () => {},
+  error: null,
+});
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   // Check if user is logged in on page load
@@ -31,9 +41,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async function loadUserFromSession() {
       try {
         const response = await fetch('/api/auth/me');
+        
         if (response.ok) {
           const data = await response.json();
-          setUser(data.user);
+          setUser(data);
         }
       } catch (error) {
         console.error('Failed to load user session:', error);
@@ -45,8 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadUserFromSession();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
+    setError(null);
+    
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -55,26 +68,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Login failed');
+        const errorData = await response.json();
+        setError(errorData.message || 'Login failed');
+        return false;
       }
 
       const data = await response.json();
       setUser(data.user);
-      router.push('/dashboard');
+      
+      // Redirect based on role
+      if (data.user.role === 'ADMIN') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
+      
+      return true;
     } catch (error: unknown) {
-        if (error instanceof Error) {
-          throw new Error(error.message);
-        } else {
-          throw new Error('Login failed');
-        }
-      }finally {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('Login failed');
+      }
+      return false;
+    } finally {
       setLoading(false);
     }
   };
 
   const register = async (name: string, email: string, password: string) => {
     setLoading(true);
+    setError(null);
+    
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -83,18 +108,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Registration failed');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Registration failed');
       }
 
       router.push('/login');
     } catch (error: unknown) {
-        if (error instanceof Error) {
-          throw new Error(error.message);
-        } else {
-          throw new Error('Regisetrtaion failed');
-        }
-      }finally {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('Registration failed');
+      }
+      throw error;
+    } finally {
       setLoading(false);
     }
   };
@@ -112,6 +138,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const isAdmin = user?.role === 'ADMIN';
+
   return (
     <AuthContext.Provider
       value={{
@@ -120,7 +148,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
-        isAdmin: user?.role === 'ADMIN',
+        isAdmin,
+        error,
       }}
     >
       {children}

@@ -1,15 +1,13 @@
-import { NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+// src/app/api/auth/login/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { login } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
-const prisma = new PrismaClient();
-
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
-    // Input validation
+    // Validate input
     if (!email || !password) {
       return NextResponse.json(
         { message: 'Email and password are required' },
@@ -17,70 +15,35 @@ export async function POST(request: Request) {
       );
     }
 
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    // Attempt login
+    const result = await login(email, password);
 
-    if (!user) {
+    if (!result) {
       return NextResponse.json(
         { message: 'Invalid email or password' },
         { status: 401 }
       );
     }
 
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      return NextResponse.json(
-        { message: 'Invalid email or password' },
-        { status: 401 }
-      );
-    }
-
-    // Create JWT token
-    const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
-      process.env.JWT_SECRET || 'fallback_secret',
-      { expiresIn: '1d' }
-    );
-
-    // Set HTTP-only cookie
-    const response = NextResponse.json(
-      { 
-        message: 'Login successful',
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        } 
-      },
-      { status: 200 }
-    );
-
-    response.cookies.set({
+    // Set JWT token in HTTP-only cookie
+    const { user, token } = result;
+    
+    cookies().set({
       name: 'token',
       value: token,
       httpOnly: true,
-      path: '/',
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24, // 1 day in seconds
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
     });
 
-    return response;
+    // Return user data (without password)
+    return NextResponse.json({ user });
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
-      { message: 'An error occurred during login' },
+      { message: 'Authentication failed' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

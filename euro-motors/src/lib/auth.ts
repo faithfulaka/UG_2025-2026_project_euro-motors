@@ -1,67 +1,51 @@
-import { NextAuthOptions } from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { prisma } from './prisma';
+// src/lib/auth.ts
+import { NextRequest } from 'next/server';
+import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { prisma } from './prisma';
 
-export const authOptions: NextAuthOptions = {
-  providers: [
-    CredentialsProvider({
-      name: 'Credentials',
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' }
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
+
+export async function verifyToken(request: NextRequest) {
+  try {
+    // Get token from cookies
+    const token = request.cookies.get('token')?.value;
+
+    if (!token) {
+      return null;
+    }
+
+    // Verify token
+    const payload = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+
+    // Get user from database
+    const user = await prisma.user.findUnique({
+      where: { id: payload.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
       },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
+    });
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
-        });
+    if (!user) {
+      return null;
+    }
 
-        if (!user) {
-          return null;
-        }
+    return user;
+  } catch (error) {
+    console.error('Token verification error:', error);
+    return null;
+  }
+}
 
-        const passwordMatch = await bcrypt.compare(credentials.password, user.password);
-
-        if (!passwordMatch) {
-          return null;
-        }
-
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        };
-      }
-    })
-  ],
-  session: {
-    strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as 'USER' | 'ADMIN';
-      }
-      return session;
-    },
-  },
-  pages: {
-    signIn: '/login',
-    error: '/login',
-  },
-  secret: process.env.NEXTAUTH_SECRET || 'next-auth-secret',
-};
+export async function verifyAdmin(request: NextRequest) {
+  const user = await verifyToken(request);
+  
+  if (!user || user.role !== 'ADMIN') {
+    return false;
+  }
+  
+  return true;
+}

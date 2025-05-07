@@ -12,7 +12,7 @@ export default function AdminAddCarPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading) {  §
+    if (!loading) {
       if (!user) {
         router.push('/login');
       } else if (!isAdmin) {
