@@ -237,8 +237,8 @@ export async function DELETE(
         where: { carId: id }
       });
       
-      // Delete car from database
-      const car = await prisma.buyCar.delete({
+      // Delete car from database (fixed unused variable)
+      await prisma.buyCar.delete({
         where: { id }
       });
       
@@ -261,8 +261,8 @@ export async function DELETE(
         where: { carId: id }
       });
       
-      // Delete car from database
-      const car = await prisma.rentalCar.delete({
+      // Delete car from database (fixed unused variable)
+      await prisma.rentalCar.delete({
         where: { id }
       });
       

@@ -5,6 +5,13 @@ import { prisma } from './prisma';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
+// Define a proper type for the token payload
+interface TokenPayload {
+  id: string;
+  email: string;
+  role: string;
+}
+
 export async function verifyToken(request: NextRequest) {
   try {
     // Get token from Authorization header
@@ -64,6 +71,7 @@ export async function comparePasswords(plainPassword: string, hashedPassword: st
   return bcrypt.compare(plainPassword, hashedPassword);
 }
 
-export function generateToken(payload: any) {
+// Use proper type instead of 'any'
+export function generateToken(payload: TokenPayload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
 }
