@@ -2,14 +2,13 @@
 
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import CarBuyForm from '@/components/admin/CarBuyForm';
 
 export default function AdminAddCarPage() {
   const { user, loading, isAdmin } = useAuth();
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!loading) {
@@ -21,36 +20,28 @@ export default function AdminAddCarPage() {
     }
   }, [user, loading, isAdmin, router]);
 
-  const handleSubmit = async (data: any) => {
-    setIsSubmitting(true);
-    
+  // Update the type to match what CarBuyForm expects
+  const handleSubmit = async (formData: FormData) => {
     try {
       const response = await fetch('/api/admin/cars?type=buy', {
-        method: 'POST',
+        method: 'POST', // or 'PUT' for edit
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(Object.fromEntries(formData)),
       });
       
       if (!response.ok) {
         throw new Error('Failed to add car');
       }
       
-      const result = await response.json();
-      
-      // Redirect to the car list page
       router.push('/admin/cars/buy');
-      
-      // Show success message
       alert('Car added successfully');
     } catch (error) {
       console.error('Error adding car:', error);
       alert('Failed to add car. Please try again.');
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+  }
 
   const handleCancel = () => {
     router.push('/admin/cars/buy');

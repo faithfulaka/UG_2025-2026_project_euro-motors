@@ -15,7 +15,6 @@ export default function AdminEditCarPage() {
   
   const [car, setCar] = useState<BuyCar | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -53,36 +52,28 @@ export default function AdminEditCarPage() {
     fetchCar();
   }, [carId, user, isAdmin]);
 
-  const handleSubmit = async (data: any) => {
-    setIsSubmitting(true);
-    
+  // Update the type to match what CarBuyForm expects
+  const handleSubmit = async (formData: FormData) => {
     try {
-      const response = await fetch(`/api/admin/cars/${carId}?type=buy`, {
-        method: 'PUT',
+      const response = await fetch('/api/admin/cars?type=buy', {
+        method: 'POST', // or 'PUT' for edit
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(Object.fromEntries(formData)),
       });
       
       if (!response.ok) {
-        throw new Error('Failed to update car');
+        throw new Error('Failed to add car');
       }
       
-      const result = await response.json();
-      
-      // Redirect to the car list page
       router.push('/admin/cars/buy');
-      
-      // Show success message
-      alert('Car updated successfully');
+      alert('Car added successfully');
     } catch (error) {
-      console.error('Error updating car:', error);
-      alert('Failed to update car. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+      console.error('Error adding car:', error);
+      alert('Failed to add car. Please try again.');
     }
-  };
+  }
 
   const handleCancel = () => {
     router.push('/admin/cars/buy');

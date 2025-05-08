@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { BuyCar, CarSpecifications, CarFeatures } from '@/types/cars';
+import { BuyCar, CarSpecifications } from '@/types/cars';
 
 
 interface CarFormProps {
