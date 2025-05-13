@@ -1,3 +1,4 @@
+// src/components/ui/CarSlideshow.tsx
 'use client';
 
 import { useState } from 'react';
@@ -7,24 +8,27 @@ interface CarSlideshowProps {
   carId: string;
   make: string;
   model: string;
+  imageUrls?: string[];
 }
 
-export default function CarSlideshow({ carId, make, model }: CarSlideshowProps) {
+export default function CarSlideshow({ carId, make, model, imageUrls }: CarSlideshowProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
-
+  
   // No matter what format the carId is in, we need the number
-  const carNumber = carId.replace(/\D/g, '');
-
-  // Create a direct path to the image with leading slash for Next.js Image component
-  const imagePath = `/car${carNumber}/pov${currentIndex + 1}.jpg`;
+  const carNumber = carId.replace(/\D/g, '') || '1';
+  
+  // If no imageUrls provided, use convention-based paths
+  const images = imageUrls || Array.from({ length: 11 }, (_, i) => {
+    return `/car${carNumber}/pov${i + 1}.jpg`;
+  });
 
   const handleNextClick = () => {
-    setCurrentIndex((prev) => (prev + 1) % 11);
+    setCurrentIndex((prev) => (prev + 1) % images.length);
   };
 
   const handlePrevClick = () => {
-    setCurrentIndex((prev) => (prev - 1 + 11) % 11);
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
   if (imageError) {
@@ -38,13 +42,13 @@ export default function CarSlideshow({ carId, make, model }: CarSlideshowProps) 
   return (
     <div className="relative h-64 w-full overflow-hidden">
       <Image
-        src={imagePath}
+        src={images[currentIndex]}
         alt={`${make} ${model}`}
         fill
         className="object-cover"
         onError={() => setImageError(true)}
       />
-
+      
       {/* Navigation buttons */}
       <button
         onClick={handlePrevClick}
@@ -55,7 +59,7 @@ export default function CarSlideshow({ carId, make, model }: CarSlideshowProps) 
           <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
         </svg>
       </button>
-
+      
       <button
         onClick={handleNextClick}
         className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 p-2 rounded-full text-white"
@@ -65,10 +69,10 @@ export default function CarSlideshow({ carId, make, model }: CarSlideshowProps) 
           <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
         </svg>
       </button>
-
+      
       {/* Image counter */}
       <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
-        {currentIndex + 1} / 11
+        {currentIndex + 1} / {images.length}
       </div>
     </div>
   );

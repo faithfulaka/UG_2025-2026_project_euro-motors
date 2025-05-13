@@ -18,9 +18,9 @@ export default function CarDetailSlideshow({ carId, make, model, imageUrls }: Ca
 
   // Extract the number from the carID (e.g., "car1" -> "1")
   const carNumber = carId.replace(/\D/g, '') || '1'; // Fallback to '1' if extraction fails
-
+  
   // If imageUrls are provided, use them; otherwise generate paths based on convention
-  const images = imageUrls || Array.from({ length: 11 }, (_, i) =>
+  const images = imageUrls || Array.from({ length: 11 }, (_, i) => 
     `/car${carNumber}/pov${i + 1}.jpg`
   );
 
@@ -105,14 +105,14 @@ export default function CarDetailSlideshow({ carId, make, model, imageUrls }: Ca
       <button
         onClick={goToPrevSlide}
         className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 p-2 z-40 cursor-pointer rounded-full"
-        aria-label="Previous image"
+        aria-label="Previous slide"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          strokeWidth="2"
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="white" 
+          strokeWidth="2" 
           className="w-6 h-6"
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -124,12 +124,12 @@ export default function CarDetailSlideshow({ carId, make, model, imageUrls }: Ca
         className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 p-2 z-40 cursor-pointer rounded-full"
         aria-label="Next slide"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          strokeWidth="2"
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="white" 
+          strokeWidth="2" 
           className="w-6 h-6"
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -149,7 +149,7 @@ export default function CarDetailSlideshow({ carId, make, model, imageUrls }: Ca
           ></button>
         ))}
       </div>
-
+      
       {/* Image counter */}
       <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
         {currentIndex + 1} / {images.length}
