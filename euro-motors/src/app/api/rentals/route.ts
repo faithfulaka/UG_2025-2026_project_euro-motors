@@ -1,7 +1,7 @@
 // src/app/api/rentals/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { RentalCar as PrismaRentalCar } from '@prisma/client';
+import { RentalCar } from '@/types/cars';
 
 export async function GET() {
   try {
@@ -9,18 +9,18 @@ export async function GET() {
       where: { isAvailable: true },
       include: { images: true },
       orderBy: { createdAt: 'desc' }
-    });
+    }) as any[];
 
-    // Parse JSON fields with proper typing
-    const parsedRentalCars = rentalCars.map((car: PrismaRentalCar & { images: any[] }) => ({
+    // Parse JSON fields with consistent approach
+    const parsedRentalCars = rentalCars.map((car: any) => ({
       ...car,
       specifications: typeof car.specifications === 'string' 
-        ? JSON.parse(car.specifications as string) 
+        ? JSON.parse(car.specifications) 
         : car.specifications,
       features: typeof car.features === 'string' 
-        ? JSON.parse(car.features as string) 
+        ? JSON.parse(car.features) 
         : car.features
-    }));
+    })) as RentalCar[];
 
     return NextResponse.json(parsedRentalCars);
   } catch (error) {

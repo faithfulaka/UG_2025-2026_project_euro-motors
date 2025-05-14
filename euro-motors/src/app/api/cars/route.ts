@@ -1,6 +1,7 @@
 // src/app/api/cars/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { BuyCar } from '@/types/cars';
 
 export async function GET() {
   try {
@@ -8,28 +9,28 @@ export async function GET() {
       where: { isAvailable: true },
       include: { images: true },
       orderBy: { createdAt: 'desc' }
-    });
+    }) as any[];
 
-    // Parse JSON strings to objects
-    const parsedCars = cars.map(car => ({
+    // Parse JSON fields with consistent approach
+    const parsedCars = cars.map((car: any) => ({
       ...car,
       specifications: typeof car.specifications === 'string' 
-        ? JSON.parse(car.specifications as string) 
+        ? JSON.parse(car.specifications) 
         : car.specifications,
       features: typeof car.features === 'string' 
-        ? JSON.parse(car.features as string) 
+        ? JSON.parse(car.features) 
         : car.features,
       standardEquipment: car.standardEquipment 
         ? (typeof car.standardEquipment === 'string' 
-            ? JSON.parse(car.standardEquipment as string) 
+            ? JSON.parse(car.standardEquipment) 
             : car.standardEquipment)
         : [],
       addedOptions: car.addedOptions 
         ? (typeof car.addedOptions === 'string' 
-            ? JSON.parse(car.addedOptions as string) 
+            ? JSON.parse(car.addedOptions) 
             : car.addedOptions) 
         : []
-    }));
+    })) as BuyCar[];
 
     return NextResponse.json(parsedCars);
   } catch (error) {
