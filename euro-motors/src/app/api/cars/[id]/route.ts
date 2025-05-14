@@ -6,36 +6,42 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { id } = params;
+  const { id } = params; // Proper destructuring
   
   try {
     const car = await prisma.buyCar.findUnique({
       where: { id },
-      include: { images: true } // Include images relation
+      include: { images: true }
     });
     
     if (!car) {
-      return NextResponse.json(
-        { error: 'Car not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Car not found' }, { status: 404 });
     }
     
     // Parse JSON fields
-    const parsedCar = {
+    const result = {
       ...car,
-      specifications: JSON.parse(car.specifications as string),
-      features: JSON.parse(car.features as string),
-      standardEquipment: car.standardEquipment ? JSON.parse(car.standardEquipment as string) : [],
-      addedOptions: car.addedOptions ? JSON.parse(car.addedOptions as string) : []
+      specifications: typeof car.specifications === 'string' 
+        ? JSON.parse(car.specifications as string) 
+        : car.specifications,
+      features: typeof car.features === 'string' 
+        ? JSON.parse(car.features as string) 
+        : car.features,
+      standardEquipment: car.standardEquipment 
+        ? (typeof car.standardEquipment === 'string' 
+            ? JSON.parse(car.standardEquipment as string) 
+            : car.standardEquipment)
+        : [],
+      addedOptions: car.addedOptions 
+        ? (typeof car.addedOptions === 'string' 
+            ? JSON.parse(car.addedOptions as string) 
+            : car.addedOptions) 
+        : []
     };
     
-    return NextResponse.json(parsedCar);
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching car:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch car data' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch car' }, { status: 500 });
   }
 }

@@ -12,18 +12,26 @@ export default async function BuyPage() {
   });
 
   // Parse JSON fields and convert null to undefined for type compatibility
-  const cars = carsData.map(car => ({
-    ...car,
-    trim: car.trim || undefined, // Convert null to undefined
-    specifications: JSON.parse(car.specifications as string) as CarSpecifications,
-    features: JSON.parse(car.features as string) as CarFeatures,
-    standardEquipment: car.standardEquipment 
-      ? JSON.parse(car.standardEquipment as string) as string[]
-      : [] as string[],
-    addedOptions: car.addedOptions 
-      ? JSON.parse(car.addedOptions as string) as string[]
-      : [] as string[],
-  })) as BuyCar[];
+// For Buy page
+const parsedCars = cars.map((car: any) => ({
+  ...car,
+  specifications: typeof car.specifications === 'string' 
+    ? JSON.parse(car.specifications as string) 
+    : car.specifications,
+  features: typeof car.features === 'string' 
+    ? JSON.parse(car.features as string) 
+    : car.features,
+  standardEquipment: car.standardEquipment 
+    ? (typeof car.standardEquipment === 'string' 
+        ? JSON.parse(car.standardEquipment as string) 
+        : car.standardEquipment)
+    : [],
+  addedOptions: car.addedOptions 
+    ? (typeof car.addedOptions === 'string' 
+        ? JSON.parse(car.addedOptions as string) 
+        : car.addedOptions) 
+    : []
+})) as BuyCar[];
 
   
 
