@@ -1,3 +1,4 @@
+//src/app/rent/page.tsx
 import Link from 'next/link';
 import CarSlideshow from '@/components/ui/CarSlideshow';
 import { prisma } from '@/lib/prisma';

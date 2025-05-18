@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { generateToken } from '@/lib/auth';
 
+const bcrypt = require('bcryptjs') as any;
+// Importing bcrypt for password hashing and comparison
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();

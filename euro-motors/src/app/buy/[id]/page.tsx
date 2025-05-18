@@ -1,72 +1,26 @@
+//src/app/buy/[id]/page.tsx
 'use client';
 
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import CarDetailSlideshow from '@/components/ui/CarDetailSlideshow';
 import TermSlider from '@/components/ui/TermSlider';
-import { Car } from '@/types/cars';
+import { BuyCar } from '@/types/cars';  
 
-export default function CarDetailsPage() {
+export default function CarDetailsPage() {  // Removed the return type
   const params = useParams();
   const carId = params?.id as string;
   
-  const [car, setCar] = useState<Car | null>(null);
+  const [car, setCar] = useState<BuyCar | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
-  const [activeSection, setActiveSection] = useState<string>('specifications'); 
+  const [activeSection, setActiveSection] = useState<string>('features'); 
   const [cashDeposit, setCashDeposit] = useState<string>('');
   const [monthlyPayment, setMonthlyPayment] = useState<string>('');
   const [canInputMonthly, setCanInputMonthly] = useState<boolean>(false);
   const [termMonths, setTermMonths] = useState<number>(12);
-
-  useEffect(() => {
-    const fetchCarData = async () => {
-      if (carId) {
-        try {
-          const response = await fetch(`/api/cars/${carId}`);
-          if (!response.ok) {
-            throw new Error('Failed to fetch car data');
-          }
-          const data = await response.json();
-          setCar(data);
-          setLoading(false);
-        } catch (error) {
-          // Use error here instead of defining a separate err variable
-          setError('Error fetching car details');
-          setLoading(false);
-        }
-      }
-    };
-    
-    fetchCarData();
-  }, [carId]);
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-2xl">Loading...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-red-600">{error}</div>
-      </div>
-    );
-  }
-
-  if (!car) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-red-600">Car not found</div>
-      </div>
-    );
-  }
-
-  
   
   // Functions to validate and handle numeric input
   const handleCashDepositChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -95,6 +49,53 @@ export default function CarDetailsPage() {
     
     setMonthlyPayment(value);
   };
+ 
+  useEffect(() => {
+    if (carId) {
+      fetch(`/api/cars/${carId}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to fetch car data');
+          }
+          return response.json();
+        })
+        .then(data => {
+          setCar(data);  
+          setLoading(false);
+        })
+        .catch(err => {
+          setError(err.message);
+          setLoading(false);
+        });
+    }
+  }, [carId]);
+
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-2xl">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl text-red-600">{error}</div>
+      </div>
+    );
+  }
+
+
+  if (!car) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl text-red-600">Car not found</div>
+      </div>
+    );
+  }
+
  
   return (
     <div className="min-h-screen bg-gray-50 py-6">

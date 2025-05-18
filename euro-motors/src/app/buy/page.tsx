@@ -2,36 +2,41 @@
 import Link from 'next/link';
 import CarSlideshow from '@/components/ui/CarSlideshow';
 import { prisma } from '@/lib/prisma';
-import { BuyCar, CarSpecifications, CarFeatures } from '@/types/cars';
+import { BuyCar } from '@/types/cars';
 
 export default async function BuyPage() {
-  // Fetch data from database
-  const carsData = await prisma.buyCar.findMany({
-    where: { isAvailable: true },
-    include: { images: true }
+  const cars = await prisma.buyCar.findMany({
+    where: {
+      isAvailable: true
+    },
+    include: {
+      images: true
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
   });
 
-  // Parse JSON fields and convert null to undefined for type compatibility
-// For Buy page
-const parsedCars = cars.map((car: any) => ({
-  ...car,
-  specifications: typeof car.specifications === 'string' 
-    ? JSON.parse(car.specifications as string) 
-    : car.specifications,
-  features: typeof car.features === 'string' 
-    ? JSON.parse(car.features as string) 
-    : car.features,
-  standardEquipment: car.standardEquipment 
-    ? (typeof car.standardEquipment === 'string' 
-        ? JSON.parse(car.standardEquipment as string) 
-        : car.standardEquipment)
-    : [],
-  addedOptions: car.addedOptions 
-    ? (typeof car.addedOptions === 'string' 
-        ? JSON.parse(car.addedOptions as string) 
-        : car.addedOptions) 
-    : []
-})) as BuyCar[];
+  // Add type annotation directly to the 'car' parameter
+  const parsedCars = cars.map((car: any) => ({
+    ...car,
+    specifications: typeof car.specifications === 'string' 
+      ? JSON.parse(car.specifications as string) 
+      : car.specifications,
+    features: typeof car.features === 'string' 
+      ? JSON.parse(car.features as string) 
+      : car.features,
+    standardEquipment: car.standardEquipment 
+      ? (typeof car.standardEquipment === 'string' 
+          ? JSON.parse(car.standardEquipment as string) 
+          : car.standardEquipment)
+      : [],
+    addedOptions: car.addedOptions 
+      ? (typeof car.addedOptions === 'string' 
+          ? JSON.parse(car.addedOptions as string) 
+          : car.addedOptions)
+      : []
+  })) as BuyCar[];
 
   
 
@@ -42,13 +47,14 @@ const parsedCars = cars.map((car: any) => ({
           <h1 className="text-3xl font-bold mb-8 text-black">Luxury Cars For Sale</h1>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {cars.map((car) => (
+            {parsedCars.map((car) => (
               <div key={car.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
-                {/* CarSlideshow with simplified props */}
                 <CarSlideshow 
                   carId={car.id} 
                   make={car.make} 
                   model={car.model} 
+                  // Add type annotation directly to the 'img' parameter
+                  imageUrls={car.images.map((img: any) => img.url)}
                 />
                 
                 <div className="p-4 bg-white">
