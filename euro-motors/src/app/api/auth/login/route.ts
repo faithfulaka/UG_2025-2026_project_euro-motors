@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { generateToken } from '@/lib/auth';
 
 const bcrypt = require('bcryptjs') as any;
-// Importing bcrypt for password hashing and comparison
+
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
@@ -45,17 +45,27 @@ export async function POST(request: NextRequest) {
       role: user.role,
     });
 
-    // Return token and user data
-    return NextResponse.json({ 
+    // Set token in cookie
+    const response = NextResponse.json({
       message: 'Login successful',
-      token,
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
-      } 
+      },
     });
+
+    response.cookies.set({
+      name: 'token',
+      value: token,
+      httpOnly: true,
+      path: '/',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
+
+    return response;
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
