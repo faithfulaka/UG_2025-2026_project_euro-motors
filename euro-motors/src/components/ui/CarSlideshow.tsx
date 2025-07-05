@@ -19,9 +19,7 @@ export default function CarSlideshow({ carId, make, model, imageUrls }: CarSlide
   const carNumber = carId.replace(/\D/g, '') || '1';
   
   // If no imageUrls provided, use convention-based paths
-  const images = imageUrls || Array.from({ length: 11 }, (_, i) => {
-    return `/car${carNumber}/pov${i + 1}.jpg`;
-  });
+  // Removed duplicate declaration of images
 
   const handleNextClick = () => {
     setCurrentIndex((prev) => (prev + 1) % images.length);
@@ -30,6 +28,14 @@ export default function CarSlideshow({ carId, make, model, imageUrls }: CarSlide
   const handlePrevClick = () => {
     setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
   };
+  const normalizeUrl = (url: string) => url.startsWith('/') ? url : `/${url}`;
+
+  const images = imageUrls
+    ? imageUrls.map(normalizeUrl)
+    : Array.from({ length: 11 }, (_, i) => `/car${carNumber}/pov${i + 1}.jpg`);
+  
+  console.log('Images:', images);
+  
 
   if (imageError) {
     return (

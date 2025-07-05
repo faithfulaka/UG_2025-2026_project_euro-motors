@@ -12,12 +12,13 @@ interface CarDetailSlideshowProps {
 }
 
 export default function CarDetailSlideshow({ carId, make, model, imageUrls }: CarDetailSlideshowProps) {
+  const safeCarId = String(carId); // Ensure carId is always a string
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isManual, setIsManual] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   // Extract the number from the carID (e.g., "car1" -> "1")
-  const carNumber = carId.replace(/\D/g, '') || '1'; // Fallback to '1' if extraction fails
+  const carNumber = safeCarId.replace(/\D/g, '') || '1'; // Fallback to '1' if extraction fails
   
   // If imageUrls are provided, use them; otherwise generate paths based on convention
   const images = imageUrls || Array.from({ length: 11 }, (_, i) => 

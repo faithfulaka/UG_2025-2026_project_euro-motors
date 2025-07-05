@@ -11,26 +11,32 @@ export async function GET() {
       orderBy: { createdAt: 'desc' }
     }) as any[];
 
-    // Parse JSON fields with consistent approach
-    const parsedCars = cars.map((car: any) => ({
-      ...car,
-      specifications: typeof car.specifications === 'string' 
-        ? JSON.parse(car.specifications) 
-        : car.specifications,
-      features: typeof car.features === 'string' 
-        ? JSON.parse(car.features) 
-        : car.features,
-      standardEquipment: car.standardEquipment 
-        ? (typeof car.standardEquipment === 'string' 
-            ? JSON.parse(car.standardEquipment) 
-            : car.standardEquipment)
-        : [],
-      addedOptions: car.addedOptions 
-        ? (typeof car.addedOptions === 'string' 
-            ? JSON.parse(car.addedOptions) 
-            : car.addedOptions) 
+    console.log('Raw cars from DB:', JSON.stringify(cars[0], null, 2)); // Debug line
+
+    const parsedCars = cars.map((car: any) => {
+      const parsed = {
+        ...car,
+        specifications: typeof car.specifications === 'string' 
+          ? JSON.parse(car.specifications) 
+          : car.specifications,
+        features: typeof car.features === 'string' 
+          ? JSON.parse(car.features) 
+          : car.features,
+        standardEquipment: car.standardEquipment 
+          ? (typeof car.standardEquipment === 'string' 
+              ? JSON.parse(car.standardEquipment) 
+              : car.standardEquipment)
+          : [],
+        addedOptions: car.addedOptions 
+          ? (typeof car.addedOptions === 'string' 
+              ? JSON.parse(car.addedOptions) 
+              : car.addedOptions) 
         : []
-    })) as BuyCar[];
+      };
+      
+      console.log('Parsed car:', JSON.stringify(parsed, null, 2)); // Debug line
+      return parsed;
+    });
 
     return NextResponse.json(parsedCars);
   } catch (error) {

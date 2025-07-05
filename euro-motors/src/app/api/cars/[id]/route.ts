@@ -1,42 +1,45 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET() {
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
-    const cars = await prisma.buyCar.findMany({
-      where: { isAvailable: true },
-      include: { images: true },
-      orderBy: { createdAt: 'desc' }
+    const { id } = params;
+
+    const car = await prisma.buyCar.findUnique({
+      where: { id },
+      include: { images: true }
     });
 
-    // Type assertion approach
-    const parsedCars = cars.map((car: any) => {
-      return {
-        ...car,
-        specifications: typeof car.specifications === 'string' 
-          ? JSON.parse(car.specifications as string) 
-          : car.specifications,
-        features: typeof car.features === 'string' 
-          ? JSON.parse(car.features as string) 
-          : car.features,
-        standardEquipment: car.standardEquipment 
-          ? (typeof car.standardEquipment === 'string' 
-              ? JSON.parse(car.standardEquipment as string) 
-              : car.standardEquipment)
-          : [],
-        addedOptions: car.addedOptions 
-          ? (typeof car.addedOptions === 'string' 
-              ? JSON.parse(car.addedOptions as string) 
-              : car.addedOptions) 
-          : []
-      };
-    });
+    if (!car) {
+      return NextResponse.json({ error: 'Car not found' }, { status: 404 });
+    }
 
-    return NextResponse.json(parsedCars);
+    // Parse JSON fields if needed
+    const parsedCar = {
+      ...car,
+      specifications: typeof car.specifications === 'string'
+        ? JSON.parse(car.specifications as string)
+        : car.specifications,
+      features: typeof car.features === 'string'
+        ? JSON.parse(car.features as string)
+        : car.features,
+      standardEquipment: car.standardEquipment
+        ? (typeof car.standardEquipment === 'string'
+            ? JSON.parse(car.standardEquipment as string)
+            : car.standardEquipment)
+        : [],
+      addedOptions: car.addedOptions
+        ? (typeof car.addedOptions === 'string'
+            ? JSON.parse(car.addedOptions as string)
+            : car.addedOptions)
+        : []
+    };
+
+    return NextResponse.json(parsedCar);
   } catch (error) {
-    console.error('Error fetching cars:', error);
+    console.error('Error fetching car:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch cars' },
+      { error: 'Failed to fetch car' },
       { status: 500 }
     );
   }
