@@ -1,6 +1,7 @@
 // prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
+  output   = "./node_modules/@prisma/client"  
 }
 
 datasource db {
@@ -14,7 +15,7 @@ model User {
   email           String           @unique
   password        String
   role            Role             @default(USER)
-  stripeCustomerId String?         // Store Stripe customer ID for returning users
+  stripeCustomerId String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   quotes          Quote[]
@@ -39,11 +40,20 @@ model BuyCar {
   model            String
   trim             String?
   year             Int
-  price            Float         // Average dealer price from scraper
-  specifications   Json          // Enhanced structured specifications from scraper
+  price            Float         // This will be the Dealer Price from Supercar Pricing Aggregator
+  
+  // Enhanced specifications from Supercar Pricing Aggregator
+  specifications   Json          // Enhanced with SPA performance data
   features         Json          // Interior, exterior, safety features
   standardEquipment Json?        // Standard equipment list
-  addedOptions     Json?         // Added options list  
+  addedOptions     Json?         // Popular configurations from SPA (without prices)
+  
+  // Supercar Pricing Aggregator specific fields
+  supercarData     Json?         // Full SPA comprehensive data
+  baseMSRP         Float?        // Base MSRP from SPA
+  performanceData  Json?         // Engine, horsepower, torque, 0-60, top speed, etc.
+  pricingData      Json?         // Market data, trends, etc.
+  
   description      String        @db.Text
   isAvailable      Boolean       @default(true)
   createdAt        DateTime      @default(now())
@@ -57,7 +67,7 @@ model BuyCarImage {
   url       String
   carId     String
   isMain    Boolean  @default(false)
-  imageType String?  // e.g., "exterior", "interior", "engine", etc.
+  imageType String?
   buyCar    BuyCar   @relation(fields: [carId], references: [id], onDelete: Cascade)
 
   @@index([carId])
@@ -72,11 +82,19 @@ model RentalCar {
   hourlyRate       Float
   dailyRate        Float
   weeklyRate       Float
-  specifications   Json             // Enhanced structured specifications
+  
+  // Enhanced specifications from Supercar Pricing Aggregator
+  specifications   Json             // Enhanced with SPA performance data
   features         Json             // Interior, exterior, safety features
+  
+  // Supercar Pricing Aggregator specific fields
+  supercarData     Json?            // Full SPA comprehensive data
+  baseMSRP         Float?           // Base MSRP from SPA for reference
+  performanceData  Json?            // Engine, horsepower, torque, 0-60, top speed, etc.
+  
   description      String           @db.Text
   isAvailable      Boolean          @default(true)
-  stripeProductId  String?          // Stripe product ID for this rental car
+  stripeProductId  String?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   images           RentalCarImage[]
@@ -88,7 +106,7 @@ model RentalCarImage {
   url       String
   carId     String
   isMain    Boolean   @default(false)
-  imageType String?   // e.g., "exterior", "interior", "engine", etc.
+  imageType String?
   rentalCar RentalCar @relation(fields: [carId], references: [id], onDelete: Cascade)
 
   @@index([carId])
@@ -126,11 +144,11 @@ model Rental {
   paymentStatus    PaymentStatus  @default(PENDING)
   rentalStatus     RentalStatus   @default(RESERVED)
   isSplitPayment   Boolean        @default(false)
-  stripePaymentIntentId String?   // Main renter's payment intent
-  stripeSessionId  String?        // Main checkout session ID
-  paymentMethod    String?        // Payment method used
-  depositAmount    Float?         // Security deposit amount
-  depositRefunded  Boolean?       // Whether deposit was refunded
+  stripePaymentIntentId String?
+  stripeSessionId  String?
+  paymentMethod    String?
+  depositAmount    Float?
+  depositRefunded  Boolean?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   coRenters        CoRenter[]
@@ -148,9 +166,9 @@ model CoRenter {
   name                String?
   paymentAmount       Float
   paymentStatus       PaymentStatus @default(PENDING)
-  stripePaymentIntentId String?     // Co-renter's payment intent
-  stripeSessionId     String?       // Co-renter's checkout session
-  paymentMethod       String?       // Payment method used
+  stripePaymentIntentId String?
+  stripeSessionId     String?
+  paymentMethod       String?
   invitationSent      Boolean       @default(false)
   invitationAccepted  Boolean       @default(false)
   createdAt           DateTime      @default(now())
@@ -164,57 +182,36 @@ model TradeInRequest {
   id                     String        @id @default(cuid())
   quoteId                String        @unique
   userId                 String
-  // Registration information
-  registrationNumber     String        // Vehicle registration number for API lookup
-
-  // DVLA API data
-  make                   String?       // Manufacturer (from API)
-  model                  String        // Model name
-  colour                 String?       // Vehicle color (from API)
-  fuelType               String?       // Fuel type (from API)
-  engineCapacity         Int?          // Engine size in cc (from API)
-  yearOfManufacture      Int?          // Year of manufacture (from API)
-  monthOfFirstRegistration String?     // Month of first registration (from API)
-  motStatus              String?       // MOT status (from API)
-  taxStatus              String?       // Current tax status (from API)
-  taxDueDate             DateTime?     // Tax due date (from API)
-  co2Emissions           Int?          // CO2 emissions (from API)
-  euroStatus             String?       // Euro emissions standard (from API)
-
-  // User input fields
-  mileage                Int           // Current odometer reading
-  condition              String        // Excellent, Good, Fair, Poor
-  conditionDetails       String?       // Additional condition details
-
-  // Accident history
-  accidentHistory        Boolean       // Yes/No for accident history
-  numberOfAccidents      Int?          // Number of accidents if any
-
-  // Service history & ownership
-  previousOwners         Int           // Number of previous owners
-  fullServiceHistory     Boolean?      // Yes/No for full service history
-
-  // Features and condition
-  hasModifications       Boolean?      // Any modifications to original spec
-  interiorCondition      Int?          // Rating 1-5
-  exteriorCondition      Int?          // Rating 1-5
-
-  // Images
-  images                 Json?         // Array of image URLs
-
-  // Valuation
-  estimatedValue         Float?        // Calculated estimated value
-  actualValue            Float?        // Final valuation after admin review
-
-  // Status
+  registrationNumber     String
+  make                   String?
+  model                  String
+  colour                 String?
+  fuelType               String?
+  engineCapacity         Int?
+  yearOfManufacture      Int?
+  monthOfFirstRegistration String?
+  motStatus              String?
+  taxStatus              String?
+  taxDueDate             DateTime?
+  co2Emissions           Int?
+  euroStatus             String?
+  mileage                Int
+  condition              String
+  conditionDetails       String?
+  accidentHistory        Boolean
+  numberOfAccidents      Int?
+  previousOwners         Int
+  fullServiceHistory     Boolean?
+  hasModifications       Boolean?
+  interiorCondition      Int?
+  exteriorCondition      Int?
+  images                 Json?
+  estimatedValue         Float?
+  actualValue            Float?
   status                 TradeInStatus @default(PENDING)
-  adminNotes             String?       // Notes from admin review
-
-  // Timestamps
+  adminNotes             String?
   createdAt              DateTime      @default(now())
   updatedAt              DateTime      @updatedAt
-
-  // Relations
   quote                  Quote         @relation(fields: [quoteId], references: [id])
   user                   User          @relation(fields: [userId], references: [id])
 
@@ -222,13 +219,12 @@ model TradeInRequest {
   @@index([registrationNumber])
 }
 
-// For storing Stripe products configuration
 model StripeProduct {
   id              String    @id
   name            String
   description     String?
   active          Boolean   @default(true)
-  type            String    // "rental", "co-rental", "deposit", etc.
+  type            String
   defaultAmount   Float?
   currency        String    @default("GBP")
   createdAt       DateTime  @default(now())

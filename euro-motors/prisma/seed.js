@@ -39,7 +39,7 @@ async function main() {
   await prisma.rentalCarImage.deleteMany({});
   await prisma.rentalCar.deleteMany({});
 
-  // Create purchase cars
+  // Create purchase cars with enhanced SPA data
   const buyCars = [
     {
       id: 'car1',
@@ -47,7 +47,8 @@ async function main() {
       model: 'Bentayga V8',
       trim: 'BLACK EDITION',
       year: 2022,
-      price: 169990,
+      price: 169990, // Dealer Price from SPA
+      baseMSRP: 175000, // Base MSRP from SPA
       specifications: {
         color: 'Pearl White',
         interiorColor: 'Red/Black',
@@ -70,6 +71,16 @@ async function main() {
         wheelSize: '22 Inch Ten Spoke',
         brakeColor: 'Red'
       },
+      performanceData: {
+        engine: '6.0L V8 Biturbo',
+        horsePower: '542 hp @ 6,000 rpm',
+        torque: '770 Nm @ 1,960-4,500 rpm',
+        acceleration060: '4.0 seconds',
+        topSpeed: '290 km/h',
+        transmission: '8-speed automatic',
+        driveType: 'All Wheel Drive',
+        weight: '2410 kg'
+      },
       features: {
         interior: [
           'Leather Seats',
@@ -90,11 +101,21 @@ async function main() {
       },
       standardEquipment: [
         'Engine start/stop button',
-        'Bentley Online services'
+        'Bentley Online services',
+        'Bentley Teleservices',
+        'Brake force display',
+        'Digital Radio',
+        'Oil level indicator'
       ],
       addedOptions: [
         'Touring Specification',
-        'Bentley Dynamic Ride'
+        'Bentley Dynamic Ride',
+        'Five Seat Comfort Specification',
+        'Sports Exhaust',
+        'Naim For Bentley',
+        'Embroidered Bentley Emblems',
+        'Heated, Acoustic, IR Front Screen',
+        'Jewel Fuel Filler Cap'
       ],
       description: 'The Bentley Bentayga V8 BLACK EDITION luxury SUV experience.',
       isAvailable: true,
@@ -106,6 +127,7 @@ async function main() {
       trim: 'BLACK BADGE',
       year: 2022,
       price: 380000,
+      baseMSRP: 395000,
       specifications: {
         color: 'Dark Grey',
         interiorColor: 'Black',
@@ -128,6 +150,16 @@ async function main() {
         wheelSize: '22 Inch Part Polished',
         brakeColor: 'Black'
       },
+      performanceData: {
+        engine: '6.75L V12',
+        horsePower: '591 hp @ 5,000 rpm',
+        torque: '850 Nm @ 1,600-4,000 rpm',
+        acceleration060: '5.0 seconds',
+        topSpeed: '250 km/h',
+        transmission: '8-speed automatic',
+        driveType: 'All Wheel Drive',
+        weight: '2735 kg'
+      },
       features: {
         interior: [
           'Leather Seats',
@@ -149,11 +181,17 @@ async function main() {
       },
       standardEquipment: [
         'Spirit of Ecstasy controller',
-        'Self-levelling air suspension'
+        'Self-levelling air suspension',
+        'Bespoke Audio System',
+        'Rear Theatre Configuration'
       ],
       addedOptions: [
         'Rear Theatre Configuration',
-        'Bespoke Audio'
+        'Bespoke Audio',
+        'Panoramic Glass Roof',
+        'Massage Seats',
+        'Champagne Cooler',
+        'Starlight Headliner'
       ],
       description: 'The Rolls Royce Cullinan V12 BLACK BADGE redefines luxury SUV performance.',
       isAvailable: true,
@@ -164,7 +202,8 @@ async function main() {
       model: 'Continental GT V8',
       trim: 'Continental GT V8',
       year: 2022,
-      price: 175000,
+      price: 174995, // Dealer Price from SPA data
+      baseMSRP: 175000, // Base MSRP from SPA data
       specifications: {
         color: 'Blue',
         interiorColor: 'Cream',
@@ -187,6 +226,17 @@ async function main() {
         wheelSize: '21 Inch Five-Spoke',
         brakeColor: 'Red'
       },
+      // Enhanced performance data from SPA
+      performanceData: {
+        engine: '4.0L V8 Twin-Turbo',
+        horsePower: '542 hp @ 6,000 rpm',
+        torque: '770 Nm @ 1,960-4,500 rpm',
+        acceleration060: '3.9 seconds',
+        topSpeed: '198 mph (318 km/h)',
+        transmission: '8-speed dual-clutch',
+        driveType: 'All-wheel drive',
+        weight: '2,165 kg'
+      },
       features: {
         interior: [
           'Leather Seats',
@@ -206,11 +256,22 @@ async function main() {
       },
       standardEquipment: [
         'Engine start/stop button',
-        'Bentley Online services'
+        'Bentley Online services',
+        'Bentley Teleservices',
+        'Brake force display',
+        'Digital Radio'
       ],
+      // Popular configurations from SPA (without prices)
       addedOptions: [
         'Touring Specification',
-        'Bentley Dynamic Ride'
+        'Naim For Bentley Audio',
+        'City Specification',
+        'Rotating Display',
+        'Front Seat Comfort Specification',
+        'Contrast Stitching',
+        'Bentley Dynamic Ride',
+        'Sports Exhaust',
+        'Mood Lighting'
       ],
       description: 'The Bentley Continental GT V8 is the ultimate expression of power and elegance.',
       isAvailable: true,
@@ -222,6 +283,7 @@ async function main() {
       data: {
         ...car,
         specifications: JSON.stringify(car.specifications),
+        performanceData: JSON.stringify(car.performanceData),
         features: JSON.stringify(car.features),
         standardEquipment: JSON.stringify(car.standardEquipment),
         addedOptions: JSON.stringify(car.addedOptions)
@@ -242,38 +304,52 @@ async function main() {
     }
   }
 
-  // Create rental cars
+  // Create rental cars - NOW ALIGNED WITH BUY CARS (same makes/models)
   const rentalCars = [
     {
       id: 'rent1',
-      make: 'Ferrari',
-      model: '488 GTB',
+      make: 'Bentley',
+      model: 'Bentayga V8',
+      trim: 'BLACK EDITION',
       year: 2022,
-      hourlyRate: 120,
-      dailyRate: 1200,
-      weeklyRate: 7000,
+      hourlyRate: 200,
+      dailyRate: 2000,
+      weeklyRate: 12000,
+      baseMSRP: 175000,
       specifications: {
-        color: 'Red',
-        interiorColor: 'Black',
+        color: 'Pearl White',
+        interiorColor: 'Red/Black',
         mileage: 5000,
-        engine: '3.9L V8 Twin-Turbo',
-        horsePower: 661,
+        engine: '6.0 L V8 Biturbo',
+        horsePower: 542,
         transmission: 'Automatic',
         fuelType: 'Petrol',
-        bodyType: 'Coupe',
-        driveType: 'Rear-Wheel Drive',
-        seats: 2,
-        doors: 2
+        bodyType: 'SUV',
+        driveType: 'All Wheel Drive',
+        seats: 5,
+        doors: 4
+      },
+      performanceData: {
+        engine: '6.0L V8 Biturbo',
+        horsePower: '542 hp @ 6,000 rpm',
+        torque: '770 Nm @ 1,960-4,500 rpm',
+        acceleration060: '4.0 seconds',
+        topSpeed: '290 km/h',
+        transmission: '8-speed automatic',
+        driveType: 'All Wheel Drive',
+        weight: '2410 kg'
       },
       features: {
         interior: [
           'Leather Seats',
           'Climate Control',
-          'Navigation System'
+          'Navigation System',
+          'Heated Seats'
         ],
         exterior: [
           'Alloy Wheels',
-          'LED Headlights'
+          'LED Headlights',
+          'Parking Sensors'
         ],
         safety: [
           'ABS',
@@ -281,69 +357,41 @@ async function main() {
           'Traction Control'
         ]
       },
-      description: 'The Ferrari 488 GTB is a mid-engine sports car produced by the Italian automobile manufacturer Ferrari.',
+      description: 'The Bentley Bentayga V8 BLACK EDITION rental experience combines luxury with performance.',
       isAvailable: true,
     },
     {
       id: 'rent2',
-      make: 'Lamborghini',
-      model: 'Huracan',
+      make: 'Rolls Royce',
+      model: 'Cullinan V12',
+      trim: 'BLACK BADGE',
       year: 2022,
-      hourlyRate: 100,
-      dailyRate: 1000,
-      weeklyRate: 6000,
+      hourlyRate: 250,
+      dailyRate: 2500,
+      weeklyRate: 15000,
+      baseMSRP: 395000,
       specifications: {
-        color: 'Blue',
+        color: 'Dark Grey',
         interiorColor: 'Black',
         mileage: 3500,
-        engine: '5.2L V10',
-        horsePower: 602,
-        transmission: 'Automatic',
-        fuelType: 'Petrol',
-        bodyType: 'Coupe',
-        driveType: 'Rear-Wheel Drive',
-        seats: 2,
-        doors: 2
-      },
-      features: {
-        interior: [
-          'Leather Seats',
-          'Climate Control',
-          'Navigation System'
-        ],
-        exterior: [
-          'Alloy Wheels',
-          'LED Headlights'
-        ],
-        safety: [
-          'ABS',
-          'Airbags',
-          'Traction Control'
-        ]
-      },
-      description: 'The Lamborghini Huracan is a high-performance sports car with a naturally aspirated V10 engine.',
-      isAvailable: true,
-    },
-    {
-      id: 'rent3',
-      make: 'Rolls Royce',
-      model: 'Ghost',
-      year: 2023,
-      hourlyRate: 150,
-      dailyRate: 1500,
-      weeklyRate: 9000,
-      specifications: {
-        color: 'Black',
-        interiorColor: 'White',
-        mileage: 2000,
         engine: '6.75L V12',
-        horsePower: 563,
+        horsePower: 591,
         transmission: 'Automatic',
         fuelType: 'Petrol',
-        bodyType: 'Sedan',
-        driveType: 'Rear-Wheel Drive',
+        bodyType: 'SUV',
+        driveType: 'All Wheel Drive',
         seats: 5,
         doors: 4
+      },
+      performanceData: {
+        engine: '6.75L V12',
+        horsePower: '591 hp @ 5,000 rpm',
+        torque: '850 Nm @ 1,600-4,000 rpm',
+        acceleration060: '5.0 seconds',
+        topSpeed: '250 km/h',
+        transmission: '8-speed automatic',
+        driveType: 'All Wheel Drive',
+        weight: '2735 kg'
       },
       features: {
         interior: [
@@ -354,7 +402,8 @@ async function main() {
         ],
         exterior: [
           'Alloy Wheels',
-          'LED Headlights'
+          'LED Headlights',
+          'Panoramic Sunroof'
         ],
         safety: [
           'ABS',
@@ -363,7 +412,61 @@ async function main() {
           'Adaptive Cruise Control'
         ]
       },
-      description: 'The Rolls-Royce Ghost is a luxury sedan known for its refined elegance and smooth ride.',
+      description: 'The Rolls Royce Cullinan V12 BLACK BADGE rental offers unparalleled luxury and comfort.',
+      isAvailable: true,
+    },
+    {
+      id: 'rent3',
+      make: 'Bentley',
+      model: 'Continental GT V8',
+      trim: 'Continental GT V8',
+      year: 2022,
+      hourlyRate: 180,
+      dailyRate: 1800,
+      weeklyRate: 10800,
+      baseMSRP: 175000,
+      specifications: {
+        color: 'Blue',
+        interiorColor: 'Cream',
+        mileage: 2000,
+        engine: '4.0L V8 Twin-Turbo',
+        horsePower: 542,
+        transmission: 'Automatic',
+        fuelType: 'Petrol',
+        bodyType: 'Coupe',
+        driveType: 'All Wheel Drive',
+        seats: 4,
+        doors: 2
+      },
+      performanceData: {
+        engine: '4.0L V8 Twin-Turbo',
+        horsePower: '542 hp @ 6,000 rpm',
+        torque: '770 Nm @ 1,960-4,500 rpm',
+        acceleration060: '3.9 seconds',
+        topSpeed: '198 mph (318 km/h)',
+        transmission: '8-speed dual-clutch',
+        driveType: 'All-wheel drive',
+        weight: '2,165 kg'
+      },
+      features: {
+        interior: [
+          'Leather Seats',
+          'Climate Control',
+          'Navigation System',
+          'Heated Seats'
+        ],
+        exterior: [
+          'Alloy Wheels',
+          'LED Headlights',
+          'Parking Sensors'
+        ],
+        safety: [
+          'ABS',
+          'Airbags',
+          'Traction Control'
+        ]
+      },
+      description: 'The Bentley Continental GT V8 rental delivers an exhilarating grand touring experience.',
       isAvailable: true,
     }
   ];
@@ -373,12 +476,13 @@ async function main() {
       data: {
         ...car,
         specifications: JSON.stringify(car.specifications),
+        performanceData: JSON.stringify(car.performanceData),
         features: JSON.stringify(car.features)
       }
     });
   }
 
-  // Add rental car images
+  // Add rental car images (reusing same car images since they're the same models)
   for (let i = 1; i <= 3; i++) {
     for (let j = 1; j <= 11; j++) {
       await prisma.rentalCarImage.create({

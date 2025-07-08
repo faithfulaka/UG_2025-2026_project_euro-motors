@@ -141,8 +141,8 @@ export default function CarDetailsPage() {  // Removed the return type
                 </div>
               </div>
               <div className="mt-4 md:mt-0">
-  <p className="text-3xl font-bold">£{car?.price?.toLocaleString() || 'Price unavailable'}</p>
-</div>
+                     <p className="text-3xl font-bold">£{car?.price?.toLocaleString() || 'Price unavailable'}</p>
+            </div>
             </div>
           </div>
 
@@ -288,7 +288,7 @@ export default function CarDetailsPage() {  // Removed the return type
         </div>
 
         {/* Tabbed content */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden text-black">
           <div className="flex border-b border-black overflow-x-auto">
           <button 
              onClick={() => setActiveSection('specifications')} 
