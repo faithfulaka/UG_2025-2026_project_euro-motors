@@ -1,4 +1,4 @@
-// src/app/admin/supercar_pricing_aggregator/page.tsx
+// src/app/admin/supercar-pricing/page.tsx
 'use client';
 
 import { useState } from 'react';
