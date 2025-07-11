@@ -1,4 +1,4 @@
-// src/types/cars.ts
+// src/types/cars.ts - FIXED VERSION
 export interface CarSpecifications {
   color: string;
   interiorColor: string;
@@ -11,15 +11,23 @@ export interface CarSpecifications {
   driveType: string;
   seats: number;
   doors: number;
+  
+  // ADDED MISSING PROPERTIES (fixes TypeScript errors)
   topSpeed?: string;
   acceleration100?: string;
+  acceleration60?: string; // Added this
   powerKW?: string;
   powerPS?: string;
+  powerRPM?: string; // Added this
   torque?: string;
+  torqueRange?: string; // Added this
   weight?: string;
   wheelbase?: string;
   wheelSize?: string;
   brakeColor?: string;
+  steeringType?: string; // Added this
+  colorOptions?: string; // Added this
+  fuelEconomy?: string; // Added this
 }
 
 export interface CarFeatures {
@@ -36,7 +44,7 @@ export interface CarImage {
   imageType: string | null;
 }
 
-// Enhanced Performance Data from SPA
+// SPA Data (Admin Helper Only - doesn't affect user experience)
 export interface PerformanceData {
   engine: string;
   horsePower: string;
@@ -49,7 +57,6 @@ export interface PerformanceData {
   fuelEconomy?: string;
 }
 
-// SPA Pricing Data
 export interface PricingData {
   baseMSRP: number;
   currentMarketRange: string;
@@ -58,7 +65,6 @@ export interface PricingData {
   priceTrend: string;
 }
 
-// SPA Auction History
 export interface AuctionHistory {
   recentSales: string;
   averageAuctionPrice: number;
@@ -67,7 +73,6 @@ export interface AuctionHistory {
   commonAuctionNotes: string[];
 }
 
-// SPA Popular Configurations
 export interface PopularConfigurations {
   basePrice: number;
   mostSelectedOptions: Array<{
@@ -78,7 +83,6 @@ export interface PopularConfigurations {
   mostPopularInterior: string;
 }
 
-// SPA Depreciation Data
 export interface DepreciationData {
   year1: string;
   year3: string;
@@ -87,7 +91,6 @@ export interface DepreciationData {
   rareOptionsForResale: string[];
 }
 
-// SPA Competing Models
 export interface CompetingModels {
   primaryCompetitors: Array<{
     name: string;
@@ -96,7 +99,6 @@ export interface CompetingModels {
   pricePosition: string;
 }
 
-// SPA Ownership Costs
 export interface OwnershipCosts {
   insuranceGroup: number;
   annualRoadTax: number;
@@ -105,36 +107,26 @@ export interface OwnershipCosts {
   estimatedAnnualMaintenance: string;
 }
 
-// Complete SPA Data Structure
+// Complete SPA Data Structure (ADMIN HELPER ONLY)
 export interface SupercarData {
-  // Basic Specifications
   make: string;
   model: string;
   year: number;
   bodyType: string;
   colourOptions: string;
   vinPattern: string;
-  
-  // Performance
   performanceData: PerformanceData;
-  
-  // Pricing
   pricingData: PricingData;
-  
-  // Market Data
   auctionHistory: AuctionHistory;
   popularConfigurations: PopularConfigurations;
   depreciationData: DepreciationData;
   competingModels: CompetingModels;
   ownershipCosts: OwnershipCosts;
-  
-  // Additional Data
   dealerData: {
     averageDaysOnMarket: number;
     currentUKInventory: number;
     mostCommonDealerAddOns: string[];
   };
-  
   warrantyMaintenance: {
     factoryWarranty: string;
     extendedOptions: string;
@@ -145,22 +137,23 @@ export interface SupercarData {
   };
 }
 
+// MAIN CAR INTERFACES (What users see - unchanged)
 export interface BuyCar {
   id: string;
   make: string;
   model: string;
   trim: string | null;
   year: number;
-  price: number; // Dealer Price from SPA
-  baseMSRP?: number; // Base MSRP from SPA
-  specifications: CarSpecifications;
-  features: CarFeatures;
+  price: number; // Main price users see
+  baseMSRP?: number; // Reference from SPA
+  specifications: CarSpecifications; // What users see
+  features: CarFeatures; // What users see
   standardEquipment: string[] | null;
-  addedOptions: string[] | null; // Popular configurations from SPA (without prices)
+  addedOptions: string[] | null;
   
-  // SPA Enhanced Data
+  // SPA Data (ADMIN REFERENCE ONLY - users don't see this)
   performanceData?: PerformanceData;
-  supercarData?: SupercarData; // Full SPA comprehensive data
+  supercarData?: SupercarData;
   pricingData?: PricingData;
   
   description: string;
@@ -179,13 +172,13 @@ export interface RentalCar {
   hourlyRate: number;
   dailyRate: number;
   weeklyRate: number;
-  baseMSRP?: number; // Base MSRP from SPA for reference
-  specifications: CarSpecifications;
-  features: CarFeatures;
+  baseMSRP?: number;
+  specifications: CarSpecifications; // What users see
+  features: CarFeatures; // What users see
   
-  // SPA Enhanced Data
+  // SPA Data (ADMIN REFERENCE ONLY)
   performanceData?: PerformanceData;
-  supercarData?: SupercarData; // Full SPA comprehensive data
+  supercarData?: SupercarData;
   
   description: string;
   isAvailable: boolean;
@@ -195,20 +188,4 @@ export interface RentalCar {
   updatedAt?: Date;
 }
 
-// Union type for both car types
 export type Car = BuyCar | RentalCar;
-
-// SPA Search Parameters
-export interface SPASearchParams {
-  make: string;
-  model: string;
-  year: number;
-  trim?: string;
-}
-
-// SPA API Response
-export interface SPAResponse {
-  success: boolean;
-  data?: SupercarData;
-  error?: string;
-}

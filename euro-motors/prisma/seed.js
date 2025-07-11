@@ -1,4 +1,4 @@
-// prisma/seed.js - COMPLETE SEED SCRIPT WITH FULL SPA DATA
+// prisma/seed.js - COMPLETE FINAL VERSION (No TypeScript Errors)
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
@@ -349,14 +349,20 @@ async function main() {
         seats: 5,
         doors: 4,
         topSpeed: '290 KM/H',
-        acceleration100: 'APPROXIMATELY 4.0 S',
+        acceleration100: '4.0 seconds',
+        acceleration60: '3.7 seconds',  // FIXED: Added missing property
         powerKW: '404 kW',
         powerPS: '549 PS',
+        powerRPM: '6,000 RPM',  // FIXED: Added missing property
         torque: '770 NM',
+        torqueRange: '1,960-4,500 RPM',  // FIXED: Added missing property
         weight: '2410 KG',
         wheelbase: '2.995 M',
         wheelSize: '22 Inch Ten Spoke',
-        brakeColor: 'Red'
+        brakeColor: 'Red',
+        steeringType: 'Power Steering',  // FIXED: Added missing property
+        colorOptions: '17 standard, 90+ bespoke',  // FIXED: Added missing property
+        fuelEconomy: '22.1 mpg combined'  // FIXED: Added missing property
       },
       performanceData: bentleyBentaygaSPA.performanceData,
       supercarData: bentleyBentaygaSPA,
@@ -416,7 +422,7 @@ async function main() {
       baseMSRP: 395000,
       specifications: {
         color: 'Dark Grey',
-        interiorColor: 'Black',
+        interiorColor: 'Black Leather',
         mileage: 0,
         engine: '6.75L V12',
         horsePower: 591,
@@ -427,14 +433,20 @@ async function main() {
         seats: 5,
         doors: 4,
         topSpeed: '250 KM/H',
-        acceleration100: 'APPROXIMATELY 5.0 S',
+        acceleration100: '5.0 seconds',
+        acceleration60: '4.5 seconds',  // FIXED: Added missing property
         powerKW: '441 kW',
         powerPS: '600 PS',
+        powerRPM: '5,000 RPM',  // FIXED: Added missing property
         torque: '850 NM',
+        torqueRange: '1,600-4,000 RPM',  // FIXED: Added missing property
         weight: '2735 KG',
         wheelbase: '3.295 M',
         wheelSize: '22 Inch Part Polished',
-        brakeColor: 'Black'
+        brakeColor: 'Black',
+        steeringType: 'Power Steering with Assistance',  // FIXED: Added missing property
+        colorOptions: '44,000+ bespoke combinations',  // FIXED: Added missing property
+        fuelEconomy: '18.8 mpg combined'  // FIXED: Added missing property
       },
       performanceData: rollsCullinanSPA.performanceData,
       supercarData: rollsCullinanSPA,
@@ -495,8 +507,8 @@ async function main() {
       price: 174995,
       baseMSRP: 175000,
       specifications: {
-        color: 'Blue',
-        interiorColor: 'Cream',
+        color: 'Glacier Blue',
+        interiorColor: 'Cream Leather',
         mileage: 0,
         engine: '4.0L V8 Twin-Turbo',
         horsePower: 542,
@@ -507,14 +519,20 @@ async function main() {
         seats: 4,
         doors: 2,
         topSpeed: '318 KM/H',
-        acceleration100: 'APPROXIMATELY 3.9 S',
+        acceleration100: '3.9 seconds',
+        acceleration60: '3.7 seconds',  // FIXED: Added missing property
         powerKW: '404 kW',
         powerPS: '542 PS',
+        powerRPM: '6,000 RPM',  // FIXED: Added missing property
         torque: '770 NM',
+        torqueRange: '1,960-4,500 RPM',  // FIXED: Added missing property
         weight: '2165 KG',
         wheelbase: '2.851 M',
         wheelSize: '21 Inch Five-Spoke',
-        brakeColor: 'Red'
+        brakeColor: 'Red',
+        steeringType: 'Dynamic Power Steering',  // FIXED: Added missing property
+        colorOptions: '16 standard, 85+ bespoke',  // FIXED: Added missing property
+        fuelEconomy: '23.3 mpg combined'  // FIXED: Added missing property
       },
       performanceData: bentleyContinentalSPA.performanceData,
       supercarData: bentleyContinentalSPA,
@@ -610,8 +628,20 @@ async function main() {
         seats: 5,
         doors: 4,
         topSpeed: '290 KM/H',
-        acceleration100: 'APPROXIMATELY 4.0 S',
-        weight: '2410 KG'
+        acceleration100: '4.0 seconds',
+        acceleration60: '3.7 seconds',  // FIXED: Added missing property
+        powerKW: '404 kW',
+        powerPS: '549 PS',
+        powerRPM: '6,000 RPM',  // FIXED: Added missing property
+        torque: '770 NM',
+        torqueRange: '1,960-4,500 RPM',  // FIXED: Added missing property
+        weight: '2410 KG',
+        wheelbase: '2.995 M',
+        wheelSize: '22 Inch Ten Spoke',
+        brakeColor: 'Red',
+        steeringType: 'Power Steering',  // FIXED: Added missing property
+        colorOptions: '17 standard, 90+ bespoke',  // FIXED: Added missing property
+        fuelEconomy: '22.1 mpg combined'  // FIXED: Added missing property
       },
       performanceData: bentleyBentaygaSPA.performanceData,
       supercarData: bentleyBentaygaSPA,
@@ -651,7 +681,7 @@ async function main() {
       baseMSRP: 395000,
       specifications: {
         color: 'Dark Grey',
-        interiorColor: 'Black',
+        interiorColor: 'Black Leather',
         mileage: 3500,
         engine: '6.75L V12',
         horsePower: 591,
@@ -662,8 +692,20 @@ async function main() {
         seats: 5,
         doors: 4,
         topSpeed: '250 KM/H',
-        acceleration100: 'APPROXIMATELY 5.0 S',
-        weight: '2735 KG'
+        acceleration100: '5.0 seconds',
+        acceleration60: '4.5 seconds',  // FIXED: Added missing property
+        powerKW: '441 kW',
+        powerPS: '600 PS',
+        powerRPM: '5,000 RPM',  // FIXED: Added missing property
+        torque: '850 NM',
+        torqueRange: '1,600-4,000 RPM',  // FIXED: Added missing property
+        weight: '2735 KG',
+        wheelbase: '3.295 M',
+        wheelSize: '22 Inch Part Polished',
+        brakeColor: 'Black',
+        steeringType: 'Power Steering with Assistance',  // FIXED: Added missing property
+        colorOptions: '44,000+ bespoke combinations',  // FIXED: Added missing property
+        fuelEconomy: '18.8 mpg combined'  // FIXED: Added missing property
       },
       performanceData: rollsCullinanSPA.performanceData,
       supercarData: rollsCullinanSPA,
@@ -704,8 +746,8 @@ async function main() {
       weeklyRate: 10800,
       baseMSRP: 175000,
       specifications: {
-        color: 'Blue',
-        interiorColor: 'Cream',
+        color: 'Glacier Blue',
+        interiorColor: 'Cream Leather',
         mileage: 2000,
         engine: '4.0L V8 Twin-Turbo',
         horsePower: 542,
@@ -716,8 +758,20 @@ async function main() {
         seats: 4,
         doors: 2,
         topSpeed: '318 KM/H',
-        acceleration100: 'APPROXIMATELY 3.9 S',
-        weight: '2165 KG'
+        acceleration100: '3.9 seconds',
+        acceleration60: '3.7 seconds',  // FIXED: Added missing property
+        powerKW: '404 kW',
+        powerPS: '542 PS',
+        powerRPM: '6,000 RPM',  // FIXED: Added missing property
+        torque: '770 NM',
+        torqueRange: '1,960-4,500 RPM',  // FIXED: Added missing property
+        weight: '2165 KG',
+        wheelbase: '2.851 M',
+        wheelSize: '21 Inch Five-Spoke',
+        brakeColor: 'Red',
+        steeringType: 'Dynamic Power Steering',  // FIXED: Added missing property
+        colorOptions: '16 standard, 85+ bespoke',  // FIXED: Added missing property
+        fuelEconomy: '23.3 mpg combined'  // FIXED: Added missing property
       },
       performanceData: bentleyContinentalSPA.performanceData,
       supercarData: bentleyContinentalSPA,
@@ -798,8 +852,9 @@ async function main() {
   console.log('  - Created 3 rental cars with COMPLETE SPA data');
   console.log('  - Created 66 car images (33 for buy, 33 for rental)');
   console.log('  - All cars have: performanceData, supercarData, pricingData');
-  console.log('  - No more null values in SPA fields!');
-  console.log('🚀 Ready for SPA integration testing!');
+  console.log('  - ✅ ALL TypeScript properties included');
+  console.log('  - ✅ NO null values in SPA fields');
+  console.log('🚀 Ready for SPA integration and trade-in system!');
 }
 
 main()
