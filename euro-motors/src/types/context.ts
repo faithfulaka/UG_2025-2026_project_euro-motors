@@ -1,4 +1,4 @@
-// src/types/context.ts - FIXED VERSION (No Any Types)
+// src/types/context.ts
 export interface CartItem {
     id: string;
     type: 'buy' | 'rent';
@@ -124,49 +124,10 @@ export interface CartItem {
     };
   }
   
-  export interface RecentActivity {
-    id: string;
-    type: 'order' | 'rental' | 'trade-in' | 'user-registration' | 'spa-search';
-    description: string;
-    timestamp: Date;
-    userId?: string;
-    details?: {
-      carMake?: string;
-      carModel?: string;
-      amount?: number;
-      status?: string;
-    };
-  }
-  
-  // Enhanced Admin types
-  export interface AdminDashboardStats {
-    totalUsers: number;
-    totalOrders: number;
-    totalRentals: number;
-    totalTradeIns: number;
-    pendingOrders: number;
-    pendingRentals: number;
-    pendingTradeIns: number;
-    carsForSale: number;
-    carsForRent: number;
-    monthlyRevenue: number;
-    popularMakes: Array<{ make: string; count: number }>;
-    recentActivity: RecentActivity[];
-  }
-  
-  // SPA Integration Types
-  export interface SPAConfiguration {
-    enabledSources: ('carquery' | 'manufacturer' | 'auction')[];
-    defaultDataSource: 'carquery' | 'manufacturer' | 'mock';
-    cacheResults: boolean;
-    cacheDuration: number; // in minutes
-  }
-  
-  // Quote System Types
-  export interface QuoteRequest {
+  // USER-FACING QUOTE TYPES (Not admin-specific)
+  export interface UserQuoteRequest {
     carId: string;
     carType: 'buy' | 'rent';
-    userId: string;
     contactDetails: {
       name: string;
       email: string;
@@ -183,7 +144,7 @@ export interface CartItem {
     };
   }
   
-  export interface QuoteResponse {
+  export interface UserQuoteResponse {
     quoteId: string;
     carDetails: {
       make: string;
@@ -202,4 +163,51 @@ export interface CartItem {
     totalPrice: number;
     validUntil: Date;
     terms: string;
+  }
+  
+  // WISHLIST & COMPARISON
+  export interface WishlistItem {
+    id: string;
+    carId: string;
+    carType: 'buy' | 'rent';
+    make: string;
+    model: string;
+    year: number;
+    price: number;
+    addedAt: Date;
+  }
+  
+  export interface ComparisonItem {
+    carId: string;
+    carType: 'buy' | 'rent';
+    make: string;
+    model: string;
+    year: number;
+    price: number;
+    key_specs: {
+      engine: string;
+      horsePower: number;
+      topSpeed: string;
+      acceleration: string;
+    };
+  }
+  
+  // SEARCH HISTORY
+  export interface SearchHistory {
+    id: string;
+    searchTerm: string;
+    filters: CarFilters;
+    resultsCount: number;
+    searchedAt: Date;
+  }
+  
+  // NOTIFICATION TYPES
+  export interface UserNotification {
+    id: string;
+    type: 'price_drop' | 'new_arrival' | 'quote_ready' | 'rental_reminder' | 'trade_in_update';
+    title: string;
+    message: string;
+    isRead: boolean;
+    createdAt: Date;
+    actionUrl?: string;
   }

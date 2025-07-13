@@ -1,4 +1,4 @@
-// src/app/admin/page.tsx - FIXED VERSION (All Required Properties)
+// src/app/admin/page.tsx 
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
@@ -20,6 +20,7 @@ export default function AdminPage() {
     pendingTradeIns: 0,
     carsForSale: 0,
     carsForRent: 0,
+    // ADDED: Missing properties to fix TypeScript error
     monthlyRevenue: 0,
     popularMakes: [],
     recentActivity: [],
@@ -49,7 +50,7 @@ export default function AdminPage() {
           setStats(data);
         } catch (error) {
           console.error('Error fetching admin data:', error);
-          // Fallback to complete dummy data with all required properties
+          // UPDATED: Fallback data with all required properties
           setStats({
             totalUsers: 24,
             totalOrders: 12,
@@ -62,68 +63,32 @@ export default function AdminPage() {
             carsForRent: 10,
             monthlyRevenue: 125000,
             popularMakes: [
-              { make: 'Bentley', count: 5 },
-              { make: 'Rolls Royce', count: 3 },
-              { make: 'Ferrari', count: 2 },
-              { make: 'Lamborghini', count: 2 }
+              { make: 'Bentley', count: 8 },
+              { make: 'Rolls Royce', count: 5 },
+              { make: 'Ferrari', count: 3 },
             ],
             recentActivity: [
               {
                 id: '1',
                 type: 'order',
-                description: 'New order for Bentley Continental GT V8',
-                timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-                userId: 'user1',
-                details: {
-                  carMake: 'Bentley',
-                  carModel: 'Continental GT V8',
-                  amount: 174995,
-                  status: 'PENDING'
-                }
+                description: 'New purchase order for Bentley Continental GT',
+                timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 min ago
+                details: { carMake: 'Bentley', amount: 175000 }
               },
               {
                 id: '2',
                 type: 'rental',
                 description: 'Rental booking for Rolls Royce Cullinan',
                 timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-                userId: 'user2',
-                details: {
-                  carMake: 'Rolls Royce',
-                  carModel: 'Cullinan V12',
-                  amount: 2500,
-                  status: 'PAID'
-                }
+                details: { carMake: 'Rolls Royce', amount: 2500 }
               },
               {
                 id: '3',
                 type: 'trade-in',
                 description: 'Trade-in request submitted',
                 timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4), // 4 hours ago
-                userId: 'user3',
-                details: {
-                  carMake: 'BMW',
-                  carModel: 'X5',
-                  status: 'PENDING'
-                }
               },
-              {
-                id: '4',
-                type: 'spa-search',
-                description: 'SPA search for McLaren 720S',
-                timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6), // 6 hours ago
-                details: {
-                  carMake: 'McLaren',
-                  carModel: '720S'
-                }
-              },
-              {
-                id: '5',
-                type: 'user-registration',
-                description: 'New user registered',
-                timestamp: new Date(Date.now() - 1000 * 60 * 60 * 8), // 8 hours ago
-                userId: 'user5'
-              }
-            ]
+            ],
           });
         }
       }
@@ -177,11 +142,11 @@ export default function AdminPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-xl font-semibold mb-4">Popular Makes</h3>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {stats.popularMakes.map((make, index) => (
                 <div key={index} className="flex justify-between items-center">
                   <span className="font-medium">{make.make}</span>
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
                     {make.count} cars
                   </span>
                 </div>
@@ -192,21 +157,12 @@ export default function AdminPage() {
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-xl font-semibold mb-4">Recent Activity</h3>
             <div className="space-y-3">
-              {stats.recentActivity.slice(0, 5).map((activity) => (
-                <div key={activity.id} className="flex items-start space-x-3">
-                  <div className="flex-shrink-0">
-                    {activity.type === 'order' && '📋'}
-                    {activity.type === 'rental' && '🔑'}
-                    {activity.type === 'trade-in' && '🔄'}
-                    {activity.type === 'spa-search' && '🚘'}
-                    {activity.type === 'user-registration' && '👤'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900">{activity.description}</p>
-                    <p className="text-xs text-gray-500">
-                      {activity.timestamp.toLocaleString()}
-                    </p>
-                  </div>
+              {stats.recentActivity.slice(0, 3).map((activity) => (
+                <div key={activity.id} className="border-l-4 border-blue-500 pl-4">
+                  <p className="text-sm font-medium">{activity.description}</p>
+                  <p className="text-xs text-gray-500">
+                    {new Date(activity.timestamp).toLocaleString()}
+                  </p>
                 </div>
               ))}
             </div>
@@ -295,7 +251,7 @@ export default function AdminPage() {
             </div>
           </Link>
           
-          {/* ENHANCED: SPA Tool Link */}
+          {/* UPDATED: SPA Tool Link */}
           <Link href="/admin/supercar-pricing" className="block">
             <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition duration-300 h-full border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
               <h3 className="text-xl font-semibold mb-4 text-blue-800">🚘 SPA Tool</h3>

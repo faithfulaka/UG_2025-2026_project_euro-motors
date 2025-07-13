@@ -1,7 +1,7 @@
-// src/types/admin.ts - BEST COMBINED VERSION (No Conflicts)
+// src/types/admin.ts
 import { BuyCar, RentalCar, CarSpecifications, CarFeatures } from '@/types/cars';
 
-// Enhanced AdminDashboardStats with all required properties
+// Enhanced AdminDashboardStats (fixes the missing properties error)
 export interface AdminDashboardStats {
   totalUsers: number;
   totalOrders: number;
@@ -12,8 +12,7 @@ export interface AdminDashboardStats {
   pendingTradeIns: number;
   carsForSale: number;
   carsForRent: number;
-  
-  // Additional enhanced properties
+  // Added missing properties to fix the error
   monthlyRevenue: number;
   popularMakes: Array<{ make: string; count: number }>;
   recentActivity: Array<{
@@ -62,18 +61,18 @@ export interface CarFormData {
     seats: number;
     topSpeed?: string;
     acceleration100?: string;
-    acceleration60?: string;
+    acceleration60?: string; // Added for TypeScript completeness
     powerKW?: string;
     powerPS?: string;
-    powerRPM?: string;
-    torqueRange?: string;
+    powerRPM?: string; // Added for TypeScript completeness
+    torqueRange?: string; // Added for TypeScript completeness
     weight?: string;
     wheelbase?: string;
     wheelSize?: string;
     brakeColor?: string;
     steeringType?: string;
-    colorOptions?: string;
-    fuelEconomy?: string;
+    colorOptions?: string; // Added for TypeScript completeness
+    fuelEconomy?: string; // Added for TypeScript completeness
   };
   features: {
     interior: string[];
@@ -110,18 +109,18 @@ export interface RentalCarFormData {
     seats: number;
     topSpeed?: string;
     acceleration100?: string;
-    acceleration60?: string;
+    acceleration60?: string; // Added for completeness
     powerKW?: string;
     powerPS?: string;
-    powerRPM?: string;
-    torqueRange?: string;
+    powerRPM?: string; // Added for completeness
+    torqueRange?: string; // Added for completeness
     weight?: string;
     wheelbase?: string;
     wheelSize?: string;
     brakeColor?: string;
     steeringType?: string;
-    colorOptions?: string;
-    fuelEconomy?: string;
+    colorOptions?: string; // Added for completeness
+    fuelEconomy?: string; // Added for completeness
   };
   features: {
     interior: string[];
@@ -138,7 +137,7 @@ export interface AdminCarFormProps {
   onCancel: () => void;
 }
 
-// SPA and Scraper Interfaces (RENAMED to avoid conflicts)
+// SPA/Scraper Interfaces (renamed to avoid conflicts)
 export interface AdminScraperResult {
   make: string;
   model: string;
@@ -152,9 +151,28 @@ export interface AdminScraperResult {
   description?: string;
   source: string;
   imageUrl?: string;
+  // Enhanced SPA data
+  performanceData?: {
+    engine: string;
+    horsePower: string;
+    torque: string;
+    acceleration060: string;
+    topSpeed: string;
+    transmission: string;
+    driveType: string;
+    weight: string;
+    fuelEconomy?: string;
+  };
+  pricingData?: {
+    baseMSRP: number;
+    currentMarketRange: string;
+    averageDealerPrice: number;
+    dealerInventoryCount: number;
+    priceTrend: string;
+  };
 }
 
-export interface AdminSPASearchParams {
+export interface AdminScraperSearchParams {
   make: string;
   model: string;
   year?: number;
@@ -177,9 +195,10 @@ export interface AdminUserData {
   lastLogin?: string;
   totalOrders?: number;
   totalRentals?: number;
+  totalSpent?: number;
 }
 
-// Trade-in Management Interfaces
+// Trade-In Management
 export interface AdminTradeInData {
   id: string;
   quoteId: string;
@@ -192,24 +211,23 @@ export interface AdminTradeInData {
   year: number;
   mileage: number;
   condition: string;
-  conditionDetails?: string;
-  accidentHistory: boolean;
-  numberOfAccidents?: number;
-  previousOwners: number;
-  fullServiceHistory: boolean;
-  hasModifications: boolean;
-  interiorCondition?: number;
-  exteriorCondition?: number;
   estimatedValue: number | null;
   actualValue: number | null;
-  adminNotes?: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
-  images?: string[];
   createdAt: string;
-  updatedAt?: string;
+  adminNotes?: string;
+  images?: string[];
+  dvlaData?: {
+    make?: string;
+    model?: string;
+    fuelType?: string;
+    engineCapacity?: number;
+    taxStatus?: string;
+    motStatus?: string;
+  };
 }
 
-// Order Management Interfaces
+// Order Management
 export interface AdminOrderData {
   id: string;
   userId: string;
@@ -221,20 +239,18 @@ export interface AdminOrderData {
   carYear: number;
   amount: number;
   financingOption: boolean;
-  financingTerm?: number;
   monthlyPayment: number | null;
   cashDeposit: number | null;
   tradeInIncluded: boolean;
   tradeInId?: string;
-  tradeInCredit?: number;
-  finalAmount: number;
-  quoteStatus: 'PENDING' | 'GENERATED' | 'RESERVED' | 'CANCELLED' | 'COMPLETED';
-  paymentStatus?: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  tradeInValue?: number;
+  quoteStatus: 'PENDING' | 'GENERATED' | 'RESERVED' | 'CANCELLED';
   createdAt: string;
   updatedAt?: string;
+  adminNotes?: string;
 }
 
-// Rental Management Interfaces
+// Rental Management
 export interface AdminRentalData {
   id: string;
   userId: string;
@@ -248,113 +264,61 @@ export interface AdminRentalData {
   endDate: string;
   rentalDuration: 'HOURLY' | 'DAILY' | 'WEEKLY';
   totalAmount: number;
-  depositAmount?: number;
   paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
   rentalStatus: 'RESERVED' | 'PAID' | 'PICKED_UP' | 'ACTIVE' | 'RETURNED' | 'COMPLETED' | 'CANCELLED';
-  isSplitPayment: boolean;
-  coRentersCount?: number;
   createdAt: string;
-  updatedAt?: string;
+  adminNotes?: string;
+  depositAmount?: number;
+  depositRefunded?: boolean;
 }
 
-// Enhanced Report Interfaces
-export interface AdminReportData {
-  period: 'day' | 'week' | 'month' | 'year';
-  startDate: Date;
-  endDate: Date;
-  salesData: {
-    totalSales: number;
-    totalRevenue: number;
-    averageOrderValue: number;
-    topSellingCars: Array<{
-      carId: string;
-      make: string;
-      model: string;
-      salesCount: number;
-      totalRevenue: number;
-    }>;
+// Settings and Configuration
+export interface AdminSettings {
+  businessInfo: {
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+    website: string;
   };
-  rentalData: {
-    totalRentals: number;
-    totalRentalRevenue: number;
-    averageRentalValue: number;
-    utilizationRate: number;
-    topRentalCars: Array<{
-      carId: string;
-      make: string;
-      model: string;
-      rentalCount: number;
-      totalRevenue: number;
-    }>;
-  };
-  tradeInData: {
-    totalTradeIns: number;
-    averageTradeInValue: number;
-    approvalRate: number;
-  };
-}
-
-// Notification System
-export interface AdminNotification {
-  id: string;
-  type: 'order' | 'rental' | 'trade-in' | 'user' | 'system' | 'spa';
-  title: string;
-  message: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  isRead: boolean;
-  actionRequired: boolean;
-  actionUrl?: string;
-  relatedId?: string; // ID of related order, rental, etc.
-  createdAt: Date;
-}
-
-// System Settings
-export interface AdminSystemSettings {
-  general: {
-    siteName: string;
-    siteDescription: string;
-    contactEmail: string;
-    contactPhone: string;
-  };
-  business: {
-    currency: string;
-    taxRate: number;
-    businessHours: {
-      open: string;
-      close: string;
-      days: string[];
-    };
-  };
-  spa: {
+  spaConfiguration: {
     enabledSources: ('carquery' | 'manufacturer' | 'auction')[];
     defaultDataSource: 'carquery' | 'manufacturer' | 'mock';
     cacheResults: boolean;
     cacheDuration: number; // in minutes
   };
-  notifications: {
-    emailNotifications: boolean;
-    smsNotifications: boolean;
-    adminNotifications: string[];
-  };
-  payment: {
-    stripeEnabled: boolean;
-    paypalEnabled: boolean;
-    bankTransferEnabled: boolean;
+  paymentSettings: {
+    stripePublicKey: string;
+    acceptedCurrencies: string[];
     depositPercentage: number;
+  };
+  emailSettings: {
+    smtpServer: string;
+    fromEmail: string;
+    enableNotifications: boolean;
   };
 }
 
-// Bulk Operations
-export interface AdminBulkOperation {
-  type: 'update-availability' | 'update-pricing' | 'delete' | 'export';
-  entityType: 'cars' | 'users' | 'orders' | 'rentals';
-  selectedIds: string[];
-  operation: Record<string, unknown>;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  progress?: number;
-  results?: {
-    successful: number;
-    failed: number;
-    errors?: string[];
+// Reports and Analytics
+export interface AdminReportData {
+  salesReport: {
+    totalSales: number;
+    monthlyTrend: Array<{ month: string; sales: number; revenue: number }>;
+    topSellingCars: Array<{ make: string; model: string; sales: number }>;
+  };
+  rentalReport: {
+    totalRentals: number;
+    utilizationRate: number;
+    topRentalCars: Array<{ make: string; model: string; rentals: number }>;
+  };
+  tradeInReport: {
+    totalTradeIns: number;
+    averageValue: number;
+    acceptanceRate: number;
+  };
+  userAnalytics: {
+    totalUsers: number;
+    activeUsers: number;
+    userGrowth: Array<{ month: string; newUsers: number }>;
   };
 }
