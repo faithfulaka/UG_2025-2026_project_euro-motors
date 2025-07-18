@@ -1,9 +1,7 @@
-//src/app/api/auth/register/route.ts
+// src/app/api/auth/register/route.ts - FIXED VERSION
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const bcrypt = require('bcryptjs') as any;
-const prisma = new PrismaClient();
+import bcrypt from 'bcryptjs';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: Request) {
   try {
@@ -13,6 +11,15 @@ export async function POST(request: Request) {
     if (!name || !email || !password) {
       return NextResponse.json(
         { message: 'Name, email, and password are required' },
+        { status: 400 }
+      );
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { message: 'Please enter a valid email address' },
         { status: 400 }
       );
     }
@@ -48,7 +55,7 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create new user
-    await prisma.user.create({
+    const newUser = await prisma.user.create({
       data: {
         name,
         email,
@@ -58,7 +65,15 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(
-      { message: 'User registered successfully' },
+      { 
+        message: 'User registered successfully',
+        user: {
+          id: newUser.id,
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+        }
+      },
       { status: 201 }
     );
   } catch (error) {
@@ -67,7 +82,5 @@ export async function POST(request: Request) {
       { message: 'An error occurred during registration' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

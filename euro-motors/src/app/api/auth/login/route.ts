@@ -1,8 +1,8 @@
+// src/app/api/auth/login/route.ts 
 import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { generateToken } from '@/lib/auth';
-
-const bcrypt = require('bcryptjs') as any;
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
         email: user.email,
         role: user.role,
       },
+      token, // Also return token for localStorage fallback
     });
 
     response.cookies.set({
@@ -72,7 +73,5 @@ export async function POST(request: NextRequest) {
       { message: 'An error occurred during login' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
