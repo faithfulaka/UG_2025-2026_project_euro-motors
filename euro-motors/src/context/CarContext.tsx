@@ -1,4 +1,4 @@
-// src/context/CarContext.tsx - FIXED VERSION (No Any Types)
+// src/context/CarContext.tsx - COMPLETE WORKING VERSION
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -32,7 +32,7 @@ interface SPASearchResult {
   make: string;
   model: string;
   year: number;
-  data: SupercarData; // Properly typed SPA data
+  data: SupercarData;
   searchedAt: Date;
   source: 'carquery' | 'manufacturer' | 'mock';
 }
@@ -143,15 +143,21 @@ export function CarProvider({ children }: { children: ReactNode }) {
 
   // Save to localStorage when data changes
   useEffect(() => {
-    localStorage.setItem('euroMotorsCart', JSON.stringify(cartItems));
+    if (cartItems.length > 0) {
+      localStorage.setItem('euroMotorsCart', JSON.stringify(cartItems));
+    }
   }, [cartItems]);
 
   useEffect(() => {
-    localStorage.setItem('euroMotorsFavorites', JSON.stringify(favorites));
+    if (favorites.length > 0) {
+      localStorage.setItem('euroMotorsFavorites', JSON.stringify(favorites));
+    }
   }, [favorites]);
 
   useEffect(() => {
-    localStorage.setItem('euroMotorsRecentlyViewed', JSON.stringify(recentlyViewed));
+    if (recentlyViewed.length > 0) {
+      localStorage.setItem('euroMotorsRecentlyViewed', JSON.stringify(recentlyViewed));
+    }
   }, [recentlyViewed]);
 
   // Cart Management
@@ -169,6 +175,7 @@ export function CarProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => {
     setCartItems([]);
+    localStorage.removeItem('euroMotorsCart');
   };
 
   // Calculate cart total
@@ -245,46 +252,46 @@ export function CarProvider({ children }: { children: ReactNode }) {
     setTradeInDataState(null);
   };
 
+  const contextValue: CarContextType = {
+    // Cart Management
+    cartItems,
+    addToCart,
+    removeFromCart,
+    clearCart,
+    cartTotal,
+
+    // Favorites Management
+    favorites,
+    addToFavorites,
+    removeFromFavorites,
+    isFavorite,
+
+    // Search & Filters
+    searchFilters,
+    updateFilters,
+    clearFilters,
+
+    // SPA Integration
+    spaSearchResults,
+    addSPAResult,
+    clearSPAResults,
+
+    // Recently Viewed
+    recentlyViewed,
+    addToRecentlyViewed,
+
+    // Trade-in Data
+    tradeInData,
+    setTradeInData,
+    clearTradeInData,
+
+    // Loading States
+    loading,
+    setLoading,
+  };
+
   return (
-    <CarContext.Provider
-      value={{
-        // Cart Management
-        cartItems,
-        addToCart,
-        removeFromCart,
-        clearCart,
-        cartTotal,
-
-        // Favorites Management
-        favorites,
-        addToFavorites,
-        removeFromFavorites,
-        isFavorite,
-
-        // Search & Filters
-        searchFilters,
-        updateFilters,
-        clearFilters,
-
-        // SPA Integration
-        spaSearchResults,
-        addSPAResult,
-        clearSPAResults,
-
-        // Recently Viewed
-        recentlyViewed,
-        addToRecentlyViewed,
-
-        // Trade-in Data
-        tradeInData,
-        setTradeInData,
-        clearTradeInData,
-
-        // Loading States
-        loading,
-        setLoading,
-      }}
-    >
+    <CarContext.Provider value={contextValue}>
       {children}
     </CarContext.Provider>
   );

@@ -1,4 +1,4 @@
-// src/app/layout.tsx - FINAL VERSION (All Imports Fixed)
+// src/app/layout.tsx - FIXED VERSION (Working Imports)
 import './globals.css';
 import { Inter } from 'next/font/google';
 import Navbar from '@/components/layout/Navbar';

@@ -1,8 +1,8 @@
-// src/app/api/auth/login/route.ts 
+// src/app/api/auth/login/route.ts - FIXED VERSION
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { generateToken } from '@/lib/auth';
+import bcrypt from 'bcryptjs'; // ✅ Fixed: ES6 import instead of require
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,16 +45,16 @@ export async function POST(request: NextRequest) {
       role: user.role,
     });
 
-    // Set token in cookie
+    // Set token in cookie and return user data
     const response = NextResponse.json({
       message: 'Login successful',
+      token, // ✅ Also return token for localStorage fallback
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
       },
-      token, // Also return token for localStorage fallback
     });
 
     response.cookies.set({
@@ -73,5 +73,5 @@ export async function POST(request: NextRequest) {
       { message: 'An error occurred during login' },
       { status: 500 }
     );
-  }
+ }
 }
