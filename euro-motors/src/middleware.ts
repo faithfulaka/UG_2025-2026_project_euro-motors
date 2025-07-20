@@ -9,9 +9,17 @@ const publicRoutes = [
   '/api/auth/login',
   '/api/auth/register',
   '/api/auth/me',
-  '/_next', // Allow next.js resources
-  '/favicon.ico'
+  '/_next',
+  '/favicon.ico',
+  '/api/auth/callback',
+  '/api/auth/verify-email',
+  '/api/auth/verify-email/callback',
+  '/api/auth/logout',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
+  '/api/auth/terms',
 ];
+
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

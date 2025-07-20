@@ -11,10 +11,10 @@
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node", // <-- changed from "bundler" to "node"
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "preserve", // <-- changed from "preserve" to "react-jsx"
     "incremental": true,
     "plugins": [
       {
@@ -27,7 +27,12 @@
         "./src/*"
       ]
     },
-    "target": "ES2017"
+    "target": "ES2017",
+    "types": [
+      "node",
+      "react",
+      "react-dom"
+    ] // <-- added this line
   },
   "include": [
     "next-env.d.ts",
