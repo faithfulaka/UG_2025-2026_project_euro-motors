@@ -17,7 +17,7 @@ export default async function BuyPage() {
   });
 
   // Parse JSON fields safely
-  const parsedCars = cars.map((car: ) => ({
+  const parsedCars = cars.map((car: any) => ({
     ...car,
     specifications: typeof car.specifications === 'string'
       ? JSON.parse(car.specifications)
