@@ -1,17 +1,19 @@
-// src/app/api/auth/logout/route.ts - UPDATED VERSION
-import { NextRequest, NextResponse } from 'next/server';
+// src/app/api/auth/logout/route.ts
+import { NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
+    // Create response
     const response = NextResponse.json({ 
+      success: true, 
       message: 'Logged out successfully' 
     });
 
-    // Clear the token cookie
+    // Clear the authentication cookie
     response.cookies.set({
       name: 'token',
       value: '',
-      expires: new Date(0),
+      expires: new Date(0), // Expire immediately
       path: '/',
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -21,13 +23,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Logout error:', error);
     return NextResponse.json(
-      { message: 'An error occurred during logout' },
+      { error: 'Logout failed' },
       { status: 500 }
     );
   }
-}
-
-// Also support GET method for logout links
-export async function GET(request: NextRequest) {
-  return POST(request);
 }
