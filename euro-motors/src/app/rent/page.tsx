@@ -5,13 +5,13 @@ import { prisma } from '@/lib/prisma';
 
 export default async function RentPage() {
   // Fetch rental cars from database
-  const dbCars = await prisma.rentalCar.findMany({
+  const cars = await prisma.rentalCar.findMany({
     where: { isAvailable: true },
     include: { images: true }
   });
 
   // Parse JSON fields stored in database
-  const cars = dbCars.map(car => ({
+  const parsedCars = cars.map(car => ({
     ...car,
     specifications: JSON.parse(car.specifications as string),
     features: JSON.parse(car.features as string)
@@ -25,7 +25,7 @@ export default async function RentPage() {
           <h1 className="text-3xl font-bold mb-8 text-black">Luxury Cars For Rent</h1>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {cars.map((car) => (
+            {parsedCars.map((car) => (
               <div key={car.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
                 {/* CarSlideshow with simplified props */}
                 <CarSlideshow 
