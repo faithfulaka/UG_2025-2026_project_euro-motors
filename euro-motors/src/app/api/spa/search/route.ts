@@ -1,4 +1,4 @@
-// src/app/api/spa/search/route.ts 
+// src/app/api/spa/search/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { carQueryService } from '@/lib/carquery';

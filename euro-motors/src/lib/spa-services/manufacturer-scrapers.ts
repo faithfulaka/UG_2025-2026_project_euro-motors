@@ -21,7 +21,7 @@ interface ScraperConfig {
 
 class RealManufacturerScraperService {
   private browser: Browser | null = null;
-  private cache = new Map<string, { data: any; expiresAt: number }>();
+  private cache = new Map<string, { data: ManufacturerConfigData | undefined; expiresAt: number }>();
   private cacheTimeout = 60 * 60 * 1000; // 1 hour cache for manufacturer data
 
   // 🏭 MANUFACTURER CONFIGURATIONS (Real URLs & Selectors)
@@ -104,7 +104,7 @@ class RealManufacturerScraperService {
       selectors: {
         models: '.model-selector, .car-model',
         basePrice: '.base-price, .starting-from',
-        totalPrice: '.total-price, '.configuration-total',
+        totalPrice: '.total-price, .configuration-total',
         options: '.option-category, .customization-item'
       },
       waitSelectors: ['.price-info', '.configurator-loaded'],
@@ -116,7 +116,7 @@ class RealManufacturerScraperService {
       currency: 'GBP',
       region: 'UK',
       selectors: {
-        models: '.model-card, '.vehicle-overview',
+        models: '.model-card, .vehicle-overview',
         basePrice: '.price-from, .starting-price',
         totalPrice: '.total-price, .configured-total',
         options: '.option-item, .equipment-line'
@@ -185,7 +185,7 @@ class RealManufacturerScraperService {
       // Wait for cookie banner and accept
       await page.waitForSelector(config.cookieAccept, { timeout: 5000 });
       await page.click(config.cookieAccept);
-      await page.waitForTimeout(1000);
+      await page.waitForLoadState('domcontentloaded');
       console.log('✅ Cookies accepted');
     } catch (error) {
       console.log('⚠️ No cookie banner found or already accepted');
@@ -204,7 +204,7 @@ class RealManufacturerScraperService {
         await page.click(`${config.countrySelector} [data-country="GB"], [value="UK"], [data-value="en-GB"]`);
       }
       
-      await page.waitForTimeout(2000);
+      await page.waitForNavigation({ waitUntil: 'domcontentloaded' });
       console.log(`✅ Region set to ${config.region}`);
     } catch (error) {
       console.log('⚠️ Could not set region, using default');
@@ -287,7 +287,7 @@ class RealManufacturerScraperService {
       let modelFound = false;
       if (config.selectors.models) {
         try {
-          modelFound = await page.evaluate((modelSelector, targetModel) => {
+          modelFound = await page.evaluate((modelSelector: string, targetModel: string) => {
             const modelElements = document.querySelectorAll(modelSelector);
             
             for (const element of modelElements) {
@@ -302,15 +302,12 @@ class RealManufacturerScraperService {
 
           if (modelFound) {
             console.log(`✅ Found and selected model: ${model}`);
-            await page.waitForTimeout(3000); // Wait for model to load
+            await page.waitForNavigation({ waitUntil: 'domcontentloaded' });
           }
         } catch (error) {
-          console.log('⚠️ Could not auto-select model, scraping general data');
-        }
-      }
 
       // Extract pricing and configuration data
-      const scrapedData = await page.evaluate((selectors, manufacturer, model, year) => {
+      const scrapedData = await page.evaluate((selectors: any, manufacturer: string, model: string, year?: number) => {
         const data: any = {
           make: manufacturer,
           model: model,
@@ -339,7 +336,7 @@ class RealManufacturerScraperService {
         // Extract options
         if (selectors.options) {
           const optionElements = document.querySelectorAll(selectors.options);
-          Array.from(optionElements).slice(0, 20).forEach((element, index) => {
+          Array.from(optionElements).slice(0, 20).forEach((element) => {
             const text = element.textContent?.trim() || '';
             if (text.length > 0 && text.length < 100) {
               const priceMatch = text.match(/£([\d,]+)/);

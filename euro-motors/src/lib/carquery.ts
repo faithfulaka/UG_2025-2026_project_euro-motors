@@ -1,4 +1,4 @@
-// src/lib/carquery.ts - ENHANCED CARQUERY SERVICE WITH REAL DATA
+// src/lib/carquery.ts 
 import { CarQueryAPIResponse, SPAServiceResponse, SPASuggestion } from '@/types/spa';
 
 class EnhancedCarQueryService {
@@ -68,13 +68,19 @@ class EnhancedCarQueryService {
     try {
       await this.rateLimit();
       
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         headers: {
           'User-Agent': 'Euro-Motors-SPA/1.0',
           'Accept': 'application/json'
         },
-        timeout: 15000 // 15 second timeout
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -91,16 +97,17 @@ class EnhancedCarQueryService {
         processingTime: Date.now() - startTime,
         cached: false
       };
-    } catch (error: any) {
-      console.error(`🚨 CarQuery API Error (${endpoint}):`, error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`🚨 CarQuery API Error (${endpoint}):`, errorMessage);
       
       return {
         success: false,
         error: {
-          code: error.name === 'TypeError' ? 'NETWORK_ERROR' : 'API_LIMIT',
-          message: error.message,
+          code: error instanceof Error && error.name === 'AbortError' ? 'NETWORK_ERROR' : 'API_LIMIT',
+          message: errorMessage,
           recoverable: true,
-          retryAfter: error.name === 'TypeError' ? 60 : 300 // Retry in 1min for network, 5min for API limits
+          retryAfter: error instanceof Error && error.name === 'AbortError' ? 60 : 300
         },
         processingTime: Date.now() - startTime,
         cached: false

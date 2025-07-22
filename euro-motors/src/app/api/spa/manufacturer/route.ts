@@ -1,4 +1,4 @@
-// src/app/api/spa/manufacturer/route.ts 
+// src/app/api/spa/manufacturer/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { manufacturerScraperService } from '@/lib/spa-services/manufacturer-scrapers';
 

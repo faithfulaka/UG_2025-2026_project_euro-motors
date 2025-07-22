@@ -1,8 +1,9 @@
-// src/context/CarContext.tsx - COMPLETE WORKING VERSION
+// src/context/CarContext.tsx - FIXED WITH PROPER SPA TYPES
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { BuyCar, RentalCar, SupercarData } from '@/types/cars';
+import { BuyCar, RentalCar } from '@/types/cars';
+import { ContextSPAResult } from '@/types/spa';
 
 interface CartItem {
   id: string;
@@ -25,16 +26,6 @@ interface CarFilters {
   bodyType?: string;
   transmission?: string;
   fuelType?: string;
-}
-
-interface SPASearchResult {
-  id: string;
-  make: string;
-  model: string;
-  year: number;
-  data: SupercarData;
-  searchedAt: Date;
-  source: 'carquery' | 'manufacturer' | 'mock';
 }
 
 interface TradeInData {
@@ -87,9 +78,9 @@ interface CarContextType {
   updateFilters: (filters: Partial<CarFilters>) => void;
   clearFilters: () => void;
 
-  // SPA Integration
-  spaSearchResults: SPASearchResult[];
-  addSPAResult: (result: SPASearchResult) => void;
+  // SPA Integration - FIXED TYPES
+  spaSearchResults: ContextSPAResult[];
+  addSPAResult: (result: ContextSPAResult) => void;
   clearSPAResults: () => void;
 
   // Recently Viewed
@@ -112,9 +103,9 @@ export function CarProvider({ children }: { children: ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [searchFilters, setSearchFilters] = useState<CarFilters>({});
-  const [spaSearchResults, setSpaSearchResults] = useState<SPASearchResult[]>([]);
+  const [spaSearchResults, setSpaSearchResults] = useState<ContextSPAResult[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<string[]>([]);
-  const [tradeInData, setTradeInDataState] = useState<TradeInData | null>(null);
+  const [tradeInDataState, setTradeInDataState] = useState<TradeInData | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Load saved data from localStorage on mount
@@ -123,6 +114,7 @@ export function CarProvider({ children }: { children: ReactNode }) {
       const savedCart = localStorage.getItem('euroMotorsCart');
       const savedFavorites = localStorage.getItem('euroMotorsFavorites');
       const savedRecentlyViewed = localStorage.getItem('euroMotorsRecentlyViewed');
+      const savedSPAResults = localStorage.getItem('euroMotorsSPAResults');
       
       if (savedCart) {
         const parsedCart: CartItem[] = JSON.parse(savedCart);
@@ -135,6 +127,15 @@ export function CarProvider({ children }: { children: ReactNode }) {
       if (savedRecentlyViewed) {
         const parsedRecentlyViewed: string[] = JSON.parse(savedRecentlyViewed);
         setRecentlyViewed(parsedRecentlyViewed);
+      }
+      if (savedSPAResults) {
+        const parsedSPAResults: ContextSPAResult[] = JSON.parse(savedSPAResults);
+        // Convert date strings back to Date objects
+        const restoredResults = parsedSPAResults.map(result => ({
+          ...result,
+          searchedAt: new Date(result.searchedAt)
+        }));
+        setSpaSearchResults(restoredResults);
       }
     } catch (error) {
       console.error('Error loading saved car data:', error);
@@ -159,6 +160,12 @@ export function CarProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('euroMotorsRecentlyViewed', JSON.stringify(recentlyViewed));
     }
   }, [recentlyViewed]);
+
+  useEffect(() => {
+    if (spaSearchResults.length > 0) {
+      localStorage.setItem('euroMotorsSPAResults', JSON.stringify(spaSearchResults));
+    }
+  }, [spaSearchResults]);
 
   // Cart Management
   const addToCart = (item: Omit<CartItem, 'id'>) => {
@@ -226,13 +233,21 @@ export function CarProvider({ children }: { children: ReactNode }) {
     setSearchFilters({});
   };
 
-  // SPA Integration
-  const addSPAResult = (result: SPASearchResult) => {
-    setSpaSearchResults(prev => [result, ...prev.slice(0, 9)]); // Keep last 10 searches
+  // SPA Integration - FIXED
+  const addSPAResult = (result: ContextSPAResult) => {
+    setSpaSearchResults(prev => {
+      // Remove any existing result with the same make/model/year
+      const filtered = prev.filter(r => 
+        !(r.make === result.make && r.model === result.model && r.year === result.year)
+      );
+      // Add new result at the beginning and keep only last 10
+      return [result, ...filtered].slice(0, 10);
+    });
   };
 
   const clearSPAResults = () => {
     setSpaSearchResults([]);
+    localStorage.removeItem('euroMotorsSPAResults');
   };
 
   // Recently Viewed
@@ -271,7 +286,7 @@ export function CarProvider({ children }: { children: ReactNode }) {
     updateFilters,
     clearFilters,
 
-    // SPA Integration
+    // SPA Integration - FIXED
     spaSearchResults,
     addSPAResult,
     clearSPAResults,
@@ -281,7 +296,7 @@ export function CarProvider({ children }: { children: ReactNode }) {
     addToRecentlyViewed,
 
     // Trade-in Data
-    tradeInData,
+    tradeInData: tradeInDataState,
     setTradeInData,
     clearTradeInData,
 

@@ -1,4 +1,4 @@
-// src/types/spa.ts - COMPREHENSIVE SPA TYPES FOR REAL DATA
+// src/types/spa.ts
 export interface CarQueryAPIResponse {
   Makes?: Array<{
     make_id: string;
@@ -331,4 +331,15 @@ export interface SPAServiceResponse<T = any> {
   processingTime: number;
   cached: boolean;
   cacheExpiresAt?: string;
+}
+
+// CONTEXT-SPECIFIC SPA RESULT (For CarContext)
+export interface ContextSPAResult {
+  id: string;
+  make: string;
+  model: string;
+  year: number;
+  data: SPASearchResponse;
+  searchedAt: Date;
+  source: 'database' | 'carquery' | 'manufacturer' | 'market' | 'comprehensive';
 }

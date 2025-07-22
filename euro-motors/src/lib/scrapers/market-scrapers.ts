@@ -21,7 +21,7 @@ interface MarketScraper {
   cookieSelector?: string;
 }
 
-class EnhancedMarketScraperService {
+class MarketScraperService {
   private browser: Browser | null = null;
   private cache = new Map<string, { data: MarketData; expiresAt: number }>();
   private cacheTimeout = 45 * 60 * 1000; // 45 minutes cache for market data
@@ -417,7 +417,7 @@ class EnhancedMarketScraperService {
 }
 
 // Export singleton
-export const marketScraperService = new EnhancedMarketScraperService();
+export const marketScraperService = new MarketScraperService();
 
 // Cleanup on exit
 process.on('exit', () => {

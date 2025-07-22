@@ -1,184 +1,262 @@
-// src/app/admin/supercar-pricing/page.tsx - READS FROM MYSQL DATABASE
+// src/app/admin/supercar-pricing/page.tsx 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useCar } from '@/context/CarContext';
+import { SPASearchResponse, SPASuggestion } from '@/types/spa';
 
-interface SupercarData {
-  // This matches your seed.js data structure
-  make: string;
-  model: string;
-  year: number;
-  bodyType: string;
-  colourOptions: string;
-  vinPattern: string;
-  performanceData: {
-    engine: string;
-    horsePower: string;
-    torque: string;
-    acceleration060: string;
-    topSpeed: string;
-    transmission: string;
-    driveType: string;
-    weight: string;
-    fuelEconomy?: string;
-  };
-  pricingData: {
-    baseMSRP: number;
-    currentMarketRange: string;
-    averageDealerPrice: number;
-    dealerInventoryCount: number;
-    priceTrend: string;
-  };
-  auctionHistory: {
-    recentSales: string;
-    averageAuctionPrice: number;
-    highestSale: string;
-    lowestSale: string;
-    commonAuctionNotes: string[];
-  };
-  popularConfigurations: {
-    basePrice: number;
-    mostSelectedOptions: Array<{
-      name: string;
-      price: number;
-    }>;
-    mostPopularExteriorColor: string;
-    mostPopularInterior: string;
-  };
-  depreciationData: {
-    year1: string;
-    year3: string;
-    year5: string;
-    residualValueRating: string;
-    rareOptionsForResale: string[];
-  };
-  competingModels: {
-    primaryCompetitors: Array<{
-      name: string;
-      avgPrice: number;
-    }>;
-    pricePosition: string;
-  };
-  ownershipCosts: {
-    insuranceGroup: number;
-    annualRoadTax: number;
-    typicalFinancing: string;
-    fuelCost: string;
-    estimatedAnnualMaintenance: string;
-  };
-  dealerData: {
-    averageDaysOnMarket: number;
-    currentUKInventory: number;
-    mostCommonDealerAddOns: string[];
-  };
-  warrantyMaintenance: {
-    factoryWarranty: string;
-    extendedOptions: string;
-    commonServiceItems: Array<{
-      item: string;
-      cost: string;
-    }>;
-  };
-}
+type DataSource = 'database' | 'carquery' | 'manufacturer' | 'market' | 'comprehensive';
 
-export default function SupercarPricingAggregatorPage() {
+export default function EnhancedSupercarPricingPage() {
   const { addSPAResult } = useCar();
+  
+  // Form state
   const [selectedMake, setSelectedMake] = useState('');
   const [selectedModel, setSelectedModel] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
-  const [dataSource, setDataSource] = useState<'database' | 'carquery' | 'manufacturer'>('database');
-  const [supercarData, setSupercarData] = useState<SupercarData | null>(null);
+  const [dataSources, setDataSources] = useState<DataSource[]>(['comprehensive']);
+  
+  // Results and UI state
+  const [searchResults, setSearchResults] = useState<SPASearchResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [carOptions, setCarOptions] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Auto-complete state
+  const [makeSuggestions, setMakeSuggestions] = useState<SPASuggestion[]>([]);
+  const [modelSuggestions, setModelSuggestions] = useState<SPASuggestion[]>([]);
+  const [yearSuggestions, setYearSuggestions] = useState<SPASuggestion[]>([]);
+  const [showMakeDropdown, setShowMakeDropdown] = useState(false);
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [showYearDropdown, setShowYearDropdown] = useState(false);
+  
+  // Search history
   const [searchHistory, setSearchHistory] = useState<Array<{
     make: string;
     model: string;
     year: string;
-    source: string;
+    sources: DataSource[];
     timestamp: Date;
+    confidence: string;
   }>>([]);
+  
+  // Real-time search capabilities
+  const [supportedManufacturers, setSupportedManufacturers] = useState<string[]>([]);
 
-  // Available cars from your database (matching your seed.js)
-  const availableCars = [
-    { make: 'Bentley', model: 'Bentayga V8', year: 2022 },
-    { make: 'Rolls Royce', model: 'Cullinan V12', year: 2022 },
-    { make: 'Bentley', model: 'Continental GT V8', year: 2022 }
-  ];
+  // Load initial data
+  useEffect(() => {
+    loadSupportedManufacturers();
+  }, []);
 
+  // Debounced search function
+  const debounce = useCallback((func: Function, wait: number) => {
+    let timeout: NodeJS.Timeout;
+    return (...args: any[]) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  }, []);
+
+  // Load supported manufacturers
+  const loadSupportedManufacturers = async () => {
+    try {
+      const response = await fetch('/api/spa/manufacturer');
+      const data = await response.json();
+      if (data.success) {
+        setSupportedManufacturers(data.supportedManufacturers);
+      }
+    } catch (error) {
+      console.error('Failed to load supported manufacturers:', error);
+    }
+  };
+
+  // 🔍 REAL-TIME MAKE SUGGESTIONS
+  const searchMakes = useCallback(
+    debounce(async (searchTerm: string) => {
+      if (searchTerm.length < 1) {
+        setMakeSuggestions([]);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/spa/suggestions?type=makes&search=${encodeURIComponent(searchTerm)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+          setMakeSuggestions(data.data.slice(0, 10));
+          setShowMakeDropdown(true);
+        }
+      } catch (error) {
+        console.error('Make search error:', error);
+      }
+    }, 300),
+    []
+  );
+
+  // 🏷️ REAL-TIME MODEL SUGGESTIONS
+  const searchModels = useCallback(
+    debounce(async (make: string, searchTerm: string) => {
+      if (!make || searchTerm.length < 1) {
+        setModelSuggestions([]);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/spa/suggestions?type=models&make=${encodeURIComponent(make)}&search=${encodeURIComponent(searchTerm)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+          setModelSuggestions(data.data.slice(0, 10));
+          setShowModelDropdown(true);
+        }
+      } catch (error) {
+        console.error('Model search error:', error);
+      }
+    }, 300),
+    []
+  );
+
+  // 📅 LOAD YEARS FOR SELECTED MAKE/MODEL
+  const loadYears = useCallback(async (make: string, model: string) => {
+    if (!make || !model) {
+      setYearSuggestions([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/spa/suggestions?type=years&make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setYearSuggestions(data.data);
+      }
+    } catch (error) {
+      console.error('Year loading error:', error);
+    }
+  }, []);
+
+  // Handle make input change
+  const handleMakeChange = (value: string) => {
+    setSelectedMake(value);
+    setSelectedModel(''); // Reset model when make changes
+    setSelectedYear(''); // Reset year when make changes
+    setModelSuggestions([]);
+    setYearSuggestions([]);
+    
+    if (value.trim()) {
+      searchMakes(value);
+    } else {
+      setMakeSuggestions([]);
+      setShowMakeDropdown(false);
+    }
+  };
+
+  // Handle model input change
+  const handleModelChange = (value: string) => {
+    setSelectedModel(value);
+    setSelectedYear(''); // Reset year when model changes
+    setYearSuggestions([]);
+    
+    if (selectedMake && value.trim()) {
+      searchModels(selectedMake, value);
+    } else {
+      setModelSuggestions([]);
+      setShowModelDropdown(false);
+    }
+  };
+
+  // Handle make selection
+  const selectMake = (make: string) => {
+    setSelectedMake(make);
+    setSelectedModel('');
+    setSelectedYear('');
+    setShowMakeDropdown(false);
+    setModelSuggestions([]);
+    setYearSuggestions([]);
+  };
+
+  // Handle model selection
+  const selectModel = (model: string) => {
+    setSelectedModel(model);
+    setSelectedYear('');
+    setShowModelDropdown(false);
+    
+    // Load years for this make/model combination
+    if (selectedMake) {
+      loadYears(selectedMake, model);
+    }
+  };
+
+  // Handle year selection
+  const selectYear = (year: string) => {
+    setSelectedYear(year);
+    setShowYearDropdown(false);
+  };
+
+  // 🚀 COMPREHENSIVE SEARCH
   const handleSearch = async () => {
     if (!selectedMake || !selectedModel) {
-      alert('Please select make and model');
+      setError('Please select make and model');
       return;
     }
 
     setIsLoading(true);
-    setSupercarData(null);
-    setCarOptions([]);
+    setError(null);
+    setSearchResults(null);
 
     try {
-      if (dataSource === 'database') {
-        // FETCH FROM YOUR MYSQL DATABASE
-        const response = await fetch('/api/spa/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            make: selectedMake,
-            model: selectedModel,
-            year: selectedYear,
-            dataSource: 'database'
-          })
-        });
+      const searchRequest = {
+        make: selectedMake,
+        model: selectedModel,
+        year: selectedYear ? parseInt(selectedYear) : undefined,
+        sources: dataSources,
+        maxResults: 50
+      };
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch vehicle data from database');
-        }
+      console.log('🔍 Starting comprehensive search:', searchRequest);
 
-        const result = await response.json();
-        
-        if (result.success && result.data) {
-          setSupercarData(result.data);
-          
-          // Extract addedOptions for display
-          if (result.data.popularConfigurations?.mostSelectedOptions) {
-            const options = result.data.popularConfigurations.mostSelectedOptions.map((opt: any) => opt.name);
-            setCarOptions(options);
-          }
+      const response = await fetch('/api/spa/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(searchRequest)
+      });
 
-          // Add to search history
-          setSearchHistory(prev => [
-            {
-              make: selectedMake,
-              model: selectedModel,
-              year: selectedYear,
-              source: 'MySQL Database',
-              timestamp: new Date()
-            },
-            ...prev.slice(0, 9)
-          ]);
+      const data = await response.json();
 
-          // Add to global context
-          addSPAResult({
-            id: `${selectedMake}-${selectedModel}-${selectedYear}-${Date.now()}`,
-            make: selectedMake,
-            model: selectedModel,
-            year: parseInt(selectedYear) || 2022,
-            data: result.data,
-            searchedAt: new Date(),
-            source: 'database' /*type '"database"' is not assignable to type '"carquery" | "manufacturer" | "mock"
-CarContext. The expected type comes from property 'source' which is declared here on type 'SPASearchResult'
-(property) SPASearchResult.source: "carquery" | "manufacturer" | "mock"*/
-          });
-        } else {
-          alert('No data found for this vehicle in database');
-        }
-      } else {
-        // Future: CarQuery or Manufacturer APIs
-        alert(`${dataSource} integration coming soon. Currently using database data.`);
+      if (!response.ok || !data.success) {
+        throw new Error(data.error?.message || 'Search failed');
       }
-    } catch (error) {
+
+      setSearchResults(data.data);
+
+      // Add to search history
+      setSearchHistory(prev => [
+        {
+          make: selectedMake,
+          model: selectedModel,
+          year: selectedYear,
+          sources: dataSources,
+          timestamp: new Date(),
+          confidence: data.data.confidence.overall
+        },
+        ...prev.slice(0, 9) // Keep last 10 searches
+      ]);
+
+      // Add to global context
+      addSPAResult({
+        id: `${selectedMake}-${selectedModel}-${selectedYear}-${Date.now()}`,
+        make: selectedMake,
+        model: selectedModel,
+        year: parseInt(selectedYear) || new Date().getFullYear(),
+        data: data.data,
+        searchedAt: new Date(),
+        source: dataSources.includes('comprehensive') ? 'carquery' : dataSources[0] as any
+      });
+
+      console.log('✅ Search completed successfully');
+
+    } catch (error: any) {
       console.error('Search error:', error);
-      alert('Failed to fetch vehicle data. Please try again.');
+      setError(error.message);
     } finally {
       setIsLoading(false);
     }
@@ -189,138 +267,254 @@ CarContext. The expected type comes from property 'source' which is declared her
       <div className="max-w-7xl mx-auto px-4">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">🚘 Supercar Pricing Aggregator</h1>
-          <p className="text-gray-600">Get comprehensive vehicle data from your MySQL database and external sources</p>
+          <p className="text-gray-600">Real-time comprehensive vehicle data from multiple live sources</p>
         </div>
 
         {/* Data Source Selection */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Data Source</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <button
-              onClick={() => setDataSource('database')}
-              className={`p-4 rounded-lg border ${dataSource === 'database' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
-            >
-              <div className="font-medium">🗄️ MySQL Database</div>
-              <div className="text-sm text-gray-600">Your comprehensive car data</div>
-              <div className="text-xs text-green-600 mt-1">✅ Available</div>
-            </button>
-            <button
-              onClick={() => setDataSource('carquery')}
-              className={`p-4 rounded-lg border ${dataSource === 'carquery' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
-            >
-              <div className="font-medium">🔍 CarQuery API</div>
-              <div className="text-sm text-gray-600">Real vehicle specifications</div>
-              <div className="text-xs text-orange-600 mt-1">🚧 Coming Soon</div>
-            </button>
-            <button
-              onClick={() => setDataSource('manufacturer')}
-              className={`p-4 rounded-lg border ${dataSource === 'manufacturer' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
-            >
-              <div className="font-medium">🏭 Manufacturer</div>
-              <div className="text-sm text-gray-600">Official configurator data</div>
-              <div className="text-xs text-orange-600 mt-1">🚧 Coming Soon</div>
-            </button>
-          </div>
-        </div>
-
-        {/* Available Cars in Database */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Available Cars in Database</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {availableCars.map((car, index) => (
-              <div 
-                key={index}
-                className="border border-gray-200 rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition"
-                onClick={() => {
-                  setSelectedMake(car.make);
-                  setSelectedModel(car.model);
-                  setSelectedYear(car.year.toString());
-                }}
-              >
-                <h3 className="font-medium">{car.make} {car.model}</h3>
-                <p className="text-sm text-gray-600">Year: {car.year}</p>
-                <p className="text-xs text-blue-600 mt-1">Click to auto-fill</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Search Form */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Search Vehicle</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Make</label>
-              <select 
-                value={selectedMake} 
-                onChange={(e) => setSelectedMake(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Make</option>
-                <option value="Bentley">Bentley</option>
-                <option value="Rolls Royce">Rolls Royce</option>
-                <option value="Ferrari">Ferrari</option>
-                <option value="Lamborghini">Lamborghini</option>
-                <option value="McLaren">McLaren</option>
-                <option value="Aston Martin">Aston Martin</option>
-                <option value="Porsche">Porsche</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
+          <h2 className="text-xl font-semibold mb-4">Data Sources</h2>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+            <label className={`p-4 rounded-lg border cursor-pointer ${dataSources.includes('comprehensive') ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}>
               <input
-                type="text"
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                placeholder="e.g., Continental GT V8"
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                type="checkbox"
+                checked={dataSources.includes('comprehensive')}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setDataSources(['comprehensive']);
+                  } else {
+                    setDataSources(prev => prev.filter(s => s !== 'comprehensive'));
+                  }
+                }}
+                className="mr-2"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
-              <select 
-                value={selectedYear} 
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Year</option>
-                <option value="2024">2024</option>
-                <option value="2023">2023</option>
-                <option value="2022">2022</option>
-                <option value="2021">2021</option>
-                <option value="2020">2020</option>
-              </select>
-            </div>
-            <div className="flex items-end">
-              <button
-                onClick={handleSearch}
-                disabled={isLoading}
-                className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition disabled:opacity-70"
-              >
-                {isLoading ? 'Searching...' : 'Get Data'}
-              </button>
-            </div>
+              <div className="font-medium">🔍 Comprehensive</div>
+              <div className="text-sm text-gray-600">All sources combined</div>
+              <div className="text-xs text-green-600 mt-1">✅ Recommended</div>
+            </label>
+            
+            <label className={`p-4 rounded-lg border cursor-pointer ${dataSources.includes('carquery') ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}>
+              <input
+                type="checkbox"
+                checked={dataSources.includes('carquery')}
+                onChange={(e) => {
+                  setDataSources(prev => 
+                    e.target.checked 
+                      ? [...prev.filter(s => s !== 'comprehensive'), 'carquery']
+                      : prev.filter(s => s !== 'carquery')
+                  );
+                }}
+                className="mr-2"
+              />
+              <div className="font-medium">🔍 CarQuery API</div>
+              <div className="text-sm text-gray-600">Technical specifications</div>
+              <div className="text-xs text-green-600 mt-1">✅ Live API</div>
+            </label>
+            
+            <label className={`p-4 rounded-lg border cursor-pointer ${dataSources.includes('manufacturer') ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}>
+              <input
+                type="checkbox"
+                checked={dataSources.includes('manufacturer')}
+                onChange={(e) => {
+                  setDataSources(prev => 
+                    e.target.checked 
+                      ? [...prev.filter(s => s !== 'comprehensive'), 'manufacturer']
+                      : prev.filter(s => s !== 'manufacturer')
+                  );
+                }}
+                className="mr-2"
+              />
+              <div className="font-medium">🏭 Manufacturer</div>
+              <div className="text-sm text-gray-600">Official configurators</div>
+              <div className="text-xs text-green-600 mt-1">✅ Real Scrapers</div>
+            </label>
+            
+            <label className={`p-4 rounded-lg border cursor-pointer ${dataSources.includes('market') ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}>
+              <input
+                type="checkbox"
+                checked={dataSources.includes('market')}
+                onChange={(e) => {
+                  setDataSources(prev => 
+                    e.target.checked 
+                      ? [...prev.filter(s => s !== 'comprehensive'), 'market']
+                      : prev.filter(s => s !== 'market')
+                  );
+                }}
+                className="mr-2"
+              />
+              <div className="font-medium">📊 Market Data</div>
+              <div className="text-sm text-gray-600">Live market listings</div>
+              <div className="text-xs text-green-600 mt-1">✅ Live Scraping</div>
+            </label>
+            
+            <label className={`p-4 rounded-lg border cursor-pointer ${dataSources.includes('database') ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}>
+              <input
+                type="checkbox"
+                checked={dataSources.includes('database')}
+                onChange={(e) => {
+                  setDataSources(prev => 
+                    e.target.checked 
+                      ? [...prev.filter(s => s !== 'comprehensive'), 'database']
+                      : prev.filter(s => s !== 'database')
+                  );
+                }}
+                className="mr-2"
+              />
+              <div className="font-medium">💾 Database</div>
+              <div className="text-sm text-gray-600">Your comprehensive data</div>
+              <div className="text-xs text-gray-600 mt-1">📦 Fallback</div>
+            </label>
           </div>
           
-          {dataSource !== 'database' && (
+          {dataSources.length === 0 && (
             <div className="bg-orange-50 border border-orange-200 rounded-md p-3">
-              <p className="text-sm text-orange-700">
-                <strong>Note:</strong> {dataSource === 'carquery' ? 'CarQuery API' : 'Manufacturer configurator'} integration is coming soon. Currently using MySQL database data.
-              </p>
+              <p className="text-sm text-orange-700">Please select at least one data source.</p>
             </div>
           )}
         </div>
 
+        {/* Enhanced Search Form with Real Auto-Complete */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-xl font-semibold mb-4">Search Vehicle</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            
+            {/* Make Field with Auto-Complete */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Make</label>
+              <input
+                type="text"
+                value={selectedMake}
+                onChange={(e) => handleMakeChange(e.target.value)}
+                onFocus={() => setShowMakeDropdown(makeSuggestions.length > 0)}
+                onBlur={() => setTimeout(() => setShowMakeDropdown(false), 200)}
+                placeholder="Start typing make..."
+                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              
+              {showMakeDropdown && makeSuggestions.length > 0 && (
+                <div className="absolute z-20 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-y-auto shadow-lg">
+                  {makeSuggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => selectMake(suggestion.value)}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center justify-between"
+                    >
+                      <span className="font-medium">{suggestion.value}</span>
+                      {suggestion.popular && <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Popular</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Model Field with Auto-Complete */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
+              <input
+                type="text"
+                value={selectedModel}
+                onChange={(e) => handleModelChange(e.target.value)}
+                onFocus={() => setShowModelDropdown(modelSuggestions.length > 0)}
+                onBlur={() => setTimeout(() => setShowModelDropdown(false), 200)}
+                placeholder={selectedMake ? "Start typing model..." : "Select make first"}
+                disabled={!selectedMake}
+                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              />
+              
+              {showModelDropdown && modelSuggestions.length > 0 && (
+                <div className="absolute z-20 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-y-auto shadow-lg">
+                  {modelSuggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => selectModel(suggestion.value)}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                    >
+                      <span className="font-medium">{suggestion.value}</span>
+                      {suggestion.count && <span className="text-xs text-gray-500 ml-2">({suggestion.count} available)</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Year Dropdown - Conditional */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+              <select 
+                value={selectedYear} 
+                onChange={(e) => selectYear(e.target.value)}
+                disabled={!selectedMake || !selectedModel || yearSuggestions.length === 0}
+                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              >
+                <option value="">
+                  {!selectedMake || !selectedModel ? "Select make & model first" : 
+                   yearSuggestions.length === 0 ? "Loading years..." : "Select year"}
+                </option>
+                {yearSuggestions.map((suggestion, index) => (
+                  <option key={index} value={suggestion.value}>
+                    {suggestion.displayName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Search Button */}
+            <div className="flex items-end">
+              <button
+                onClick={handleSearch}
+                disabled={isLoading || !selectedMake || !selectedModel || dataSources.length === 0}
+                className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Searching...' : 'Get Real Data'}
+              </button>
+            </div>
+          </div>
+          
+          {/* Status Messages */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Supported Manufacturers Info */}
+        {supportedManufacturers.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h3 className="text-lg font-semibold mb-4">🏭 Supported Manufacturers ({supportedManufacturers.length})</h3>
+            <div className="flex flex-wrap gap-2">
+              {supportedManufacturers.map(manufacturer => (
+                <span 
+                  key={manufacturer}
+                  className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                >
+                  {manufacturer}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Search History */}
         {searchHistory.length > 0 && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h3 className="text-lg font-semibold mb-4">Recent Searches</h3>
+            <h3 className="text-lg font-semibold mb-4">🕒 Recent Searches</h3>
             <div className="space-y-2">
               {searchHistory.slice(0, 5).map((search, index) => (
                 <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-md">
-                  <span className="font-medium">{search.make} {search.model} {search.year}</span>
+                  <div className="flex items-center space-x-4">
+                    <span className="font-medium">{search.make} {search.model} {search.year}</span>
+                    <span className="text-sm text-gray-500">
+                      Sources: {search.sources.join(', ')}
+                    </span>
+                  </div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-500">{search.source}</span>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      search.confidence === 'high' ? 'bg-green-100 text-green-800' :
+                      search.confidence === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {search.confidence} confidence
+                    </span>
                     <span className="text-xs text-gray-400">
                       {search.timestamp.toLocaleTimeString()}
                     </span>
@@ -331,132 +525,324 @@ CarContext. The expected type comes from property 'source' which is declared her
           </div>
         )}
 
-        {/* Comprehensive Data Display */}
-        {supercarData && (
+        {/* Comprehensive Results Display */}
+        {searchResults && (
           <div className="space-y-6">
             {/* Header */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                🔍 COMPREHENSIVE DATA: {supercarData.make} {supercarData.model}
+                🔍 COMPREHENSIVE DATA: {searchResults.vehicle.make} {searchResults.vehicle.model} {searchResults.vehicle.year}
               </h2>
-              <div className="text-sm text-gray-600">
-                Data Source: <span className="font-medium text-green-600">MySQL Database</span>
+              <div className="flex items-center space-x-4 text-sm text-gray-600">
+                <span>Processing Time: <strong>{searchResults.processingTimeMs}ms</strong></span>
+                <span>Confidence: <strong className={`${
+                  searchResults.confidence.overall === 'high' ? 'text-green-600' :
+                  searchResults.confidence.overall === 'medium' ? 'text-yellow-600' :
+                  'text-red-600'
+                }`}>{searchResults.confidence.overall.toUpperCase()}</strong></span>
+                <span>Sources: <strong>{Object.values(searchResults.dataSources).filter(Boolean).length}</strong></span>
               </div>
             </div>
 
-            {/* Basic Specifications */}
+            {/* Data Sources Used */}
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-semibold mb-4 text-blue-600">=== BASIC SPECIFICATIONS ===</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div><strong>Make:</strong> {supercarData.make}</div>
-                <div><strong>Model:</strong> {supercarData.model}</div>
-                <div><strong>Year:</strong> {supercarData.year}</div>
-                <div><strong>Body Type:</strong> {supercarData.bodyType}</div>
-                <div><strong>Colour Options:</strong> {supercarData.colourOptions}</div>
-                <div><strong>VIN Pattern:</strong> {supercarData.vinPattern}</div>
+              <h3 className="text-xl font-semibold mb-4 text-blue-600">📊 DATA SOURCES USED</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {Object.entries(searchResults.dataSources).map(([source, active]) => (
+                  <div key={source} className={`p-3 rounded-lg border ${active ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
+                    <div className="flex items-center">
+                      {active ? (
+                        <span className="text-green-500 mr-2">✅</span>
+                      ) : (
+                        <span className="text-gray-400 mr-2">❌</span>
+                      )}
+                      <span className={`text-sm font-medium ${active ? 'text-green-700' : 'text-gray-500'}`}>
+                        {source.replace(/([A-Z])/g, ' $1').trim()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Performance */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-semibold mb-4 text-green-600">=== PERFORMANCE ===</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div><strong>Engine:</strong> {supercarData.performanceData?.engine || 'N/A'}</div>
-                <div><strong>Horsepower:</strong> {supercarData.performanceData?.horsePower || 'N/A'}</div>
-                <div><strong>Torque:</strong> {supercarData.performanceData?.torque || 'N/A'}</div>
-                <div><strong>0-60 mph:</strong> {supercarData.performanceData?.acceleration060 || 'N/A'}</div>
-                <div><strong>Top Speed:</strong> {supercarData.performanceData?.topSpeed || 'N/A'}</div>
-                <div><strong>Transmission:</strong> {supercarData.performanceData?.transmission || 'N/A'}</div>
-                <div><strong>Drive Type:</strong> {supercarData.performanceData?.driveType || 'N/A'}</div>
-                <div><strong>Weight:</strong> {supercarData.performanceData?.weight || 'N/A'}</div>
-                {supercarData.performanceData?.fuelEconomy && (
-                  <div><strong>Fuel Economy:</strong> {supercarData.performanceData.fuelEconomy}</div>
-                )}
-              </div>
-            </div>
-
-            {/* Pricing Data */}
-            {supercarData.pricingData && (
+            {/* Technical Specifications */}
+            {searchResults.specifications && (
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-xl font-semibold mb-4 text-red-600">=== PRICING DATA ===</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div><strong>Base MSRP:</strong> £{supercarData.pricingData.baseMSRP?.toLocaleString() || 'N/A'}</div>
-                  <div><strong>Current Market Range:</strong> {supercarData.pricingData.currentMarketRange || 'N/A'}</div>
-                  <div><strong>Average Dealer Price:</strong> £{supercarData.pricingData.averageDealerPrice?.toLocaleString() || 'N/A'}</div>
-                  <div><strong>Dealer Inventory Count:</strong> {supercarData.pricingData.dealerInventoryCount || 'N/A'} vehicles nationwide</div>
-                  <div><strong>Price Trend:</strong> {supercarData.pricingData.priceTrend || 'N/A'}</div>
+                <h3 className="text-xl font-semibold mb-4 text-green-600">⚙️ TECHNICAL SPECIFICATIONS</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  
+                  {/* Engine */}
+                  {searchResults.specifications.engine && (
+                    <div>
+                      <h4 className="font-semibold text-gray-700 mb-2">Engine</h4>
+                      <div className="space-y-1 text-sm">
+                        <div><strong>Type:</strong> {searchResults.specifications.engine.type}</div>
+                        {searchResults.specifications.engine.displacement && (
+                          <div><strong>Displacement:</strong> {searchResults.specifications.engine.displacement}</div>
+                        )}
+                        {searchResults.specifications.engine.cylinders && (
+                          <div><strong>Cylinders:</strong> {searchResults.specifications.engine.cylinders}</div>
+                        )}
+                        <div><strong>Fuel:</strong> {searchResults.specifications.engine.fuelType}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Performance */}
+                  {searchResults.specifications.performance && (
+                    <div>
+                      <h4 className="font-semibold text-gray-700 mb-2">Performance</h4>
+                      <div className="space-y-1 text-sm">
+                        <div><strong>Power:</strong> {searchResults.specifications.performance.horsepower} HP</div>
+                        <div><strong>Torque:</strong> {searchResults.specifications.performance.torque} Nm</div>
+                        {searchResults.specifications.performance.acceleration0to100 && (
+                          <div><strong>0-100 km/h:</strong> {searchResults.specifications.performance.acceleration0to100}s</div>
+                        )}
+                        {searchResults.specifications.performance.topSpeed && (
+                          <div><strong>Top Speed:</strong> {searchResults.specifications.performance.topSpeed} {searchResults.specifications.performance.topSpeedUnit}</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Drivetrain */}
+                  {searchResults.specifications.drivetrain && (
+                    <div>
+                      <h4 className="font-semibold text-gray-700 mb-2">Drivetrain</h4>
+                      <div className="space-y-1 text-sm">
+                        <div><strong>Transmission:</strong> {searchResults.specifications.drivetrain.transmission}</div>
+                        <div><strong>Drive Type:</strong> {searchResults.specifications.drivetrain.driveType}</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Popular Configurations - CONVERTED TO ADDED OPTIONS */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-semibold mb-4 text-orange-600">=== POPULAR CONFIGURATIONS ===</h3>
-              <div className="mb-4">
-                <div><strong>Base Price:</strong> £{supercarData.popularConfigurations?.basePrice?.toLocaleString() || 'N/A'}</div>
+            {/* Pricing Information */}
+            {searchResults.pricing && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-xl font-semibold mb-4 text-red-600">💰 PRICING DATA</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
+                  {/* New Car Pricing */}
+                  {searchResults.pricing.newCar && (
+                    <div>
+                      <h4 className="font-semibold text-gray-700 mb-2">New Car Pricing</h4>
+                      <div className="space-y-2">
+                        <div className="text-2xl font-bold text-green-600">
+                          £{searchResults.pricing.newCar.msrp.toLocaleString()}
+                        </div>
+                        <div className="text-sm text-gray-600">MSRP (Manufacturer Suggested Retail Price)</div>
+                        {searchResults.pricing.newCar.financing && (
+                          <div className="mt-4 p-3 bg-blue-50 rounded">
+                            <div className="text-sm">
+                              <div><strong>Estimated Financing:</strong> {searchResults.pricing.newCar.financing.apr}% APR</div>
+                              <div><strong>Monthly Payment:</strong> £{searchResults.pricing.newCar.financing.monthlyPaymentEstimate?.toLocaleString()}/month</div>
+                              <div className="text-xs text-gray-500 mt-1">*Estimate based on 20% down, 48 months</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Used Market Data */}
+                  {searchResults.pricing.usedMarket && (
+                    <div>
+                      <h4 className="font-semibold text-gray-700 mb-2">Used Market Data</h4>
+                      <div className="space-y-2">
+                        <div className="text-xl font-bold text-blue-600">
+                          £{searchResults.pricing.usedMarket.averagePrice.toLocaleString()}
+                        </div>
+                        <div className="text-sm text-gray-600">Average Market Price</div>
+                        <div className="text-sm">
+                          <strong>Price Range:</strong> £{searchResults.pricing.usedMarket.priceRange.min.toLocaleString()} - £{searchResults.pricing.usedMarket.priceRange.max.toLocaleString()}
+                        </div>
+                        <div className="text-sm">
+                          <strong>Market Trend:</strong> 
+                          <span className={`ml-1 ${
+                            searchResults.pricing.usedMarket.marketTrend.direction === 'rising' ? 'text-green-600' :
+                            searchResults.pricing.usedMarket.marketTrend.direction === 'falling' ? 'text-red-600' :
+                            'text-gray-600'
+                          }`}>
+                            {searchResults.pricing.usedMarket.marketTrend.direction.toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="mb-4">
-                <strong>Most Selected Options (Ready for addedOptions field):</strong>
-                <ul className="ml-4 mt-2 space-y-1">
-                  {carOptions.map((option, index) => (
-                    <li key={index} className="flex items-center">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                      {option}
-                    </li>
-                  ))}
-                </ul>
+            )}
+
+            {/* Manufacturer Configurator Data */}
+            {searchResults.configurator && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-xl font-semibold mb-4 text-orange-600">🏭 MANUFACTURER CONFIGURATOR</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold text-gray-700 mb-2">Base Configuration</h4>
+                    <div className="space-y-2">
+                      <div className="text-2xl font-bold">£{searchResults.configurator.basePrice.toLocaleString()}</div>
+                      <div className="text-sm text-gray-600">Official Base Price</div>
+                      <a 
+                        href={searchResults.configurator.configuratorUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        🔗 Open Official Configurator
+                      </a>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold text-gray-700 mb-2">Available Options ({searchResults.configurator.availableOptions.length})</h4>
+                    <div className="max-h-32 overflow-y-auto">
+                      {searchResults.configurator.availableOptions.slice(0, 8).map((option, index) => (
+                        <div key={index} className="flex justify-between text-sm py-1">
+                          <span>{option.name}</span>
+                          <span className="font-medium">£{option.price.toLocaleString()}</span>
+                        </div>
+                      ))}
+                      {searchResults.configurator.availableOptions.length > 8 && (
+                        <div className="text-xs text-gray-500 mt-2">
+                          + {searchResults.configurator.availableOptions.length - 8} more options
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><strong>Most Popular Exterior Color:</strong> {supercarData.popularConfigurations?.mostPopularExteriorColor || 'N/A'}</div>
-                <div><strong>Most Popular Interior:</strong> {supercarData.popularConfigurations?.mostPopularInterior || 'N/A'}</div>
+            )}
+
+            {/* Market Listings */}
+            {searchResults.marketData && searchResults.marketData.length > 0 && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-xl font-semibold mb-4 text-purple-600">📊 MARKET LISTINGS</h3>
+                {searchResults.marketData.map((source, sourceIndex) => (
+                  <div key={sourceIndex} className="mb-6">
+                    <h4 className="font-semibold text-gray-700 mb-3 capitalize">
+                      {source.source} ({source.listings.length} listings)
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {source.listings.slice(0, 6).map((listing, index) => (
+                        <div key={index} className="border border-gray-200 rounded-lg p-4">
+                          <div className="font-medium text-sm mb-2 truncate" title={listing.title}>
+                            {listing.title}
+                          </div>
+                          <div className="text-lg font-bold text-green-600">
+                            £{listing.price.toLocaleString()}
+                          </div>
+                          {listing.mileage && (
+                            <div className="text-xs text-gray-500">
+                              {listing.mileage.toLocaleString()} miles
+                            </div>
+                          )}
+                          {listing.location && (
+                            <div className="text-xs text-gray-500 truncate">
+                              📍 {listing.location}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {source.listings.length > 6 && (
+                      <div className="text-sm text-gray-500 mt-2">
+                        + {source.listings.length - 6} more listings from {source.source}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
+
+            {/* Ownership Costs */}
+            {searchResults.ownershipCosts && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-xl font-semibold mb-4 text-indigo-600">💸 OWNERSHIP COSTS</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  
+                  {/* Insurance */}
+                  <div>
+                    <h4 className="font-semibold text-gray-700 mb-2">Insurance</h4>
+                    <div className="text-2xl font-bold text-red-600 mb-1">
+                      £{searchResults.ownershipCosts.insurance.averageAnnual.toLocaleString()}/year
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Group {searchResults.ownershipCosts.insurance.group}
+                    </div>
+                  </div>
+
+                  {/* Maintenance */}
+                  <div>
+                    <h4 className="font-semibold text-gray-700 mb-2">Maintenance</h4>
+                    <div className="text-2xl font-bold text-orange-600 mb-1">
+                      £{searchResults.ownershipCosts.maintenance.averageAnnual.toLocaleString()}/year
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Average annual cost
+                    </div>
+                  </div>
+
+                  {/* Depreciation */}
+                  <div>
+                    <h4 className="font-semibold text-gray-700 mb-2">Depreciation</h4>
+                    <div className="space-y-1 text-sm">
+                      <div>Year 1: <strong>-{searchResults.ownershipCosts.depreciation.year1Percent}%</strong></div>
+                      <div>Year 3: <strong>-{searchResults.ownershipCosts.depreciation.year3Percent}%</strong></div>
+                      <div>Year 5: <strong>-{searchResults.ownershipCosts.depreciation.year5Percent}%</strong></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-semibold mb-4">Integration Actions</h3>
+              <h3 className="text-xl font-semibold mb-4">🛠️ Actions</h3>
               <div className="flex flex-wrap gap-4">
                 <button
                   onClick={() => {
-                    console.log('🚗 Car Options for addedOptions field:', carOptions);
-                    console.log('📊 Full SPA Data:', supercarData);
-                    alert(`${carOptions.length} options ready for integration!\nCheck console for details.`);
+                    const dataToExport = {
+                      vehicle: searchResults.vehicle,
+                      specifications: searchResults.specifications,
+                      pricing: searchResults.pricing,
+                      confidence: searchResults.confidence,
+                      timestamp: searchResults.timestamp
+                    };
+                    navigator.clipboard.writeText(JSON.stringify(dataToExport, null, 2));
+                    alert('Data copied to clipboard!');
                   }}
-                  className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
                 >
-                  📊 Extract addedOptions
+                  📋 Copy Data to Clipboard
                 </button>
                 
                 <button
                   onClick={() => {
-                    const integrationData = {
-                      make: supercarData.make,
-                      model: supercarData.model,
-                      year: supercarData.year,
-                      dealerPrice: supercarData.pricingData?.averageDealerPrice,
-                      baseMSRP: supercarData.pricingData?.baseMSRP,
-                      addedOptions: carOptions,
-                      performanceData: supercarData.performanceData,
-                      pricingData: supercarData.pricingData
-                    };
-                    navigator.clipboard.writeText(JSON.stringify(integrationData, null, 2));
-                    alert('Integration data copied to clipboard!');
+                    console.log('🚗 Complete SPA Data:', searchResults);
+                    alert('Complete data logged to console!');
                   }}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
+                  className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition"
                 >
-                  📋 Copy Integration Data
+                  🔍 View Complete Data
                 </button>
 
                 <button
                   onClick={() => {
-                    console.log('🗄️ This data is already in your MySQL database!');
-                    console.log('📍 Location: BuyCar.supercarData, BuyCar.performanceData, BuyCar.pricingData');
-                    console.log('🔄 addedOptions field ready for:', carOptions);
-                    alert('Data confirmed in MySQL database!\nCheck console for field locations.');
+                    const manufacturerUrl = searchResults.configurator?.configuratorUrl;
+                    if (manufacturerUrl) {
+                      window.open(manufacturerUrl, '_blank');
+                    } else {
+                      alert('No manufacturer configurator available for this vehicle');
+                    }
                   }}
                   className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition"
+                  disabled={!searchResults.configurator}
                 >
-                  🗄️ Verify Database Storage
+                  🏭 Open Configurator
                 </button>
               </div>
             </div>

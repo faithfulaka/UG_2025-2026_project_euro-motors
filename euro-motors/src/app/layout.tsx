@@ -1,7 +1,7 @@
-// src/app/layout.tsx 
+// src/app/layout.tsx - CONDITIONAL USER NAVBAR (Fixed)
 import './globals.css';
 import { Inter } from 'next/font/google';
-import Navbar from '@/components/layout/Navbar';
+import ConditionalNavbar from '@/components/layout/ConditionalNavbar';
 import Footer from '@/components/layout/Footer';
 import Gallery from '@/components/ui/Gallery';
 import { AuthProvider } from '@/context/AuthContext';
@@ -30,10 +30,13 @@ export default function RootLayout({
         <AuthProvider>
           <CarProvider>
             <div className="flex flex-col min-h-screen">
-              <Navbar />
+              {/* CONDITIONAL NAVBAR COMPONENT */}
+              <ConditionalNavbar />
+              
               <main className="flex-1 w-full max-w-[100vw] mx-auto overflow-x-hidden">
                 {children}
               </main>
+              
               <Gallery />
               <Footer />
             </div>
