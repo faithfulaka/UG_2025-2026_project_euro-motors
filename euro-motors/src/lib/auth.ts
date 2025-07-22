@@ -1,65 +1,21 @@
-import { NextRequest } from 'next/server';
+//src/lib/auth.ts
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import { NextRequest } from 'next/server';
 import { prisma } from './prisma';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_change_in_production';
 
-// Define a proper type for the token payload
-interface TokenPayload {
-  id: string;
-  email: string;
-  role: string;
-}
-
-export async function verifyToken(request: NextRequest) {
+export function verifyToken(token: string) {
   try {
-    // Get token from Authorization header
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null;
-    }
-    
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-
-    // Verify token
-    const payload = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
-
-    // Check if token has expired
-    const now = Math.floor(Date.now() / 1000);
-    if (payload.exp && payload.exp < now) {
-      return null;
-    }
-
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { id: payload.id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-      },
-    });
-
-    if (!user) {
-      return null;
-    }
-
-    return user;
-  } catch (error) {
-    console.error('Token verification error:', error);
-    return null;
+    return jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
+  } catch (error) { //'error' is defined but never used.
+    throw new Error('Invalid token');
   }
 }
 
-export async function verifyAdmin(request: NextRequest) {
-  const user = await verifyToken(request);
-  
-  if (!user || user.role !== 'ADMIN') {
-    return false;
-  }
-  
-  return true;
+export function generateToken(payload: { userId: string; email: string }) {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
 }
 
 export async function hashPassword(password: string) {
@@ -69,8 +25,33 @@ export async function hashPassword(password: string) {
 export async function comparePasswords(plainPassword: string, hashedPassword: string) {
   return bcrypt.compare(plainPassword, hashedPassword);
 }
+// ADD THIS MISSING FUNCTION
+export async function verifyAdmin(request: NextRequest) {
+  try {
+    // Get token from cookie or header
+    const cookieToken = request.cookies.get('token')?.value;
+    const authHeader = request.headers.get('authorization');
+    const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+    
+    const token = cookieToken || headerToken;
+    
+    if (!token) {
+      return false;
+    }
 
-// Use proper type instead of 'any'
-export function generateToken(payload: TokenPayload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
+    // Verify token
+    const decoded = verifyToken(token);
+    
+    // Get user from database
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, role: true }
+    });
+
+    return user?.role === 'ADMIN';
+  } catch (error) {
+    console.error('Admin verification error:', error);
+    return false;
+  }
 }
+    

@@ -1,45 +1,90 @@
-//src/app/api/spa/manufacturer/route.ts
+// src/app/api/spa/manufacturer/route.ts 
 import { NextRequest, NextResponse } from 'next/server';
-import { manufacturerScraper } from '@/lib/spa-services/manufacturer-scrapers';
+import { manufacturerScraperService } from '@/lib/spa-services/manufacturer-scrapers';
 
 export async function POST(request: NextRequest) {
   try {
-    const { manufacturer, model } = await request.json();
-
+    const { manufacturer, model, year } = await request.json();
+    
     if (!manufacturer || !model) {
-      return NextResponse.json({ 
-        error: 'Manufacturer and model are required' 
+      return NextResponse.json({
+        success: false,
+        error: {
+          code: 'INVALID_INPUT',
+          message: 'Manufacturer and model are required',
+          recoverable: false
+        }
       }, { status: 400 });
     }
 
-    // Scrape data from manufacturer
-    const data = await manufacturerScraper.scrapeWithDelay(manufacturer, model);
+    console.log(`🏭 Manufacturer Scraper API: ${manufacturer} ${model} ${year || 'current'}`);
 
-    if (!data) {
-      return NextResponse.json({ 
-        error: 'Failed to scrape data or unsupported manufacturer' 
-      }, { status: 400 });
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      data,
-      source: 'manufacturer_scraper'
+    const result = await manufacturerScraperService.scrapeManufacturerData(
+      manufacturer,
+      model,
+      year
+    );
+    
+    return NextResponse.json({
+      success: result.success,
+      data: result.data || null,
+      error: result.error || null,
+      meta: {
+        manufacturer,
+        model,
+        year: year || new Date().getFullYear(),
+        processingTime: result.processingTime,
+        cached: result.cached,
+        supportedManufacturers: manufacturerScraperService.getSupportedManufacturers()
+      }
     });
 
-  } catch (error) {
-    console.error('Manufacturer scraping API error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error' 
+  } catch (error: any) {
+    console.error('🚨 Manufacturer Scraper API Error:', error);
+    
+    return NextResponse.json({
+      success: false,
+      error: {
+        code: 'SCRAPER_ERROR',
+        message: 'Manufacturer scraper failed',
+        recoverable: true,
+        retryAfter: 300
+      }
     }, { status: 500 });
   }
 }
 
-// package.json additions needed:
-/*
-{
-  "dependencies": {
-    "puppeteer": "^21.0.0"
+// GET method to list supported manufacturers
+export async function GET() {
+  try {
+    const supportedManufacturers = manufacturerScraperService.getSupportedManufacturers();
+    const cacheStats = manufacturerScraperService.getCacheStats();
+    
+    return NextResponse.json({
+      success: true,
+      supportedManufacturers,
+      total: supportedManufacturers.length,
+      cache: {
+        size: cacheStats.size,
+        manufacturers: cacheStats.manufacturers
+      },
+      capabilities: {
+        realTimePricing: true,
+        configuratorData: true,
+        optionsExtraction: true,
+        multiRegion: true
+      }
+    });
+
+  } catch (error: any) {
+    console.error('🚨 Manufacturer Info API Error:', error);
+    
+    return NextResponse.json({
+      success: false,
+      error: {
+        code: 'API_ERROR',
+        message: 'Failed to get manufacturer info'
+      }
+    }, { status: 500 });
   }
 }
-*/

@@ -20,18 +20,29 @@ export default function AdminPage() {
     pendingTradeIns: 0,
     carsForSale: 0,
     carsForRent: 0,
-    // ADDED: Missing properties to fix TypeScript error
     monthlyRevenue: 0,
     popularMakes: [],
     recentActivity: [],
   });
 
   useEffect(() => {
+    // ADD THESE CONSOLE LOGS FOR DEBUGGING
+    console.log('🔍 Admin page check:');
+    console.log('  - User:', user?.email || 'none');
+    console.log('  - Role:', user?.role || 'none');
+    console.log('  - IsAdmin:', isAdmin);
+    console.log('  - Loading:', loading);
+    
     if (!loading) {
       if (!user) {
+        console.log('❌ No user, redirecting to login');
         router.push('/login');
       } else if (!isAdmin) {
+        console.log('❌ User is not admin, redirecting to dashboard');
+        console.log('  - User role is:', user.role);
         router.push('/dashboard');
+      } else {
+        console.log('✅ Admin access granted for:', user.email);
       }
     }
   }, [user, loading, isAdmin, router]);
@@ -41,7 +52,6 @@ export default function AdminPage() {
     async function fetchAdminData() {
       if (user && isAdmin) {
         try {
-          // Fetch dashboard stats from API
           const response = await fetch('/api/admin/dashboard');
           if (!response.ok) {
             throw new Error('Failed to fetch dashboard data');
@@ -50,7 +60,7 @@ export default function AdminPage() {
           setStats(data);
         } catch (error) {
           console.error('Error fetching admin data:', error);
-          // UPDATED: Fallback data with all required properties
+          // Keep your existing fallback data - it's perfect!
           setStats({
             totalUsers: 24,
             totalOrders: 12,
@@ -72,21 +82,21 @@ export default function AdminPage() {
                 id: '1',
                 type: 'order',
                 description: 'New purchase order for Bentley Continental GT',
-                timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 min ago
+                timestamp: new Date(Date.now() - 1000 * 60 * 30),
                 details: { carMake: 'Bentley', amount: 175000 }
               },
               {
                 id: '2',
                 type: 'rental',
                 description: 'Rental booking for Rolls Royce Cullinan',
-                timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
+                timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
                 details: { carMake: 'Rolls Royce', amount: 2500 }
               },
               {
                 id: '3',
                 type: 'trade-in',
                 description: 'Trade-in request submitted',
-                timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4), // 4 hours ago
+                timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
               },
             ],
           });
@@ -100,15 +110,39 @@ export default function AdminPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-2xl">Loading...</div>
+        <div className="text-center">
+          <div className="text-2xl font-semibold mb-4">Loading Admin Dashboard...</div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        </div>
       </div>
     );
   }
 
   if (!user || !isAdmin) {
-    return null; // This will be handled by the useEffect redirect
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-2xl font-semibold mb-4">
+            {!user ? 'Please Login' : 'Access Denied'}
+          </div>
+          {!user ? (
+            <Link href="/login" className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700">
+              Go to Login
+            </Link>
+          ) : (
+            <div>
+              <div className="text-gray-600 mb-4">You need admin privileges to access this page.</div>
+              <div className="text-sm text-gray-500 mb-4">Current role: {user.role}</div>
+              <Link href="/dashboard" className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700">
+                Go to Dashboard
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   }
-
+  
   return (
     <div className="bg-gray-50 min-h-screen py-10">
       <div className="max-w-7xl mx-auto px-4">

@@ -1,62 +1,56 @@
 // src/app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { generateToken } from '@/lib/auth';
-import bcrypt from 'bcryptjs'; 
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
-    // Input validation
+    console.log('🔐 Login attempt for:', email);
+
     if (!email || !password) {
       return NextResponse.json(
-        { message: 'Email and password are required' },
+        { error: 'Email and password are required' },
         { status: 400 }
       );
     }
 
     // Find user
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email }
     });
 
     if (!user) {
-      return NextResponse.json(
-        { message: 'Invalid email or password' },
-        { status: 401 }
-      );
+      console.log('❌ User not found:', email);
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      return NextResponse.json(
-        { message: 'Invalid email or password' },
-        { status: 401 }
-      );
+    // Check password
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      console.log('❌ Invalid password for:', email);
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
-    // Create JWT token
-    const token = generateToken({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    });
+    // Generate token
+    const token = generateToken({ userId: user.id, email: user.email });
 
-    // Set token in cookie and return user data
+    console.log('✅ Login successful for:', user.email, 'Role:', user.role);
+
+    // Create response
     const response = NextResponse.json({
-      message: 'Login successful',
-      token,
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: user.role
       },
+      token
     });
 
+    // Set HTTP-only cookie
     response.cookies.set({
       name: 'token',
       value: token,
@@ -66,12 +60,11 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
+    console.log('🍪 Token cookie set for user:', user.email);
+
     return response;
   } catch (error) {
-    console.error('Login error:', error);
-    return NextResponse.json(
-      { message: 'An error occurred during login' },
-      { status: 500 }
-    );
- }
+    console.error('❌ Login error:', error);
+    return NextResponse.json({ error: 'An error occurred during login' }, { status: 500 });
+  }
 }

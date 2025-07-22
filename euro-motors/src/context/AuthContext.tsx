@@ -1,8 +1,8 @@
-// src/context/AuthContext.tsx - COMPLETE WORKING VERSION
+// src/context/AuthContext.tsx 
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface User {
   id: string;
@@ -29,27 +29,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
 
-  // Clear error function
   const clearError = () => setError(null);
 
-  // Check if user is logged in on page load
   useEffect(() => {
     async function loadUserFromSession() {
       try {
         setLoading(true);
+        console.log('🔄 [AUTH CONTEXT] Loading user session...');
         
-        // Try to get user from API (which checks HTTP-only cookies)
         const response = await fetch('/api/auth/me', {
           method: 'GET',
-          credentials: 'include', // Include cookies
+          credentials: 'include',
         });
+        
+        console.log('📡 [AUTH CONTEXT] Auth response status:', response.status);
         
         if (response.ok) {
           const data = await response.json();
           setUser(data.user);
+          console.log('✅ [AUTH CONTEXT] User session loaded:', data.user.email, 'Role:', data.user.role);
+          console.log('🎯 [AUTH CONTEXT] IsAdmin calculated:', data.user.role === 'ADMIN');
+          
+          // REDIRECT LOGIC: If admin user is on non-admin page, redirect
+          if (data.user.role === 'ADMIN' && !pathname.startsWith('/admin')) {
+            console.log('🔄 [AUTH CONTEXT] Admin detected on user page, redirecting to /admin');
+            router.push('/admin');
+          }
         } else {
-          // If cookie auth fails, try localStorage token as fallback
+          console.log('❌ [AUTH CONTEXT] Auth failed, trying localStorage token...');
+          // Try localStorage token as fallback
           const token = localStorage.getItem('token');
           if (token) {
             const tokenResponse = await fetch('/api/auth/me', {
@@ -61,15 +71,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (tokenResponse.ok) {
               const tokenData = await tokenResponse.json();
               setUser(tokenData.user);
+              console.log('✅ [AUTH CONTEXT] User loaded from localStorage token:', tokenData.user.email, 'Role:', tokenData.user.role);
+              
+              // REDIRECT LOGIC: If admin user is on non-admin page, redirect
+              if (tokenData.user.role === 'ADMIN' && !pathname.startsWith('/admin')) {
+                console.log('🔄 [AUTH CONTEXT] Admin detected (from token) on user page, redirecting to /admin');
+                router.push('/admin');
+              }
             } else {
-              // Token is invalid, clear it
+              console.log('❌ [AUTH CONTEXT] Token invalid, clearing localStorage');
               localStorage.removeItem('token');
             }
+          } else {
+            console.log('📝 [AUTH CONTEXT] No token found - user not logged in');
           }
         }
       } catch (error) {
-        console.error('Failed to load user session:', error);
-        // Clear any invalid tokens
+        console.error('❌ [AUTH CONTEXT] Failed to load user session:', error);
         localStorage.removeItem('token');
       } finally {
         setLoading(false);
@@ -77,41 +95,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     loadUserFromSession();
-  }, []);
+  }, [router, pathname]);
 
   const login = async (email: string, password: string) => {
     setLoading(true);
     setError(null);
     
     try {
+      console.log('🔐 [AUTH CONTEXT] Attempting login for:', email);
+      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Include cookies
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
-      }
-
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
+      }
       
-      // Save token to localStorage as fallback
       if (data.token) {
         localStorage.setItem('token', data.token);
       }
       
       setUser(data.user);
+      console.log('✅ [AUTH CONTEXT] Login successful:', data.user.email, 'Role:', data.user.role);
+      console.log('🎯 [AUTH CONTEXT] User is admin:', data.user.role === 'ADMIN');
       
-      // Redirect based on user role
+      // ENHANCED: Force redirect based on user role
       if (data.user.role === 'ADMIN') {
-        router.push('/admin');
+        console.log('🔄 [AUTH CONTEXT] Admin login - FORCING redirect to /admin');
+        window.location.href = '/admin'; // Force full page redirect
       } else {
+        console.log('🔄 [AUTH CONTEXT] Regular user - redirecting to /dashboard');
         router.push('/dashboard');
       }
     } catch (error: unknown) {
+      console.error('❌ [AUTH CONTEXT] Login error:', error);
       if (error instanceof Error) {
         setError(error.message);
       } else {
@@ -133,12 +156,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ name, email, password }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
+        throw new Error(data.message || 'Registration failed');
       }
 
-      // Redirect to login page after successful registration
       router.push('/login?message=Registration successful! Please log in.');
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -154,24 +177,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     setLoading(true);
     try {
-      // Call logout API to clear HTTP-only cookies
       await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
       });
       
-      // Remove token from localStorage
       localStorage.removeItem('token');
-      
-      // Clear user state
       setUser(null);
       setError(null);
-      
-      // Redirect to home page
+      console.log('✅ [AUTH CONTEXT] Logout successful');
       router.push('/');
     } catch (error) {
       console.error('Logout failed:', error);
-      // Even if API call fails, clear local state
       localStorage.removeItem('token');
       setUser(null);
       router.push('/');
@@ -180,13 +197,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Enhanced isAdmin calculation with logging
+  const isAdmin = user?.role === 'ADMIN';
+  
+  useEffect(() => {
+    if (user) {
+      console.log('🎯 [AUTH CONTEXT] isAdmin recalculated:', isAdmin, 'for user:', user.email, 'with role:', user.role);
+    }
+  }, [user, isAdmin]);
+
   const contextValue: AuthContextType = {
     user,
     loading,
     login,
     register,
     logout,
-    isAdmin: user?.role === 'ADMIN',
+    isAdmin,
     error,
     clearError,
   };

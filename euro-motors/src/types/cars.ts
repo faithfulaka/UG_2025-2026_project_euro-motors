@@ -1,4 +1,4 @@
-// src/types/cars.ts - FIXED VERSION
+// src/types/cars.ts
 export interface CarSpecifications {
   color: string;
   interiorColor: string;
