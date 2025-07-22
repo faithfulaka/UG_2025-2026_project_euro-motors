@@ -1,47 +1,13 @@
-# Dependencies
-node_modules/
-.pnp
-.pnp.js
+# Ignore virtual environment
+#myenv/
+#venv/
 
-# Production builds
-.next/
-out/
-build/
-dist/
+# Ignore database and compiled files
+#db.sqlite3
+#__pycache__/
+#*.pyc
+#*.pyo
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Ignore logs
+#debug.log source myenv/bin/activate
 
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# IDE
-.vscode/launch.json
-.vscode/tasks.json
-.idea/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Cache
-.eslintcache
-.stylelintcache
-*.tsbuildinfo
-
-# Coverage
-coverage/
-.nyc_output/
-
-# Database
-*.db
-*.sqlite
-
-# Prisma
-prisma/migrations/
