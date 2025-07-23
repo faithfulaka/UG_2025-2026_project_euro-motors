@@ -1,4 +1,4 @@
-// prisma/seed.js -
+// prisma/seed.js - COMPLETE FINAL VERSION (No TypeScript Errors)
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
