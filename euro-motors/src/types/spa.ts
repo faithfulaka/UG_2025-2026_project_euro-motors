@@ -1,345 +1,332 @@
-// src/types/spa.ts
-export interface CarQueryAPIResponse {
-  Makes?: Array<{
-    make_id: string;
-    make_display: string;
-    make_is_common: string;
-  }>;
-  Models?: Array<{
-    model_name: string;
-    model_make_id: string;
-  }>;
-  Trims?: Array<{
-    model_id: string;
-    model_make_id: string;
-    model_name: string;
-    model_trim: string;
-    model_year: string;
-    model_body: string;
-    model_engine_type: string;
-    model_engine_power_ps: string;
-    model_engine_power_rpm: string;
-    model_engine_torque_nm: string;
-    model_engine_torque_rpm: string;
-    model_top_speed_kph: string;
-    model_0_to_100_kph: string;
-    model_drive: string;
-    model_transmission_type: string;
-    model_seats: string;
-    model_doors: string;
-    model_weight_kg: string;
-    model_length_mm: string;
-    model_width_mm: string;
-    model_height_mm: string;
-    model_wheelbase_mm: string;
-    model_lkm_mixed: string;
-    model_fuel_cap_l: string;
-    model_co2: string;
-    model_make_display: string;
-  }>;
-}
+// src/types/spa.ts 
 
-// REAL MANUFACTURER CONFIGURATOR DATA
-export interface ManufacturerConfigData {
-  make: string;
-  model: string;
-  year: number;
-  basePrice: number;
-  currency: string;
-  configuratorUrl: string;
-  availableOptions: Array<{
-    category: string;
-    name: string;
-    price: number;
-    description?: string;
-  }>;
-  colors: Array<{
-    name: string;
-    price: number;
-    hex?: string;
-  }>;
-  interiorOptions: Array<{
-    name: string;
-    price: number;
-  }>;
-  packages: Array<{
-    name: string;
-    price: number;
-    includedFeatures: string[];
-  }>;
-}
-
-// REAL MARKET DATA FROM SCRAPERS
-export interface MarketData {
-  source: 'autotrader' | 'cars.com' | 'classic.com' | 'bringatrailer';
-  listings: Array<{
-    title: string;
-    price: number;
-    mileage?: number;
-    year: number;
-    location?: string;
-    dealerName?: string;
-    listingUrl: string;
-    images?: string[];
-    daysOnMarket?: number;
-  }>;
-  marketAnalysis: {
-    averagePrice: number;
-    priceRange: {
-      min: number;
-      max: number;
-    };
-    inventoryCount: number;
-    averageMileage?: number;
-    averageDaysOnMarket?: number;
-    pricePerMile?: number;
-  };
-  regionalData?: {
-    region: string;
-    averagePrice: number;
-    inventory: number;
-  }[];
-}
-
-// COMPREHENSIVE SPA SEARCH REQUEST
-export interface SPASearchRequest {
+// Base SPA Search Parameters
+export interface SPASearchParams {
   make: string;
   model: string;
   year?: number;
   trim?: string;
-  sources: ('database' | 'carquery' | 'manufacturer' | 'market' | 'auction')[];
-  includeHistorical?: boolean;
-  includeForecasting?: boolean;
-  maxResults?: number;
+  dataSource: 'comprehensive' | 'database' | 'carquery' | 'manufacturer' | 'market';
 }
 
-// COMPREHENSIVE SPA SEARCH RESPONSE
-export interface SPASearchResponse {
-  searchQuery: SPASearchRequest;
+// Auto-complete/Suggestion Types
+export interface SPASuggestion {
+  value: string;
+  label: string;
+  count?: number;
+  source: 'database' | 'carquery' | 'cache';
+}
+
+export interface SPASuggestionResponse {
+  success: boolean;
+  suggestions: SPASuggestion[];
+  source: string;
+  cached: boolean;
   timestamp: string;
-  processingTimeMs: number;
-  
-  // BASIC CAR INFO
-  vehicle: {
+}
+
+// CarQuery API Response Types
+export interface CarQueryMake {
+  make_id: string;
+  make_display: string;
+  make_is_common: string;
+  make_country?: string;
+}
+
+export interface CarQueryModel {
+  model_name: string;
+  model_make_id: string;
+  model_make_display: string;
+}
+
+export interface CarQueryTrim {
+  model_id: string;
+  model_make_id: string;
+  model_name: string;
+  model_trim: string;
+  model_year: string;
+  model_body: string;
+  model_engine_position: string;
+  model_engine_cc: string;
+  model_engine_cyl: string;
+  model_engine_type: string;
+  model_engine_valves_per_cyl: string;
+  model_engine_power_ps: string;
+  model_engine_power_rpm: string;
+  model_engine_torque_nm: string;
+  model_engine_torque_rpm: string;
+  model_top_speed_kph: string;
+  model_0_to_100_kph: string;
+  model_drive: string;
+  model_transmission_type: string;
+  model_seats: string;
+  model_doors: string;
+  model_weight_kg: string;
+  model_length_mm: string;
+  model_width_mm: string;
+  model_height_mm: string;
+  model_wheelbase_mm: string;
+  model_lkm_hwy: string;
+  model_lkm_mixed: string;
+  model_lkm_city: string;
+  model_fuel_cap_l: string;
+  model_sold_in_us: string;
+  model_co2: string;
+  model_make_display: string;
+}
+
+// Market Data Types (Autotrader, etc.)
+export interface MarketListing {
+  title: string;
+  price: string;
+  priceNumeric: number;
+  mileage?: string;
+  year?: number;
+  location?: string;
+  dealer?: string;
+  specs?: string;
+  url: string;
+  imageUrl?: string;
+  datePosted?: string;
+}
+
+export interface MarketData {
+  listings: MarketListing[];
+  averagePrice: number;
+  priceRange: string;
+  inventoryCount: number;
+  priceDistribution?: {
+    min: number;
+    max: number;
+    median: number;
+    q1: number;
+    q3: number;
+  };
+  dataSource: string;
+  searchParams: {
     make: string;
     model: string;
-    year: number;
-    trim?: string;
-    bodyType?: string;
-    category?: string;
+    year?: number;
   };
-  
-  // TECHNICAL SPECIFICATIONS (from CarQuery + Manufacturers)
-  specifications?: {
-    engine: {
-      type: string;
-      displacement?: string;
-      cylinders?: number;
-      configuration?: string;
-      fuelType: string;
-      fuelSystem?: string;
-    };
-    performance: {
-      horsepower: number;
-      horsepowerRPM?: number;
-      torque: number;
-      torqueRPM?: string;
-      acceleration0to60?: number;
-      acceleration0to100?: number;
-      topSpeed?: number;
-      topSpeedUnit?: 'mph' | 'kph';
-    };
-    drivetrain: {
-      transmission: string;
-      driveType: string;
-    };
-    dimensions: {
-      weight?: number;
-      length?: number;
-      width?: number;
-      height?: number;
-      wheelbase?: number;
-      groundClearance?: number;
-    };
-    efficiency: {
-      fuelEconomyCity?: number;
-      fuelEconomyHighway?: number;
-      fuelEconomyCombined?: number;
-      fuelTankCapacity?: number;
-      co2Emissions?: number;
-      emissionStandard?: string;
-    };
-  };
-  
-  // REAL PRICING DATA (from multiple sources)
-  pricing: {
-    // NEW CAR PRICING
-    newCar?: {
-      msrp: number;
-      startingPrice: number;
-      averagePaidPrice?: number;
-      incentives?: Array<{
-        type: string;
-        amount: number;
-        description: string;
-        expiresAt?: string;
-      }>;
-      financing?: {
-        apr: number;
-        terms: number[];
-        monthlyPaymentEstimate?: number;
-      };
-    };
-    
-    // USED CAR MARKET DATA
-    usedMarket?: {
-      averagePrice: number;
-      priceRange: {
-        min: number;
-        max: number;
-      };
-      priceByMileage?: Array<{
-        mileageRange: string;
-        averagePrice: number;
-        sampleSize: number;
-      }>;
-      priceByCondition?: Array<{
-        condition: 'excellent' | 'good' | 'fair' | 'poor';
-        averagePrice: number;
-      }>;
-      marketTrend: {
-        direction: 'rising' | 'falling' | 'stable';
-        changePercent: number;
-        timeframe: '30d' | '90d' | '1y';
-      };
-    };
-    
-    // AUCTION DATA
-    auctionHistory?: {
-      recentSales: Array<{
-        salePrice: number;
-        saleDate: string;
-        mileage?: number;
-        condition?: string;
-        auctionHouse: string;
-        lotNumber?: string;
-      }>;
-      averageSalePrice: number;
-      highestSale: number;
-      lowestSale: number;
-      totalSales: number;
-    };
-  };
-  
-  // CONFIGURATOR DATA (from manufacturer websites)
-  configurator?: ManufacturerConfigData;
-  
-  // MARKET ANALYSIS (from scraping)
-  marketData?: MarketData[];
-  
-  // OWNERSHIP COSTS
-  ownershipCosts?: {
-    insurance: {
-      averageAnnual: number;
-      group?: number;
-      factors?: string[];
-    };
-    maintenance: {
-      averageAnnual: number;
-      commonServices: Array<{
-        service: string;
-        intervalMiles: number;
-        averageCost: number;
-      }>;
-    };
-    depreciation: {
-      year1Percent: number;
-      year3Percent: number;
-      year5Percent: number;
-      projectedValue: {
-        year1: number;
-        year3: number;
-        year5: number;
-      };
-    };
-    totalCostOfOwnership: {
-      year1: number;
-      year3: number;
-      year5: number;
-    };
-  };
-  
-  // DATA SOURCES & CONFIDENCE
-  dataSources: {
-    carQuery: boolean;
-    manufacturerOfficial: boolean;
-    autotrader: boolean;
-    carscom: boolean;
-    classiccom: boolean;
-    bringatrailer: boolean;
-    edmunds: boolean;
-    kbb: boolean;
-  };
-  
-  confidence: {
-    specifications: 'high' | 'medium' | 'low';
-    pricing: 'high' | 'medium' | 'low';
-    marketData: 'high' | 'medium' | 'low';
-    overall: 'high' | 'medium' | 'low';
-  };
-  
-  // SUGGESTIONS & ALTERNATIVES
-  suggestions?: {
-    similarVehicles: Array<{
-      make: string;
-      model: string;
-      year: number;
-      priceComparison: 'higher' | 'similar' | 'lower';
-      keyDifferences: string[];
-    }>;
-    betterDeals?: Array<{
-      description: string;
-      savings: number;
-      source: string;
-    }>;
-  };
+  timestamp: string;
 }
 
-// AUTO-COMPLETE SUGGESTIONS
-export interface SPASuggestion {
-  type: 'make' | 'model' | 'year';
-  value: string;
-  displayName: string;
-  count?: number;
-  popular?: boolean;
+// Manufacturer Configurator Types
+export interface ManufacturerOption {
+  id?: string;
+  name: string;
+  description?: string;
+  price: number;
+  currency: string;
+  category?: string;
+  isPopular?: boolean;
+  availability?: 'standard' | 'optional' | 'package';
 }
 
-// ERROR HANDLING
-export interface SPAError {
-  code: 'NETWORK_ERROR' | 'SCRAPING_FAILED' | 'API_LIMIT' | 'NO_DATA_FOUND' | 'INVALID_INPUT';
-  message: string;
-  details?: any;
-  recoverable: boolean;
-  retryAfter?: number;
+export interface ManufacturerPricing {
+  basePrice: number;
+  currency: string;
+  totalPrice?: number;
+  options: ManufacturerOption[];
+  packages?: Array<{
+    name: string;
+    price: number;
+    options: string[];
+  }>;
+  deliveryTime?: string;
+  availability?: 'available' | 'limited' | 'custom_order';
 }
 
-// SPA SERVICE RESPONSE
-export interface SPAServiceResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: SPAError;
-  processingTime: number;
-  cached: boolean;
-  cacheExpiresAt?: string;
-}
-
-// CONTEXT-SPECIFIC SPA RESULT (For CarContext)
-export interface ContextSPAResult {
-  id: string;
+export interface ManufacturerData {
   make: string;
   model: string;
   year: number;
-  data: SPASearchResponse;
-  searchedAt: Date;
-  source: 'database' | 'carquery' | 'manufacturer' | 'market' | 'comprehensive';
+  trim?: string;
+  bodyType?: string;
+  pricing: ManufacturerPricing;
+  specifications?: {
+    engine?: string;
+    power?: string;
+    torque?: string;
+    transmission?: string;
+    drivetrain?: string;
+    acceleration?: string;
+    topSpeed?: string;
+    fuelEconomy?: string;
+  };
+  colors?: Array<{
+    name: string;
+    type: 'standard' | 'metallic' | 'special';
+    price?: number;
+    imageUrl?: string;
+  }>;
+  dataSource: string;
+  configuratorUrl?: string;
+  lastUpdated: string;
+}
+
+// Comprehensive SPA Result Types
+export interface ComprehensiveSPAData {
+  // Basic Info
+  make: string;
+  model: string;
+  year: number;
+  bodyType?: string;
+  trim?: string;
+
+  // CarQuery Technical Data
+  basicSpecifications?: {
+    make: string;
+    model: string;
+    year: number;
+    bodyType: string;
+    engine: string;
+    engineCC?: string;
+    cylinders?: string;
+    doors: number;
+    seats: number;
+    drivetrain?: string;
+    transmission?: string;
+    fuelType?: string;
+  };
+
+  // Enhanced Performance Data
+  performanceData?: {
+    engine: string;
+    horsePower: string;
+    torque: string;
+    acceleration060: string;
+    topSpeed: string;
+    transmission: string;
+    driveType: string;
+    weight: string;
+    fuelEconomy?: string;
+  };
+
+  // Real Market Pricing
+  pricingData?: {
+    baseMSRP?: number;
+    currentMarketRange: string;
+    averageDealerPrice: number;
+    dealerInventoryCount: number;
+    priceTrend: string;
+    priceDistribution?: {
+      min: number;
+      max: number;
+      median: number;
+    };
+  };
+
+  // Manufacturer Data
+  manufacturerData?: ManufacturerData;
+
+  // Market Data
+  marketData?: MarketData;
+
+  // Aggregated Options (for addedOptions field)
+  popularOptions?: Array<{
+    name: string;
+    frequency?: number;
+    source: 'manufacturer' | 'market' | 'database';
+  }>;
+
+  // Data Sources Used
+  dataSources: {
+    database: boolean;
+    carQuery: boolean;
+    manufacturer: boolean;
+    market: boolean;
+  };
+
+  // Metadata
+  dataSource: string;
+  searchQuery: SPASearchParams;
+  timestamp: string;
+  cacheExpiry?: string;
+}
+
+// Error Types
+export interface SPAError {
+  code: string;
+  message: string;
+  source?: string;
+  details?: Record<string, unknown>;
+  retryable?: boolean;
+  retryAfter?: number;
+}
+
+// API Response Types
+export interface SPASearchResponse {
+  success: boolean;
+  data?: ComprehensiveSPAData;
+  error?: SPAError;
+  meta: {
+    searchQuery: SPASearchParams;
+    executionTime: number;
+    timestamp: string;
+    version: string;
+  };
+}
+
+export interface SPAMakesResponse {
+  success: boolean;
+  makes: string[];
+  source: 'carquery' | 'database' | 'combined';
+  cached: boolean;
+  timestamp: string;
+  error?: SPAError;
+}
+
+export interface SPAModelsResponse {
+  success: boolean;
+  models: string[];
+  make: string;
+  source: 'carquery' | 'database' | 'combined';
+  cached: boolean;
+  timestamp: string;
+  error?: SPAError;
+}
+
+// Cache Types
+export interface SPACacheEntry {
+  key: string;
+  data: unknown;
+  timestamp: number;
+  expiry: number;
+  source: string;
+}
+
+// Scraper Configuration
+export interface ScraperConfig {
+  name: string;
+  baseUrl: string;
+  rateLimit: number; // requests per minute
+  timeout: number; // milliseconds
+  retries: number;
+  userAgent: string;
+  headers?: Record<string, string>;
+  proxy?: {
+    host: string;
+    port: number;
+    username?: string;
+    password?: string;
+  };
+}
+
+// Real-time Search Context (for frontend state)
+export interface SPASearchContext {
+  currentSearch: SPASearchParams | null;
+  searchResults: ComprehensiveSPAData | null;
+  searchHistory: Array<{
+    params: SPASearchParams;
+    timestamp: string;
+    resultSummary: string;
+  }>;
+  suggestions: {
+    makes: SPASuggestion[];
+    models: SPASuggestion[];
+    years: number[];
+  };
+  loading: boolean;
+  error: SPAError | null;
 }

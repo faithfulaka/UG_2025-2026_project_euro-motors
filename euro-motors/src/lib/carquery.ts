@@ -1,366 +1,403 @@
-// src/lib/carquery.ts 
-import { CarQueryAPIResponse, SPAServiceResponse, SPASuggestion } from '@/types/spa';
+// src/lib/carquery.ts - Enhanced CarQuery Service with Rate Limiting
+export interface CarQueryResponse {
+  Makes?: Array<{make_id: string; make_display: string; make_is_common: string}>;
+  Models?: Array<{model_name: string; model_make_id: string}>;
+  Trims?: Array<{
+    model_id: string;
+    model_make_id: string;
+    model_name: string;
+    model_trim: string;
+    model_year: string;
+    model_body: string;
+    model_engine_position: string;
+    model_engine_cc: string;
+    model_engine_cyl: string;
+    model_engine_type: string;
+    model_engine_valves_per_cyl: string;
+    model_engine_power_ps: string;
+    model_engine_power_rpm: string;
+    model_engine_torque_nm: string;
+    model_engine_torque_rpm: string;
+    model_engine_bore_mm: string;
+    model_engine_stroke_mm: string;
+    model_engine_compression: string;
+    model_engine_fuel: string;
+    model_top_speed_kph: string;
+    model_0_to_100_kph: string;
+    model_drive: string;
+    model_transmission_type: string;
+    model_seats: string;
+    model_doors: string;
+    model_weight_kg: string;
+    model_length_mm: string;
+    model_width_mm: string;
+    model_height_mm: string;
+    model_wheelbase_mm: string;
+    model_lkm_hwy: string;
+    model_lkm_mixed: string;
+    model_lkm_city: string;
+    model_fuel_cap_l: string;
+    model_sold_in_us: string;
+    model_co2: string;
+    model_make_display: string;
+  }>;
+}
 
-class EnhancedCarQueryService {
-  private baseUrl = 'https://www.carqueryapi.com/api/0.3/';
-  private cache = new Map<string, { data: any; expiresAt: number }>();
-  private cacheTimeout = 30 * 60 * 1000; // 30 minutes
-
-  // RATE LIMITING
-  private rateLimiter = {
-    requests: 0,
-    resetTime: Date.now() + 60000, // Reset every minute
-    maxRequests: 50 // Max 50 requests per minute
+interface CarQueryError {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    retryAfter?: number;
   };
+}
 
-  private async rateLimit(): Promise<void> {
-    const now = Date.now();
-    
-    if (now > this.rateLimiter.resetTime) {
-      this.rateLimiter.requests = 0;
-      this.rateLimiter.resetTime = now + 60000;
-    }
-    
-    if (this.rateLimiter.requests >= this.rateLimiter.maxRequests) {
-      const waitTime = this.rateLimiter.resetTime - now;
-      console.log(`⏳ Rate limit hit, waiting ${waitTime}ms`);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-      this.rateLimiter.requests = 0;
-      this.rateLimiter.resetTime = Date.now() + 60000;
-    }
-    
-    this.rateLimiter.requests++;
-  }
+interface CarQuerySuccess<T> {
+  success: true;
+  data: T;
+  cached: boolean;
+  timestamp: string;
+}
 
-  // CACHING HELPER
-  private getCached<T>(key: string): T | null {
-    const cached = this.cache.get(key);
-    if (cached && cached.expiresAt > Date.now()) {
-      return cached.data;
-    }
-    return null;
-  }
+type CarQueryResult<T> = CarQuerySuccess<T> | CarQueryError;
 
-  private setCache(key: string, data: any): void {
-    this.cache.set(key, {
-      data,
-      expiresAt: Date.now() + this.cacheTimeout
-    });
-  }
+class CarQueryService {
+  private baseUrl = 'https://www.carqueryapi.com/api/0.3/';
+  private cache = new Map<string, { data: any; timestamp: number }>();
+  private requestCount = 0;
+  private requestWindow = Date.now();
+  
+  // Rate limiting: 100 requests per hour
+  private readonly RATE_LIMIT = 100;
+  private readonly RATE_WINDOW = 60 * 60 * 1000; // 1 hour
+  private readonly CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+  private readonly REQUEST_TIMEOUT = 10000; // 10 seconds
 
-  // ENHANCED API CALL WITH ERROR HANDLING
-  private async apiCall<T>(endpoint: string): Promise<SPAServiceResponse<T>> {
-    const startTime = Date.now();
-    const cacheKey = endpoint;
-    
-    // Check cache first
-    const cached = this.getCached<T>(cacheKey);
-    if (cached) {
-      return {
-        success: true,
-        data: cached,
-        processingTime: Date.now() - startTime,
-        cached: true,
-        cacheExpiresAt: new Date(this.cache.get(cacheKey)!.expiresAt).toISOString()
-      };
-    }
-
+  private async apiCall(endpoint: string, params: Record<string, string> = {}): Promise<CarQueryResult<any>> {
     try {
-      await this.rateLimit();
+      // Check rate limiting
+      const now = Date.now();
+      if (now - this.requestWindow > this.RATE_WINDOW) {
+        this.requestCount = 0;
+        this.requestWindow = now;
+      }
+
+      if (this.requestCount >= this.RATE_LIMIT) {
+        const retryAfter = Math.ceil((this.RATE_WINDOW - (now - this.requestWindow)) / 1000);
+        return {
+          success: false,
+          error: {
+            code: 'RATE_LIMITED',
+            message: 'CarQuery API rate limit exceeded',
+            retryAfter
+          }
+        };
+      }
+
+      // Check cache
+      const cacheKey = `${endpoint}-${JSON.stringify(params)}`;
+      const cached = this.cache.get(cacheKey);
       
-      // Create AbortController for timeout
+      if (cached && (now - cached.timestamp < this.CACHE_TTL)) {
+        console.log(`✅ CarQuery cache hit: ${cacheKey}`);
+        return {
+          success: true,
+          data: cached.data,
+          cached: true,
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      // Build URL
+      const url = new URL(this.baseUrl);
+      url.searchParams.set('cmd', endpoint);
+      url.searchParams.set('format', 'json');
+      
+      Object.entries(params).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+      });
+
+      console.log(`🔍 CarQuery API call: ${endpoint}`, params);
+      
+      // Make request with timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-      
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      const timeoutId = setTimeout(() => controller.abort(), this.REQUEST_TIMEOUT);
+
+      const response = await fetch(url.toString(), {
+        signal: controller.signal,
         headers: {
-          'User-Agent': 'Euro-Motors-SPA/1.0',
-          'Accept': 'application/json'
-        },
-        signal: controller.signal
+          'User-Agent': process.env.SCRAPER_USER_AGENT || 'EuroMotors-SPA/1.0',
+          'Accept': 'application/json',
+        }
       });
 
       clearTimeout(timeoutId);
+      this.requestCount++;
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const data: T = await response.json();
-      
-      // Cache the result
-      this.setCache(cacheKey, data);
+      const data: CarQueryResponse = await response.json();
+
+      // Cache successful response
+      this.cache.set(cacheKey, {
+        data,
+        timestamp: now
+      });
 
       return {
         success: true,
         data,
-        processingTime: Date.now() - startTime,
-        cached: false
+        cached: false,
+        timestamp: new Date().toISOString()
       };
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`🚨 CarQuery API Error (${endpoint}):`, errorMessage);
+
+    } catch (error) {
+      console.error('CarQuery API error:', error);
       
-      return {
-        success: false,
-        error: {
-          code: error instanceof Error && error.name === 'AbortError' ? 'NETWORK_ERROR' : 'API_LIMIT',
-          message: errorMessage,
-          recoverable: true,
-          retryAfter: error instanceof Error && error.name === 'AbortError' ? 60 : 300
-        },
-        processingTime: Date.now() - startTime,
-        cached: false
-      };
-    }
-  }
-
-  // 🚗 GET ALL MAKES WITH SUGGESTIONS
-  async getMakes(search?: string): Promise<SPAServiceResponse<SPASuggestion[]>> {
-    const response = await this.apiCall<CarQueryAPIResponse>('?cmd=getMakes&format=json');
-    
-    if (!response.success || !response.data?.Makes) {
-      return {
-        success: false,
-        error: {
-          code: 'NO_DATA_FOUND',
-          message: 'No makes data available from CarQuery',
-          recoverable: true
-        },
-        processingTime: response.processingTime,
-        cached: false
-      };
-    }
-
-    let makes = response.data.Makes.map(make => ({
-      type: 'make' as const,
-      value: make.make_display,
-      displayName: make.make_display,
-      popular: make.make_is_common === '1'
-    }));
-
-    // Filter by search if provided
-    if (search) {
-      const searchLower = search.toLowerCase();
-      makes = makes.filter(make => 
-        make.value.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Sort: popular first, then alphabetical
-    makes.sort((a, b) => {
-      if (a.popular && !b.popular) return -1;
-      if (!a.popular && b.popular) return 1;
-      return a.value.localeCompare(b.value);
-    });
-
-    return {
-      success: true,
-      data: makes.slice(0, 20), // Limit to top 20 results
-      processingTime: response.processingTime,
-      cached: response.cached
-    };
-  }
-
-  // 🏷️ GET MODELS FOR SPECIFIC MAKE
-  async getModels(make: string, search?: string): Promise<SPAServiceResponse<SPASuggestion[]>> {
-    const endpoint = `?cmd=getModels&make=${encodeURIComponent(make)}&format=json`;
-    const response = await this.apiCall<CarQueryAPIResponse>(endpoint);
-    
-    if (!response.success || !response.data?.Models) {
-      return {
-        success: false,
-        error: {
-          code: 'NO_DATA_FOUND',
-          message: `No models found for ${make}`,
-          recoverable: true
-        },
-        processingTime: response.processingTime,
-        cached: false
-      };
-    }
-
-    let models = response.data.Models.map(model => ({
-      type: 'model' as const,
-      value: model.model_name,
-      displayName: model.model_name,
-      popular: false
-    }));
-
-    // Filter by search if provided
-    if (search) {
-      const searchLower = search.toLowerCase();
-      models = models.filter(model => 
-        model.value.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Remove duplicates and sort
-    const uniqueModels = Array.from(
-      new Map(models.map(m => [m.value, m])).values()
-    ).sort((a, b) => a.value.localeCompare(b.value));
-
-    return {
-      success: true,
-      data: uniqueModels.slice(0, 15), // Limit to 15 results
-      processingTime: response.processingTime,
-      cached: response.cached
-    };
-  }
-
-  // 📅 GET YEARS FOR SPECIFIC MAKE AND MODEL
-  async getYears(make: string, model: string): Promise<SPAServiceResponse<SPASuggestion[]>> {
-    const endpoint = `?cmd=getTrims&make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&format=json`;
-    const response = await this.apiCall<CarQueryAPIResponse>(endpoint);
-    
-    if (!response.success || !response.data?.Trims) {
-      return {
-        success: false,
-        error: {
-          code: 'NO_DATA_FOUND',
-          message: `No years found for ${make} ${model}`,
-          recoverable: true
-        },
-        processingTime: response.processingTime,
-        cached: false
-      };
-    }
-
-    // Extract unique years
-    const yearSet = new Set<number>();
-    response.data.Trims.forEach(trim => {
-      const year = parseInt(trim.model_year);
-      if (!isNaN(year) && year >= 1990 && year <= new Date().getFullYear() + 2) {
-        yearSet.add(year);
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          return {
+            success: false,
+            error: {
+              code: 'TIMEOUT',
+              message: 'CarQuery API request timed out',
+              retryAfter: 30
+            }
+          };
+        }
+        
+        if (error.message.includes('429')) {
+          return {
+            success: false,
+            error: {
+              code: 'API_RATE_LIMITED',
+              message: 'CarQuery API returned rate limit error',
+              retryAfter: 300 // 5 minutes
+            }
+          };
+        }
       }
-    });
 
-    const years = Array.from(yearSet)
-      .sort((a, b) => b - a) // Most recent first
-      .map(year => ({
-        type: 'year' as const,
-        value: year.toString(),
-        displayName: year.toString(),
-        popular: year >= new Date().getFullYear() - 3 // Last 3 years are popular
-      }));
-
-    return {
-      success: true,
-      data: years,
-      processingTime: response.processingTime,
-      cached: response.cached
-    };
-  }
-
-  // 🔍 GET COMPREHENSIVE CAR DATA
-  async getCarData(make: string, model: string, year: number): Promise<SPAServiceResponse<any>> {
-    const endpoint = `?cmd=getTrims&make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&year=${year}&format=json`;
-    const response = await this.apiCall<CarQueryAPIResponse>(endpoint);
-    
-    if (!response.success || !response.data?.Trims || response.data.Trims.length === 0) {
       return {
         success: false,
         error: {
-          code: 'NO_DATA_FOUND',
-          message: `No data found for ${make} ${model} ${year}`,
-          recoverable: true
-        },
-        processingTime: response.processingTime,
-        cached: false
+          code: 'API_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown CarQuery error'
+        }
       };
     }
+  }
 
-    const trim = response.data.Trims[0]; // Use first trim as primary data
-
-    // Convert and normalize the data
-    const carData = {
-      vehicle: {
-        make: trim.model_make_display || make,
-        model: trim.model_name || model,
-        year: parseInt(trim.model_year) || year,
-        trim: trim.model_trim || null,
-        bodyType: trim.model_body || null,
-      },
+  async getMakes(): Promise<string[]> {
+    try {
+      const result = await this.apiCall('getMakes');
       
-      specifications: {
-        engine: {
-          type: trim.model_engine_type || 'Unknown',
-          displacement: trim.model_engine_cc ? `${trim.model_engine_cc}cc` : undefined,
-          cylinders: parseInt(trim.model_engine_cyl) || undefined,
-          fuelType: 'Petrol', // Default for luxury cars
+      if (!result.success) {
+        console.error('CarQuery getMakes error:', result.error);
+        return [];
+      }
+
+      if (!result.data.Makes || !Array.isArray(result.data.Makes)) {
+        console.warn('CarQuery getMakes: No makes data');
+        return [];
+      }
+
+      const makes = result.data.Makes
+        .map((make: any) => make.make_display)
+        .filter((make: string) => make && make.trim())
+        .sort();
+
+      console.log(`✅ CarQuery getMakes: ${makes.length} makes retrieved`);
+      return makes;
+
+    } catch (error) {
+      console.error('CarQuery getMakes error:', error);
+      return [];
+    }
+  }
+
+  async getModels(make: string): Promise<string[]> {
+    try {
+      if (!make || !make.trim()) {
+        console.warn('CarQuery getModels: Empty make provided');
+        return [];
+      }
+
+      const result = await this.apiCall('getModels', { make: make.trim() });
+      
+      if (!result.success) {
+        console.error('CarQuery getModels error:', result.error);
+        return [];
+      }
+
+      if (!result.data.Models || !Array.isArray(result.data.Models)) {
+        console.warn(`CarQuery getModels: No models data for ${make}`);
+        return [];
+      }
+
+      const models = result.data.Models
+        .map((model: any) => model.model_name)
+        .filter((model: string) => model && model.trim())
+        .sort();
+
+      console.log(`✅ CarQuery getModels for ${make}: ${models.length} models retrieved`);
+      return models;
+
+    } catch (error) {
+      console.error('CarQuery getModels error:', error);
+      return [];
+    }
+  }
+
+  async getTrims(make: string, model: string, year?: number): Promise<CarQueryResponse['Trims']> {
+    try {
+      if (!make || !model) {
+        console.warn('CarQuery getTrims: Missing make or model');
+        return [];
+      }
+
+      const params: Record<string, string> = {
+        make: make.trim(),
+        model: model.trim()
+      };
+
+      if (year) {
+        params.year = year.toString();
+      }
+
+      const result = await this.apiCall('getTrims', params);
+      
+      if (!result.success) {
+        console.error('CarQuery getTrims error:', result.error);
+        return [];
+      }
+
+      if (!result.data.Trims || !Array.isArray(result.data.Trims)) {
+        console.warn(`CarQuery getTrims: No trims data for ${make} ${model} ${year || 'any'}`);
+        return [];
+      }
+
+      console.log(`✅ CarQuery getTrims for ${make} ${model} ${year || 'any'}: ${result.data.Trims.length} trims retrieved`);
+      return result.data.Trims;
+
+    } catch (error) {
+      console.error('CarQuery getTrims error:', error);
+      return [];
+    }
+  }
+
+  async getYears(make: string, model: string): Promise<number[]> {
+    try {
+      const trims = await this.getTrims(make, model);
+      
+      if (!trims || trims.length === 0) {
+        return [];
+      }
+
+      const years = [...new Set(
+        trims
+          .map(trim => parseInt(trim.model_year))
+          .filter(year => !isNaN(year) && year > 1990 && year <= new Date().getFullYear() + 2)
+      )].sort((a, b) => b - a); // Most recent first
+
+      console.log(`✅ CarQuery getYears for ${make} ${model}: ${years.length} years found`);
+      return years;
+
+    } catch (error) {
+      console.error('CarQuery getYears error:', error);
+      return [];
+    }
+  }
+
+  async getCarData(make: string, model: string, year: number): Promise<any> {
+    try {
+      const trims = await this.getTrims(make, model, year);
+      
+      if (!trims || trims.length === 0) {
+        console.warn(`CarQuery getCarData: No data for ${make} ${model} ${year}`);
+        return null;
+      }
+
+      // Use the first trim as primary data
+      const trim = trims[0];
+
+      // Convert and enhance the data
+      const carData = {
+        basicSpecifications: {
+          make: trim.model_make_display,
+          model: trim.model_name,
+          year: parseInt(trim.model_year),
+          bodyType: trim.model_body || 'Unknown',
+          engine: trim.model_engine_type || 'Unknown',
+          engineCC: trim.model_engine_cc,
+          cylinders: trim.model_engine_cyl,
+          doors: parseInt(trim.model_doors) || 4,
+          seats: parseInt(trim.model_seats) || 5,
+          drivetrain: trim.model_drive,
+          transmission: trim.model_transmission_type,
+          fuelType: trim.model_engine_fuel
         },
         
-        performance: {
-          horsepower: parseInt(trim.model_engine_power_ps) || 0,
-          horsepowerRPM: parseInt(trim.model_engine_power_rpm) || undefined,
-          torque: parseInt(trim.model_engine_torque_nm) || 0,
-          torqueRPM: trim.model_engine_torque_rpm || undefined,
-          acceleration0to100: trim.model_0_to_100_kph ? parseFloat(trim.model_0_to_100_kph) : undefined,
-          topSpeed: trim.model_top_speed_kph ? parseInt(trim.model_top_speed_kph) : undefined,
-          topSpeedUnit: 'kph' as const,
-        },
-        
-        drivetrain: {
+        performanceData: {
+          engine: trim.model_engine_type || 'Unknown',
+          horsePower: trim.model_engine_power_ps ? 
+            `${trim.model_engine_power_ps} PS @ ${trim.model_engine_power_rpm || 'N/A'} RPM` : 
+            'N/A',
+          torque: trim.model_engine_torque_nm ? 
+            `${trim.model_engine_torque_nm} Nm @ ${trim.model_engine_torque_rpm || 'N/A'} RPM` : 
+            'N/A',
+          acceleration060: trim.model_0_to_100_kph ? 
+            `${(parseFloat(trim.model_0_to_100_kph) * 0.621371).toFixed(1)} seconds` : 
+            'N/A',
+          topSpeed: trim.model_top_speed_kph ? 
+            `${(parseFloat(trim.model_top_speed_kph) * 0.621371).toFixed(0)} mph` : 
+            'N/A',
           transmission: trim.model_transmission_type || 'Unknown',
           driveType: trim.model_drive || 'Unknown',
+          weight: trim.model_weight_kg ? `${trim.model_weight_kg} kg` : 'N/A',
+          fuelEconomy: trim.model_lkm_mixed ? 
+            `${(100 / parseFloat(trim.model_lkm_mixed) * 2.352).toFixed(1)} mpg combined` : 
+            'N/A'
         },
         
-        dimensions: {
-          weight: trim.model_weight_kg ? parseInt(trim.model_weight_kg) : undefined,
-          length: trim.model_length_mm ? parseInt(trim.model_length_mm) : undefined,
-          width: trim.model_width_mm ? parseInt(trim.model_width_mm) : undefined,
-          height: trim.model_height_mm ? parseInt(trim.model_height_mm) : undefined,
-          wheelbase: trim.model_wheelbase_mm ? parseInt(trim.model_wheelbase_mm) : undefined,
-        },
-        
-        efficiency: {
-          fuelEconomyCombined: trim.model_lkm_mixed ? parseFloat(trim.model_lkm_mixed) : undefined,
-          fuelTankCapacity: trim.model_fuel_cap_l ? parseFloat(trim.model_fuel_cap_l) : undefined,
-          co2Emissions: trim.model_co2 ? parseInt(trim.model_co2) : undefined,
-        }
-      },
-      
-      dataSources: {
-        carQuery: true,
-        manufacturerOfficial: false,
-        autotrader: false,
-        carscom: false,
-        classiccom: false,
-        bringatrailer: false,
-        edmunds: false,
-        kbb: false
-      },
-      
-      confidence: {
-        specifications: 'high' as const,
-        pricing: 'low' as const, // CarQuery doesn't provide pricing
-        marketData: 'low' as const,
-        overall: 'medium' as const
-      }
-    };
+        dataSource: 'CarQuery API',
+        availableTrims: trims.length,
+        lastUpdated: new Date().toISOString()
+      };
 
-    return {
-      success: true,
-      data: carData,
-      processingTime: response.processingTime,
-      cached: response.cached
-    };
+      console.log(`✅ CarQuery getCarData: Complete data for ${make} ${model} ${year}`);
+      return carData;
+
+    } catch (error) {
+      console.error('CarQuery getCarData error:', error);
+      return null;
+    }
   }
 
-  // 🧹 CACHE MANAGEMENT
+  // Utility methods
   clearCache(): void {
     this.cache.clear();
-    console.log('✅ CarQuery cache cleared');
+    console.log('🧹 CarQuery cache cleared');
   }
 
-  getCacheInfo() {
+  getCacheStats(): { size: number; keys: string[] } {
     return {
       size: this.cache.size,
-      entries: Array.from(this.cache.keys()),
-      rateLimiter: this.rateLimiter
+      keys: Array.from(this.cache.keys())
+    };
+  }
+
+  getRateLimitStatus(): { remaining: number; resetTime: number } {
+    const now = Date.now();
+    const windowReset = this.requestWindow + this.RATE_WINDOW;
+    
+    return {
+      remaining: Math.max(0, this.RATE_LIMIT - this.requestCount),
+      resetTime: windowReset
     };
   }
 }
 
-// Export singleton instance
-export const carQueryService = new EnhancedCarQueryService();
+export const carQueryService = new CarQueryService();

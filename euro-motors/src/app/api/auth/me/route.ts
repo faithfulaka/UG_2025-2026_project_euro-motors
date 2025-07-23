@@ -1,7 +1,18 @@
-// src/app/api/auth/me/route.ts
+// src/app/api/auth/me/route.ts - 
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
+
+interface JWTPayload {
+  userId: string;
+  email: string;
+}
+
+interface CustomJWTError extends Error {
+  name: string;
+  message: string;
+  expiredAt?: Date;
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_change_in_production';
 
@@ -26,14 +37,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'No token provided' }, { status: 401 });
     }
 
-    // Verify and decode the token
-    let decoded;
+    // Verify and decode the token with proper error handling
+    let decoded: JWTPayload;
     try {
-      decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
+      decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
       console.log('🔓 [AUTH ME] Token decoded for userId:', decoded.userId);
-    } catch (jwtError) {
-      console.log('❌ [AUTH ME] JWT verification failed:', jwtError.message);
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    } catch (jwtError: unknown) {
+      // FIXED: Proper TypeScript error handling
+      const error = jwtError as CustomJWTError;
+      console.log('❌ [AUTH ME] JWT verification failed:', error.message);
+      
+      let errorMessage = 'Invalid token';
+      if (error.name === 'TokenExpiredError') {
+        errorMessage = 'Token expired';
+      } else if (error.name === 'JsonWebTokenError') {
+        errorMessage = 'Malformed token';
+      } else if (error.name === 'NotBeforeError') {
+        errorMessage = 'Token not active';
+      }
+      
+      return NextResponse.json({ 
+        error: errorMessage,
+        code: error.name 
+      }, { status: 401 });
     }
     
     // Get user from database
@@ -56,8 +82,15 @@ export async function GET(request: NextRequest) {
     console.log('🎯 [AUTH ME] Is Admin:', user.role === 'ADMIN');
 
     return NextResponse.json({ user });
-  } catch (error) {
+    
+  } catch (error: unknown) {
     console.error('❌ [AUTH ME] Error:', error);
-    return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });
+    
+    // FIXED: Proper unknown error handling
+    const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+    
+    return NextResponse.json({ 
+      error: errorMessage 
+    }, { status: 500 });
   }
 }

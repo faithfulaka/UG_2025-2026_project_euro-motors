@@ -1,353 +1,513 @@
-// src/app/api/spa/search/route.ts
+// src/app/api/spa/search/route.ts - Enhanced Real SPA with Live Data
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { carQueryService } from '@/lib/carquery';
-import { manufacturerScraperService } from '@/lib/spa-services/manufacturer-scrapers';
-import { marketScraperService } from '@/lib/scrapers/market-scrapers';
-import { SPASearchRequest, SPASearchResponse } from '@/types/spa';
+import { autotraderScraper } from '@/lib/scrapers/autotrader';
+import { manufacturerScraper } from '@/lib/spa-services/manufacturer-scrapers';
+import { SPASearchResponse, ComprehensiveSPAData, SPASearchParams } from '@/types/spa';
+
+// Rate limiting and caching
+const COMPREHENSIVE_SEARCH_CACHE = new Map<string, {
+  data: ComprehensiveSPAData;
+  timestamp: number;
+}>();
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes for search results
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   
   try {
-    const searchRequest: SPASearchRequest = await request.json();
-    const { make, model, year, sources, maxResults = 50 } = searchRequest;
+    const searchParams: SPASearchParams = await request.json();
+    const { make, model, year, dataSource = 'comprehensive' } = searchParams;
 
-    // Input validation
     if (!make || !model) {
       return NextResponse.json({
         success: false,
         error: {
-          code: 'INVALID_INPUT',
+          code: 'INVALID_PARAMS',
           message: 'Make and model are required',
-          recoverable: false
+          source: 'spa-search-api'
+        },
+        meta: {
+          searchQuery: searchParams,
+          executionTime: Date.now() - startTime,
+          timestamp: new Date().toISOString(),
+          version: '2.0.0'
         }
-      }, { status: 400 });
+      } as SPASearchResponse, { status: 400 });
     }
 
-    console.log(`🚀 COMPREHENSIVE SPA SEARCH: ${make} ${model} ${year || 'any'}`);
-    console.log(`📊 Sources requested: ${sources?.join(', ') || 'all'}`);
+    console.log(`🔍 Enhanced SPA Search: ${make} ${model} ${year || 'any'} (Source: ${dataSource})`);
 
-    // Initialize response object
-    const spaResponse: SPASearchResponse = {
-      searchQuery: searchRequest,
-      timestamp: new Date().toISOString(),
-      processingTimeMs: 0,
-      vehicle: {
-        make: make.trim(),
-        model: model.trim(),
-        year: year || new Date().getFullYear()
-      },
-      dataSources: {
-        carQuery: false,
-        manufacturerOfficial: false,
-        autotrader: false,
-        carscom: false,
-        classiccom: false,
-        bringatrailer: false,
-        edmunds: false,
-        kbb: false
-      },
-      confidence: {
-        specifications: 'low',
-        pricing: 'low',
-        marketData: 'low',
-        overall: 'low'
-      }
-    };
-
-    // Determine which sources to use
-    const enabledSources = sources || ['database', 'carquery', 'manufacturer', 'market'];
-
-    // 🗄️ DATABASE SEARCH (Our existing comprehensive data)
-    let databaseData = null;
-    if (enabledSources.includes('database')) {
-      console.log('🔍 Searching database...');
-      try {
-        const dbCars = await prisma.buyCar.findMany({
-          where: {
-            make: { contains: make, mode: 'insensitive' },
-            model: { contains: model, mode: 'insensitive' },
-            ...(year && { year: parseInt(year.toString()) })
-          },
-          select: {
-            id: true, make: true, model: true, year: true, price: true,
-            baseMSRP: true, supercarData: true, performanceData: true, pricingData: true,
-            specifications: true, features: true, addedOptions: true
-          },
-          take: 1
-        });
-
-        if (dbCars.length > 0) {
-          const car = dbCars[0];
-          
-          // Parse JSON fields safely
-          const supercarData = typeof car.supercarData === 'string' 
-            ? JSON.parse(car.supercarData) 
-            : car.supercarData;
-          
-          const performanceData = typeof car.performanceData === 'string'
-            ? JSON.parse(car.performanceData)
-            : car.performanceData;
-
-          if (supercarData && performanceData) {
-            databaseData = supercarData;
-            spaResponse.dataSources.carQuery = true; // Our DB has CarQuery-enhanced data
-            spaResponse.confidence.specifications = 'high';
-            spaResponse.confidence.pricing = 'high';
-            
-            console.log('✅ Found comprehensive data in database');
-          }
-        }
-      } catch (dbError) {
-        console.error('❌ Database search error:', dbError);
-      }
-    }
-
-    // 🔍 CARQUERY API (Technical specifications)
-    if (enabledSources.includes('carquery')) {
-      console.log('🔍 Querying CarQuery API...');
-      try {
-        const carQueryResult = await carQueryService.getCarData(make, model, year || new Date().getFullYear());
-        
-        if (carQueryResult.success && carQueryResult.data) {
-          spaResponse.specifications = carQueryResult.data.specifications;
-          spaResponse.dataSources.carQuery = true;
-          spaResponse.confidence.specifications = 'high';
-          
-          console.log('✅ CarQuery API data retrieved');
-        } else {
-          console.log('⚠️ CarQuery API: No data found');
-        }
-      } catch (carQueryError) {
-        console.error('❌ CarQuery error:', carQueryError);
-      }
-    }
-
-    // 🏭 MANUFACTURER CONFIGURATOR (Official pricing)
-    let manufacturerData = null;
-    if (enabledSources.includes('manufacturer')) {
-      console.log('🏭 Scraping manufacturer configurator...');
-      try {
-        const manufacturerResult = await manufacturerScraperService.scrapeManufacturerData(
-          make.toLowerCase(), 
-          model, 
-          year
-        );
-        
-        if (manufacturerResult.success && manufacturerResult.data) {
-          manufacturerData = manufacturerResult.data;
-          spaResponse.configurator = manufacturerData;
-          spaResponse.dataSources.manufacturerOfficial = true;
-          
-          // Set pricing from manufacturer if available
-          if (manufacturerData.basePrice > 0) {
-            spaResponse.pricing = {
-              newCar: {
-                msrp: manufacturerData.basePrice,
-                startingPrice: manufacturerData.basePrice,
-                financing: {
-                  apr: 4.9, // Default APR for luxury cars
-                  terms: [36, 48, 60, 72],
-                  monthlyPaymentEstimate: Math.round(manufacturerData.basePrice * 0.02) // Rough estimate
-                }
-              }
-            };
-            spaResponse.confidence.pricing = 'high';
-          }
-          
-          console.log(`✅ Manufacturer data: £${manufacturerData.basePrice.toLocaleString()}, ${manufacturerData.availableOptions.length} options`);
-        } else {
-          console.log(`⚠️ Manufacturer scraping failed: ${manufacturerResult.error?.message}`);
-        }
-      } catch (manufacturerError) {
-        console.error('❌ Manufacturer scraping error:', manufacturerError);
-      }
-    }
-
-    // 📊 MARKET DATA (Used car pricing and inventory)
-    if (enabledSources.includes('market')) {
-      console.log('📊 Scraping market data...');
-      try {
-        const marketResult = await marketScraperService.scrapeAllMarketData(make, model, year);
-        
-        if (marketResult.success && marketResult.data) {
-          spaResponse.marketData = marketResult.data;
-          
-          // Aggregate market data for used car pricing
-          const allListings = marketResult.data.flatMap(source => source.listings);
-          if (allListings.length > 0) {
-            const prices = allListings.map(l => l.price).filter(p => p > 0);
-            const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
-            
-            spaResponse.pricing = {
-              ...spaResponse.pricing,
-              usedMarket: {
-                averagePrice: Math.round(avgPrice),
-                priceRange: {
-                  min: Math.min(...prices),
-                  max: Math.max(...prices)
-                },
-                marketTrend: {
-                  direction: 'stable' as const,
-                  changePercent: 0,
-                  timeframe: '30d' as const
-                }
-              }
-            };
-            
-            spaResponse.dataSources.autotrader = true;
-            spaResponse.dataSources.carscom = true;
-            spaResponse.dataSources.classiccom = true;
-            spaResponse.dataSources.bringatrailer = true;
-            spaResponse.confidence.marketData = 'high';
-          }
-          
-          console.log(`✅ Market data: ${allListings.length} listings from ${marketResult.data.length} sources`);
-        } else {
-          console.log('⚠️ Market data scraping failed');
-        }
-      } catch (marketError) {
-        console.error('❌ Market scraping error:', marketError);
-      }
-    }
-
-    // 💰 ENHANCED PRICING WITH DATABASE FALLBACK
-    if (!spaResponse.pricing && databaseData) {
-      console.log('💰 Using database pricing data...');
+    // Check cache for comprehensive searches
+    if (dataSource === 'comprehensive') {
+      const cacheKey = `${make}-${model}-${year || 'any'}`;
+      const cached = COMPREHENSIVE_SEARCH_CACHE.get(cacheKey);
       
-      if (databaseData.pricingData) {
-        spaResponse.pricing = {
-          newCar: {
-            msrp: databaseData.pricingData.baseMSRP || databaseData.pricingData.averageDealerPrice,
-            startingPrice: databaseData.pricingData.averageDealerPrice,
-            financing: {
-              apr: 4.9,
-              terms: [36, 48, 60, 72],
-              monthlyPaymentEstimate: Math.round((databaseData.pricingData.averageDealerPrice || 0) * 0.02)
-            }
+      if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+        console.log('✅ Returning cached comprehensive search result');
+        
+        return NextResponse.json({
+          success: true,
+          data: cached.data,
+          meta: {
+            searchQuery: searchParams,
+            executionTime: Date.now() - startTime,
+            timestamp: new Date().toISOString(),
+            version: '2.0.0'
           }
-        };
+        } as SPASearchResponse);
       }
     }
 
-    // 🏆 OWNERSHIP COSTS (Enhanced with real data)
-    if (databaseData?.ownershipCosts || manufacturerData) {
-      const basePrice = spaResponse.pricing?.newCar?.msrp || databaseData?.pricingData?.baseMSRP || 150000;
-      
-      spaResponse.ownershipCosts = {
-        insurance: {
-          averageAnnual: Math.round(basePrice * 0.02), // 2% of vehicle value
-          group: 50,
-          factors: ['High performance', 'Luxury vehicle', 'High repair costs']
-        },
-        maintenance: {
-          averageAnnual: Math.round(basePrice * 0.03), // 3% of vehicle value
-          commonServices: [
-            { service: 'Annual service', intervalMiles: 12000, averageCost: 1500 },
-            { service: 'Brake pads', intervalMiles: 30000, averageCost: 2000 },
-            { service: 'Tires (set)', intervalMiles: 25000, averageCost: 1800 }
-          ]
-        },
-        depreciation: {
-          year1Percent: 15,
-          year3Percent: 35,
-          year5Percent: 48,
-          projectedValue: {
-            year1: Math.round(basePrice * 0.85),
-            year3: Math.round(basePrice * 0.65),
-            year5: Math.round(basePrice * 0.52)
+    let responseData: ComprehensiveSPAData | null = null;
+
+    // Route to appropriate search method
+    switch (dataSource) {
+      case 'database':
+        responseData = await searchDatabase(make, model, year);
+        break;
+        
+      case 'carquery':
+        responseData = await searchCarQuery(make, model, year);
+        break;
+        
+      case 'manufacturer':
+        responseData = await searchManufacturer(make, model, year);
+        break;
+        
+      case 'market':
+        responseData = await searchMarketData(make, model, year);
+        break;
+        
+      case 'comprehensive':
+      default:
+        responseData = await comprehensiveSearch(make, model, year);
+        break;
+    }
+
+    if (!responseData) {
+      return NextResponse.json({
+        success: false,
+        error: {
+          code: 'NO_DATA_FOUND',
+          message: `No data found for ${make} ${model} ${year || ''}`,
+          source: 'spa-search-api',
+          details: {
+            suggestion: 'Try different spelling or check if the car exists',
+            availableDataSources: ['database', 'carquery', 'manufacturer', 'market', 'comprehensive']
           }
         },
-        totalCostOfOwnership: {
-          year1: Math.round(basePrice * 0.25), // Initial depreciation + costs
-          year3: Math.round(basePrice * 0.55),
-          year5: Math.round(basePrice * 0.75)
+        meta: {
+          searchQuery: searchParams,
+          executionTime: Date.now() - startTime,
+          timestamp: new Date().toISOString(),
+          version: '2.0.0'
         }
-      };
+      } as SPASearchResponse, { status: 404 });
     }
 
-    // 📈 OVERALL CONFIDENCE CALCULATION
-    const confidenceScores = {
-      specifications: spaResponse.confidence.specifications === 'high' ? 3 : spaResponse.confidence.specifications === 'medium' ? 2 : 1,
-      pricing: spaResponse.confidence.pricing === 'high' ? 3 : spaResponse.confidence.pricing === 'medium' ? 2 : 1,
-      marketData: spaResponse.confidence.marketData === 'high' ? 3 : spaResponse.confidence.marketData === 'medium' ? 2 : 1
-    };
-    
-    const avgConfidence = (confidenceScores.specifications + confidenceScores.pricing + confidenceScores.marketData) / 3;
-    spaResponse.confidence.overall = avgConfidence >= 2.5 ? 'high' : avgConfidence >= 1.5 ? 'medium' : 'low';
-
-    // 🎯 SUGGESTIONS (Based on data quality)
-    const activeSources = Object.values(spaResponse.dataSources).filter(Boolean).length;
-    if (activeSources < 2) {
-      spaResponse.suggestions = {
-        similarVehicles: [
-          {
-            make: make,
-            model: model + ' (different year)',
-            year: (year || new Date().getFullYear()) - 1,
-            priceComparison: 'lower',
-            keyDifferences: ['Previous model year', 'May have lower price']
-          }
-        ],
-        betterDeals: [
-          {
-            description: 'Try searching with broader criteria',
-            savings: 0,
-            source: 'Search suggestion'
-          }
-        ]
-      };
+    // Cache comprehensive results
+    if (dataSource === 'comprehensive') {
+      const cacheKey = `${make}-${model}-${year || 'any'}`;
+      COMPREHENSIVE_SEARCH_CACHE.set(cacheKey, {
+        data: responseData,
+        timestamp: Date.now()
+      });
     }
 
-    // Final processing time
-    spaResponse.processingTimeMs = Date.now() - startTime;
-
-    console.log(`✅ SPA SEARCH COMPLETE: ${activeSources} sources, ${spaResponse.confidence.overall} confidence, ${spaResponse.processingTimeMs}ms`);
+    const executionTime = Date.now() - startTime;
+    console.log(`✅ Enhanced SPA Search completed in ${executionTime}ms`);
 
     return NextResponse.json({
       success: true,
-      data: spaResponse,
+      data: responseData,
       meta: {
-        searchQuery: searchRequest,
-        sourcesUsed: Object.entries(spaResponse.dataSources).filter(([_, active]) => active).map(([source]) => source),
-        processingTime: spaResponse.processingTimeMs,
-        cacheStatus: 'fresh'
+        searchQuery: searchParams,
+        executionTime,
+        timestamp: new Date().toISOString(),
+        version: '2.0.0'
       }
-    });
+    } as SPASearchResponse);
 
-  } catch (error: any) {
-    console.error('🚨 SPA SEARCH ERROR:', error);
+  } catch (error) {
+    console.error('❌ Enhanced SPA search error:', error);
     
     return NextResponse.json({
       success: false,
       error: {
-        code: 'SEARCH_FAILED',
-        message: error.message || 'Comprehensive search failed',
-        recoverable: true,
-        retryAfter: 60
+        code: 'SEARCH_ERROR',
+        message: error instanceof Error ? error.message : 'Search failed',
+        source: 'spa-search-api'
       },
-      processingTimeMs: Date.now() - startTime
-    }, { status: 500 });
+      meta: {
+        searchQuery: {} as SPASearchParams,
+        executionTime: Date.now() - startTime,
+        timestamp: new Date().toISOString(),
+        version: '2.0.0'
+      }
+    } as SPASearchResponse, { status: 500 });
   }
 }
 
-// GET method for quick health check
-export async function GET() {
-  const supportedManufacturers = manufacturerScraperService.getSupportedManufacturers();
-  const marketSources = marketScraperService.getCacheStats().sources;
-  
-  return NextResponse.json({
-    status: 'SPA Service Operational',
-    capabilities: {
-      carQueryAPI: true,
-      manufacturerScrapers: supportedManufacturers.length,
-      marketScrapers: marketSources.length,
-      databaseIntegration: true
-    },
-    supportedManufacturers,
-    marketSources,
-    version: '2.0',
-    lastUpdated: new Date().toISOString()
-  });
+// Database search (enhanced)
+async function searchDatabase(make: string, model: string, year?: number): Promise<ComprehensiveSPAData | null> {
+  try {
+    const buyCars = await prisma.buyCar.findMany({
+      where: {
+        make: { contains: make, mode: 'insensitive' },
+        model: { contains: model, mode: 'insensitive' },
+        ...(year && { year: year })
+      },
+      select: {
+        id: true, make: true, model: true, year: true, price: true,
+        baseMSRP: true, supercarData: true, performanceData: true, 
+        pricingData: true, addedOptions: true, trim: true
+      },
+      take: 1
+    });
+
+    if (buyCars.length === 0) return null;
+
+    const car = buyCars[0];
+    let supercarData = null;
+    let performanceData = null;
+    let pricingData = null;
+    let addedOptions: string[] = [];
+    
+    try {
+      if (car.supercarData) {
+        supercarData = typeof car.supercarData === 'string' 
+          ? JSON.parse(car.supercarData) 
+          : car.supercarData;
+      }
+      if (car.performanceData) {
+        performanceData = typeof car.performanceData === 'string'
+          ? JSON.parse(car.performanceData)
+          : car.performanceData;
+      }
+      if (car.pricingData) {
+        pricingData = typeof car.pricingData === 'string'
+          ? JSON.parse(car.pricingData)
+          : car.pricingData;
+      }
+      if (car.addedOptions) {
+        addedOptions = typeof car.addedOptions === 'string'
+          ? JSON.parse(car.addedOptions)
+          : car.addedOptions;
+      }
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError);
+    }
+
+    return {
+      make: car.make,
+      model: car.model,
+      year: car.year,
+      trim: car.trim,
+      bodyType: supercarData?.bodyType || 'Unknown',
+      
+      performanceData: performanceData || {
+        engine: 'N/A',
+        horsePower: 'N/A',
+        torque: 'N/A',
+        acceleration060: 'N/A',
+        topSpeed: 'N/A',
+        transmission: 'N/A',
+        driveType: 'N/A',
+        weight: 'N/A'
+      },
+      
+      pricingData: pricingData ? {
+        baseMSRP: pricingData.baseMSRP,
+        currentMarketRange: pricingData.currentMarketRange,
+        averageDealerPrice: pricingData.averageDealerPrice || car.price,
+        dealerInventoryCount: pricingData.dealerInventoryCount || 1,
+        priceTrend: pricingData.priceTrend || 'Stable'
+      } : {
+        baseMSRP: car.baseMSRP,
+        currentMarketRange: `£${Math.round(car.price * 0.95).toLocaleString()} - £${Math.round(car.price * 1.05).toLocaleString()}`,
+        averageDealerPrice: car.price,
+        dealerInventoryCount: 1,
+        priceTrend: 'Database pricing'
+      },
+      
+      popularOptions: addedOptions.map(option => ({
+        name: option,
+        source: 'database' as const
+      })),
+
+      dataSources: {
+        database: true,
+        carQuery: false,
+        manufacturer: false,
+        market: false
+      },
+      
+      dataSource: 'MySQL Database',
+      searchQuery: { make, model, year, dataSource: 'database' },
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (error) {
+    console.error('Database search error:', error);
+    return null;
+  }
+}
+
+// CarQuery API search (enhanced)
+async function searchCarQuery(make: string, model: string, year?: number): Promise<ComprehensiveSPAData | null> {
+  try {
+    const carData = await carQueryService.getCarData(make, model, year || 2022);
+    
+    if (!carData) return null;
+
+    return {
+      make,
+      model,
+      year: year || 2022,
+      bodyType: carData.basicSpecifications?.bodyType || 'Unknown',
+      
+      basicSpecifications: carData.basicSpecifications,
+      performanceData: carData.performanceData,
+      
+      pricingData: {
+        baseMSRP: 0, // CarQuery doesn't provide pricing
+        currentMarketRange: 'N/A',
+        averageDealerPrice: 0,
+        dealerInventoryCount: 0,
+        priceTrend: 'CarQuery API - No pricing data'
+      },
+
+      dataSources: {
+        database: false,
+        carQuery: true,
+        manufacturer: false,
+        market: false
+      },
+      
+      dataSource: 'CarQuery API',
+      searchQuery: { make, model, year, dataSource: 'carquery' },
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (error) {
+    console.error('CarQuery search error:', error);
+    return null;
+  }
+}
+
+// Manufacturer search (real scrapers)
+async function searchManufacturer(make: string, model: string, year?: number): Promise<ComprehensiveSPAData | null> {
+  try {
+    const manufacturerData = await manufacturerScraper.scrapeWithDelay(make, model);
+    
+    if (!manufacturerData || manufacturerData.error) return null;
+
+    return {
+      make,
+      model,
+      year: year || new Date().getFullYear(),
+      bodyType: manufacturerData.bodyType || 'Unknown',
+      
+      performanceData: manufacturerData.performanceData,
+      pricingData: manufacturerData.pricingData,
+      
+      manufacturerData: {
+        make,
+        model,
+        year: year || new Date().getFullYear(),
+        pricing: {
+          basePrice: manufacturerData.pricingData?.baseMSRP || 0,
+          currency: 'GBP',
+          options: manufacturerData.popularConfigurations?.mostSelectedOptions?.map(opt => ({
+            name: opt.name,
+            price: opt.price || 0,
+            currency: 'GBP'
+          })) || []
+        },
+        dataSource: manufacturerData.dataSource,
+        lastUpdated: new Date().toISOString()
+      },
+      
+      popularOptions: manufacturerData.popularConfigurations?.mostSelectedOptions?.map(opt => ({
+        name: opt.name,
+        source: 'manufacturer' as const
+      })) || [],
+
+      dataSources: {
+        database: false,
+        carQuery: false,
+        manufacturer: true,
+        market: false
+      },
+      
+      dataSource: manufacturerData.dataSource,
+      searchQuery: { make, model, year, dataSource: 'manufacturer' },
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (error) {
+    console.error('Manufacturer search error:', error);
+    return null;
+  }
+}
+
+// Market data search (real scrapers)
+async function searchMarketData(make: string, model: string, year?: number): Promise<ComprehensiveSPAData | null> {
+  try {
+    const marketResult = await autotraderScraper.searchCars(make, model, year);
+    
+    if (!marketResult || !marketResult.marketData) return null;
+
+    return {
+      make,
+      model,
+      year: year || 2022,
+      
+      pricingData: {
+        baseMSRP: 0,
+        currentMarketRange: marketResult.marketData.priceRange,
+        averageDealerPrice: marketResult.marketData.averagePrice,
+        dealerInventoryCount: marketResult.marketData.inventoryCount,
+        priceTrend: 'Based on current market listings'
+      },
+      
+      marketData: {
+        listings: marketResult.listings.map(listing => ({
+          title: listing.title,
+          price: listing.price,
+          priceNumeric: parseFloat(listing.price.replace(/[^\d]/g, '')) || 0,
+          specs: listing.specs,
+          url: listing.url
+        })),
+        averagePrice: marketResult.marketData.averagePrice,
+        priceRange: marketResult.marketData.priceRange,
+        inventoryCount: marketResult.marketData.inventoryCount,
+        dataSource: marketResult.marketData.dataSource,
+        searchParams: { make, model, year },
+        timestamp: new Date().toISOString()
+      },
+
+      dataSources: {
+        database: false,
+        carQuery: false,
+        manufacturer: false,
+        market: true
+      },
+      
+      dataSource: 'Autotrader UK Market Data',
+      searchQuery: { make, model, year, dataSource: 'market' },
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (error) {
+    console.error('Market search error:', error);
+    return null;
+  }
+}
+
+// Comprehensive search combining all sources
+async function comprehensiveSearch(make: string, model: string, year?: number): Promise<ComprehensiveSPAData | null> {
+  try {
+    console.log(`🚀 Starting comprehensive search for ${make} ${model} ${year || 'any'}`);
+    
+    // Parallel execution of all data sources
+    const [databaseResult, carQueryResult, manufacturerResult, marketResult] = await Promise.allSettled([
+      searchDatabase(make, model, year),
+      searchCarQuery(make, model, year),
+      searchManufacturer(make, model, year),
+      searchMarketData(make, model, year)
+    ]);
+
+    // Extract successful results
+    const dbData = databaseResult.status === 'fulfilled' ? databaseResult.value : null;
+    const cqData = carQueryResult.status === 'fulfilled' ? carQueryResult.value : null;
+    const mfgData = manufacturerResult.status === 'fulfilled' ? manufacturerResult.value : null;
+    const marketData = marketResult.status === 'fulfilled' ? marketResult.value : null;
+
+    // If no data from any source, return null
+    if (!dbData && !cqData && !mfgData && !marketData) {
+      return null;
+    }
+
+    // Combine all data intelligently
+    const combinedData: ComprehensiveSPAData = {
+      make,
+      model,
+      year: year || dbData?.year || cqData?.year || 2022,
+      bodyType: dbData?.bodyType || cqData?.bodyType || mfgData?.bodyType || 'Unknown',
+      trim: dbData?.trim,
+
+      // Use CarQuery for technical specs, fallback to database
+      basicSpecifications: cqData?.basicSpecifications || dbData?.basicSpecifications,
+      
+      // Use database/manufacturer for performance data
+      performanceData: dbData?.performanceData || mfgData?.performanceData || cqData?.performanceData,
+      
+      // Combine pricing data from multiple sources
+      pricingData: {
+        baseMSRP: mfgData?.pricingData?.baseMSRP || dbData?.pricingData?.baseMSRP || 0,
+        currentMarketRange: marketData?.pricingData?.currentMarketRange || 
+                           dbData?.pricingData?.currentMarketRange || 'N/A',
+        averageDealerPrice: marketData?.pricingData?.averageDealerPrice || 
+                           dbData?.pricingData?.averageDealerPrice || 0,
+        dealerInventoryCount: marketData?.pricingData?.dealerInventoryCount || 
+                             dbData?.pricingData?.dealerInventoryCount || 0,
+        priceTrend: marketData?.pricingData?.priceTrend || 
+                   dbData?.pricingData?.priceTrend || 'Comprehensive analysis'
+      },
+      
+      // Use manufacturer data if available
+      manufacturerData: mfgData?.manufacturerData,
+      
+      // Use market data if available
+      marketData: marketData?.marketData,
+      
+      // Combine popular options from all sources
+      popularOptions: [
+        ...(dbData?.popularOptions || []),
+        ...(mfgData?.popularOptions || [])
+      ],
+
+      // Track which sources provided data
+      dataSources: {
+        database: !!dbData,
+        carQuery: !!cqData,
+        manufacturer: !!mfgData,
+        market: !!marketData
+      },
+      
+      dataSource: 'Comprehensive Multi-Source Aggregation',
+      searchQuery: { make, model, year, dataSource: 'comprehensive' },
+      timestamp: new Date().toISOString()
+    };
+
+    console.log(`✅ Comprehensive search completed - Sources: DB:${!!dbData}, CQ:${!!cqData}, MFG:${!!mfgData}, MKT:${!!marketData}`);
+    
+    return combinedData;
+    
+  } catch (error) {
+    console.error('Comprehensive search error:', error);
+    return null;
+  }
+}
+
+// Cache management endpoint
+export async function DELETE(request: NextRequest) {
+  try {
+    COMPREHENSIVE_SEARCH_CACHE.clear();
+    console.log('🧹 SPA search cache cleared');
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Search cache cleared successfully'
+    });
+    
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Failed to clear cache' },
+      { status: 500 }
+    );
+  }
 }
