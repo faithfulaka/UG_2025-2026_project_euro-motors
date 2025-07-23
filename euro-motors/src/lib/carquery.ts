@@ -190,66 +190,118 @@ class CarQueryService {
     }
   }
 
-  async getMakes(): Promise<string[]> {
+ async getMakes(search?: string): Promise<CarQueryResult<string[]>> {
     try {
       const result = await this.apiCall('getMakes');
       
       if (!result.success) {
-        console.error('CarQuery getMakes error:', result.error);
-        return [];
+        return result as CarQueryError;
       }
 
       if (!result.data.Makes || !Array.isArray(result.data.Makes)) {
-        console.warn('CarQuery getMakes: No makes data');
-        return [];
+        return {
+          success: false,
+          error: {
+            code: 'NO_DATA_FOUND',
+            message: 'No makes data returned from CarQuery API'
+          }
+        };
       }
 
-      const makes = result.data.Makes
+      let makes = result.data.Makes
         .map((make: any) => make.make_display)
         .filter((make: string) => make && make.trim())
         .sort();
 
+      // Apply search filter if provided
+      if (search && search.trim()) {
+        makes = makes.filter(make => 
+          make.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+
       console.log(`✅ CarQuery getMakes: ${makes.length} makes retrieved`);
-      return makes;
+      
+      return {
+        success: true,
+        data: makes,
+        cached: result.cached,
+        timestamp: result.timestamp
+      };
 
     } catch (error) {
       console.error('CarQuery getMakes error:', error);
-      return [];
+      return {
+        success: false,
+        error: {
+          code: 'API_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown CarQuery error'
+        }
+      };
     }
   }
 
-  async getModels(make: string): Promise<string[]> {
+ async getModels(make: string, search?: string): Promise<CarQueryResult<string[]>> {
     try {
       if (!make || !make.trim()) {
-        console.warn('CarQuery getModels: Empty make provided');
-        return [];
+        return {
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message: 'Make parameter is required'
+          }
+        };
       }
 
       const result = await this.apiCall('getModels', { make: make.trim() });
       
       if (!result.success) {
-        console.error('CarQuery getModels error:', result.error);
-        return [];
+        return result as CarQueryError;
       }
 
       if (!result.data.Models || !Array.isArray(result.data.Models)) {
-        console.warn(`CarQuery getModels: No models data for ${make}`);
-        return [];
+        return {
+          success: false,
+          error: {
+            code: 'NO_DATA_FOUND',
+            message: `No models data found for ${make}`
+          }
+        };
       }
 
-      const models = result.data.Models
+      let models = result.data.Models
         .map((model: any) => model.model_name)
         .filter((model: string) => model && model.trim())
         .sort();
 
+      // Apply search filter if provided
+      if (search && search.trim()) {
+        models = models.filter(model => 
+          model.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+
       console.log(`✅ CarQuery getModels for ${make}: ${models.length} models retrieved`);
-      return models;
+      
+      return {
+        success: true,
+        data: models,
+        cached: result.cached,
+        timestamp: result.timestamp
+      };
 
     } catch (error) {
       console.error('CarQuery getModels error:', error);
-      return [];
+      return {
+        success: false,
+        error: {
+          code: 'API_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown CarQuery error'
+        }
+      };
     }
   }
+
 
   async getTrims(make: string, model: string, year?: number): Promise<CarQueryResponse['Trims']> {
     try {

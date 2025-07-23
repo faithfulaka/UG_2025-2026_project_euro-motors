@@ -152,8 +152,8 @@ async function getDatabaseModels(make: string): Promise<string[]> {
       prisma.buyCar.findMany({
         where: { 
           make: { 
-            contains: make,
-            mode: 'insensitive'
+            contains: make
+           
           }
         },
         select: { model: true },
@@ -162,8 +162,8 @@ async function getDatabaseModels(make: string): Promise<string[]> {
       prisma.rentalCar.findMany({
         where: { 
           make: { 
-            contains: make,
-            mode: 'insensitive'
+            contains: make
+           
           }
         },
         select: { model: true },
@@ -185,12 +185,17 @@ async function getDatabaseModels(make: string): Promise<string[]> {
   }
 }
 
-// Get models from CarQuery API for specific make
+import type { CarQueryResult, CarQueryError } from '@/lib/carquery';
+
 async function getCarQueryModels(make: string): Promise<string[]> {
   try {
-    const models = await carQueryService.getModels(make);
-    console.log(`🔍 CarQuery models for ${make}: ${models.length}`);
-    return models;
+    const result: CarQueryResult<string[]> | CarQueryError = await carQueryService.getModels(make);
+    if ('error' in result) {
+      console.error(`❌ CarQuery models error for ${make}:`, result.error);
+      return [];
+    }
+    console.log(`🔍 CarQuery models for ${make}: ${result.length}`);
+    return result;
     
   } catch (error) {
     console.error(`❌ CarQuery models error for ${make}:`, error);

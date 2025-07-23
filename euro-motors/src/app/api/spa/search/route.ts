@@ -155,8 +155,8 @@ async function searchDatabase(make: string, model: string, year?: number): Promi
   try {
     const buyCars = await prisma.buyCar.findMany({
       where: {
-        make: { contains: make, mode: 'insensitive' },
-        model: { contains: model, mode: 'insensitive' },
+        make: { contains: make }, 
+        model: { contains: model }, 
         ...(year && { year: year })
       },
       select: {

@@ -1,10 +1,16 @@
-//src/lib/scrappers/porsche.ts
+ //src/lib/scrappers/porsche.ts
 import puppeteer from 'puppeteer';
 
 class PorscheConfiguratorScraper {
   private baseUrl = 'https://configurator.porsche.com/gbr/en_GB';
 
-  async getCarPricing(model: string): Promise<any> { //Unexpected any. Specify a different type(this error is in every instance  everywhere int his project tht has 'any)
+  async getCarPricing(model: string): Promise<{
+    basePrice?: string;
+    totalPrice?: string;
+    options?: Array<{ name: string; price: string }>;
+    dataSource?: string;
+    error?: string;
+  }> { // Replaced 'any' with specific type as per instructions
     let browser;
     try {
       browser = await puppeteer.launch({ 

@@ -90,26 +90,8 @@ export interface MarketListing {
   datePosted?: string;
 }
 
-export interface MarketData {
-  listings: MarketListing[];
-  averagePrice: number;
-  priceRange: string;
-  inventoryCount: number;
-  priceDistribution?: {
-    min: number;
-    max: number;
-    median: number;
-    q1: number;
-    q3: number;
-  };
-  dataSource: string;
-  searchParams: {
-    make: string;
-    model: string;
-    year?: number;
-  };
-  timestamp: string;
-}
+// Remove this older MarketData interface to avoid conflict with the new one
+
 
 // Manufacturer Configurator Types
 export interface ManufacturerOption {
@@ -329,4 +311,74 @@ export interface SPASearchContext {
   };
   loading: boolean;
   error: SPAError | null;
+}
+
+// MISSING TYPES - ADD THESE:
+export interface ManufacturerConfigData {
+  make: string;
+  model: string;
+  year: number;
+  basePrice: number;
+  currency: string;
+  configuratorUrl: string;
+  availableOptions: Array<{
+    category: string;
+    name: string;
+    price: number;
+    description: string;
+  }>;
+  colors: Array<{
+    name: string;
+    type: 'standard' | 'metallic' | 'special';
+    price?: number;
+  }>;
+  interiorOptions: Array<{
+    name: string;
+    price: number;
+  }>;
+  packages: Array<{
+    name: string;
+    price: number;
+    options: string[];
+  }>;
+  engine?: string;
+  horsepower?: number;
+  acceleration?: number;
+}
+
+export interface SPAServiceResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: {
+    code: string;
+    message: string;
+    recoverable?: boolean;
+    retryAfter?: number;
+  };
+  processingTime: number;
+  cached: boolean;
+}
+
+export interface MarketData {
+  source: 'autotrader' | 'carscom' | 'classiccom' | 'bringatrailer';
+  listings: Array<{
+    title: string;
+    price: number;
+    mileage?: number;
+    year?: number;
+    location?: string;
+    dealerName?: string;
+    listingUrl?: string;
+    images?: string[];
+  }>;
+  marketAnalysis: {
+    averagePrice: number;
+    priceRange: {
+      min: number;
+      max: number;
+    };
+    inventoryCount: number;
+    averageMileage?: number;
+    pricePerMile?: number;
+  };
 }

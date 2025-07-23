@@ -1,4 +1,4 @@
-// src/lib/spa-services/manufacturer-scrapers.ts - REAL MULTI-BRAND SCRAPERS
+// src/lib/spa-services/manufacturer-scrapers.ts 
 import puppeteer, { Browser, Page } from 'puppeteer';
 import { ManufacturerConfigData, SPAServiceResponse } from '@/types/spa';
 
@@ -23,6 +23,10 @@ class RealManufacturerScraperService {
   private browser: Browser | null = null;
   private cache = new Map<string, { data: any; expiresAt: number }>();
   private cacheTimeout = 60 * 60 * 1000; // 1 hour cache for manufacturer data
+      
+  private async delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
   // 🏭 MANUFACTURER CONFIGURATIONS (Real URLs & Selectors)
   private manufacturerConfigs: Record<string, ScraperConfig> = {

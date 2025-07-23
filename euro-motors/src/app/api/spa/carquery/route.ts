@@ -1,4 +1,4 @@
-// src/app/api/spa/carquery/route.ts - CARQUERY DIRECT ACCESS API
+// src/app/api/spa/carquery/route.ts 
 import { NextRequest, NextResponse } from 'next/server';
 import { carQueryService } from '@/lib/carquery';
 

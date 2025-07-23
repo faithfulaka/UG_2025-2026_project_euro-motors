@@ -101,14 +101,14 @@ class AutotraderScraper {
         });
 
         // Wait for results to load
-        await page.waitForTimeout(2000);
+        await this.delay(2000);
 
         // Handle cookie consent if present
         try {
           const acceptCookies = await page.$('#onetrust-accept-btn-handler');
           if (acceptCookies) {
             await acceptCookies.click();
-            await page.waitForTimeout(1000);
+            await this.delay(1000);
           }
         } catch (e) {
           // Cookie consent not found, continue
