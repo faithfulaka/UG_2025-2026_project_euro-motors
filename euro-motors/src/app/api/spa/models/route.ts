@@ -16,9 +16,10 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now();
   
   try {
-    const { searchParams } = new URL(request.url);
-    const make = searchParams.get('make');
-    const source = searchParams.get('source') as 'carquery' | 'database' | 'combined' || 'combined';
+    const url = new URL(request.url);
+    const searchParams = url.searchParams;
+    const make = searchParams.get('make') || '';
+    const source = (searchParams.get('source') as 'carquery' | 'database' | 'combined') ?? 'combined';
     const query = searchParams.get('q') || ''; // For filtering models
     
     if (!make) {
@@ -127,10 +128,11 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ SPA Models API error:', error);
     
+    // Fix: searchParams is not defined here, use empty string for make
     const response: SPAModelsResponse = {
       success: false,
       models: [],
-      make: searchParams?.get('make') || '',
+      make: '',
       source: 'database',
       cached: false,
       timestamp: new Date().toISOString(),
@@ -185,23 +187,25 @@ async function getDatabaseModels(make: string): Promise<string[]> {
   }
 }
 
-import type { CarQueryResult, CarQueryError } from '@/lib/carquery';
-
 async function getCarQueryModels(make: string): Promise<string[]> {
   try {
-    const result: CarQueryResult<string[]> | CarQueryError = await carQueryService.getModels(make);
+    const result = await carQueryService.getModels(make);
     if ('error' in result) {
       console.error(`❌ CarQuery models error for ${make}:`, result.error);
       return [];
     }
-    console.log(`🔍 CarQuery models for ${make}: ${result.length}`);
-    return result;
-    
-  } catch (error) {
-    console.error(`❌ CarQuery models error for ${make}:`, error);
+    if ('data' in result) {
+      console.log(`🔍 CarQuery models for ${make}: ${result.data.length}`);
+      return result.data;
+    }
+    console.error(`❌ Unexpected CarQuery models result for ${make}:`, result);
     return [];
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error(`❌ CarQuery models error for ${make}:`, err);
+      return [];
+    }
   }
-}
 
 // POST method for cache management
 export async function POST(request: NextRequest) {

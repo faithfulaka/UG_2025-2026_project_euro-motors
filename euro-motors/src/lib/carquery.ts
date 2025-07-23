@@ -43,6 +43,14 @@ export interface CarQueryResponse {
   }>;
 }
 
+
+interface CarQuerySuccess<T> {
+  success: true;
+  data: T;
+  cached: boolean;
+  timestamp: string;
+}
+
 interface CarQueryError {
   success: false;
   error: {
@@ -50,13 +58,6 @@ interface CarQueryError {
     message: string;
     retryAfter?: number;
   };
-}
-
-interface CarQuerySuccess<T> {
-  success: true;
-  data: T;
-  cached: boolean;
-  timestamp: string;
 }
 
 type CarQueryResult<T> = CarQuerySuccess<T> | CarQueryError;

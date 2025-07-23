@@ -4,7 +4,8 @@ import { manufacturerScraperService } from '@/lib/spa-services/manufacturer-scra
 
 export async function POST(request: NextRequest) {
   try {
-    const { manufacturer, model, year } = await request.json();
+    const body: { manufacturer: string; model: string; year?: number } = await request.json();
+    const { manufacturer, model, year } = body;
     
     if (!manufacturer || !model) {
       return NextResponse.json({
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('🚨 Manufacturer Scraper API Error:', error);
     
     return NextResponse.json({

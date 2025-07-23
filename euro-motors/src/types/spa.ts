@@ -1,87 +1,34 @@
-// src/types/spa.ts 
-
-// Base SPA Search Parameters
-export interface SPASearchParams {
-  make: string;
-  model: string;
-  year?: number;
-  trim?: string;
-  dataSource: 'comprehensive' | 'database' | 'carquery' | 'manufacturer' | 'market';
+export interface MarketData {
+  source: 'autotrader' | 'carscom' | 'classiccom' | 'bringatrailer';
+  listings: MarketListing[];
+  marketAnalysis: {
+    averagePrice: number;
+    priceRange: {
+      min: number;
+      max: number;
+    };
+    inventoryCount: number;
+    averageMileage?: number;
+    pricePerMile?: number;
+  };
+  averagePrice: number;  // Duplicate for backward compatibility
+  priceRange: string;    // Duplicate for backward compatibility
+  inventoryCount: number; // Duplicate for backward compatibility
+  dataSource: string;
+  searchParams?: {
+    make: string;
+    model: string;
+    year?: number;
+  };
+  timestamp?: string;
 }
 
-// Auto-complete/Suggestion Types
-export interface SPASuggestion {
-  value: string;
-  label: string;
-  count?: number;
-  source: 'database' | 'carquery' | 'cache';
-}
-
-export interface SPASuggestionResponse {
-  success: boolean;
-  suggestions: SPASuggestion[];
-  source: string;
-  cached: boolean;
-  timestamp: string;
-}
-
-// CarQuery API Response Types
-export interface CarQueryMake {
-  make_id: string;
-  make_display: string;
-  make_is_common: string;
-  make_country?: string;
-}
-
-export interface CarQueryModel {
-  model_name: string;
-  model_make_id: string;
-  model_make_display: string;
-}
-
-export interface CarQueryTrim {
-  model_id: string;
-  model_make_id: string;
-  model_name: string;
-  model_trim: string;
-  model_year: string;
-  model_body: string;
-  model_engine_position: string;
-  model_engine_cc: string;
-  model_engine_cyl: string;
-  model_engine_type: string;
-  model_engine_valves_per_cyl: string;
-  model_engine_power_ps: string;
-  model_engine_power_rpm: string;
-  model_engine_torque_nm: string;
-  model_engine_torque_rpm: string;
-  model_top_speed_kph: string;
-  model_0_to_100_kph: string;
-  model_drive: string;
-  model_transmission_type: string;
-  model_seats: string;
-  model_doors: string;
-  model_weight_kg: string;
-  model_length_mm: string;
-  model_width_mm: string;
-  model_height_mm: string;
-  model_wheelbase_mm: string;
-  model_lkm_hwy: string;
-  model_lkm_mixed: string;
-  model_lkm_city: string;
-  model_fuel_cap_l: string;
-  model_sold_in_us: string;
-  model_co2: string;
-  model_make_display: string;
-}
-
-// Market Data Types (Autotrader, etc.)
 export interface MarketListing {
   title: string;
   price: string;
   priceNumeric: number;
   mileage?: string;
-  year?: number;
+  year?: number;  
   location?: string;
   dealer?: string;
   specs?: string;
@@ -90,64 +37,25 @@ export interface MarketListing {
   datePosted?: string;
 }
 
-// Remove this older MarketData interface to avoid conflict with the new one
-
-
-// Manufacturer Configurator Types
-export interface ManufacturerOption {
-  id?: string;
-  name: string;
-  description?: string;
-  price: number;
-  currency: string;
-  category?: string;
-  isPopular?: boolean;
-  availability?: 'standard' | 'optional' | 'package';
+export interface SPAError {
+  code: string;
+  message: string;
+  source?: string;
+  details?: Record<string, unknown>;
 }
 
-export interface ManufacturerPricing {
-  basePrice: number;
-  currency: string;
-  totalPrice?: number;
-  options: ManufacturerOption[];
-  packages?: Array<{
-    name: string;
-    price: number;
-    options: string[];
-  }>;
-  deliveryTime?: string;
-  availability?: 'available' | 'limited' | 'custom_order';
-}
-
-export interface ManufacturerData {
-  make: string;
-  model: string;
-  year: number;
-  trim?: string;
-  bodyType?: string;
-  pricing: ManufacturerPricing;
-  specifications?: {
-    engine?: string;
-    power?: string;
-    torque?: string;
-    transmission?: string;
-    drivetrain?: string;
-    acceleration?: string;
-    topSpeed?: string;
-    fuelEconomy?: string;
+export interface SPASearchResponse {
+  success: boolean;
+  data?: ComprehensiveSPAData; // ADD this - was missing
+  error?: SPAError;
+  meta: {
+    searchQuery: SPASearchParams;
+    executionTime: number;
+    timestamp: string;
+    version: string;
   };
-  colors?: Array<{
-    name: string;
-    type: 'standard' | 'metallic' | 'special';
-    price?: number;
-    imageUrl?: string;
-  }>;
-  dataSource: string;
-  configuratorUrl?: string;
-  lastUpdated: string;
 }
 
-// Comprehensive SPA Result Types
 export interface ComprehensiveSPAData {
   // Basic Info
   make: string;
@@ -227,33 +135,17 @@ export interface ComprehensiveSPAData {
   cacheExpiry?: string;
 }
 
-// Error Types
-export interface SPAError {
-  code: string;
-  message: string;
-  source?: string;
-  details?: Record<string, unknown>;
-  retryable?: boolean;
-  retryAfter?: number;
-}
-
-// API Response Types
-export interface SPASearchResponse {
-  success: boolean;
-  data?: ComprehensiveSPAData;
-  error?: SPAError;
-  meta: {
-    searchQuery: SPASearchParams;
-    executionTime: number;
-    timestamp: string;
-    version: string;
-  };
+export interface SPASearchParams {
+  make: string;
+  model: string;
+  year?: number;
+  dataSource?: string;
 }
 
 export interface SPAMakesResponse {
   success: boolean;
   makes: string[];
-  source: 'carquery' | 'database' | 'combined';
+  source: 'carquery' | 'database' | 'combined'; // ADD this - was missing
   cached: boolean;
   timestamp: string;
   error?: SPAError;
@@ -262,58 +154,13 @@ export interface SPAMakesResponse {
 export interface SPAModelsResponse {
   success: boolean;
   models: string[];
-  make: string;
+  make: string; // ADD this - was missing
   source: 'carquery' | 'database' | 'combined';
   cached: boolean;
   timestamp: string;
   error?: SPAError;
 }
 
-// Cache Types
-export interface SPACacheEntry {
-  key: string;
-  data: unknown;
-  timestamp: number;
-  expiry: number;
-  source: string;
-}
-
-// Scraper Configuration
-export interface ScraperConfig {
-  name: string;
-  baseUrl: string;
-  rateLimit: number; // requests per minute
-  timeout: number; // milliseconds
-  retries: number;
-  userAgent: string;
-  headers?: Record<string, string>;
-  proxy?: {
-    host: string;
-    port: number;
-    username?: string;
-    password?: string;
-  };
-}
-
-// Real-time Search Context (for frontend state)
-export interface SPASearchContext {
-  currentSearch: SPASearchParams | null;
-  searchResults: ComprehensiveSPAData | null;
-  searchHistory: Array<{
-    params: SPASearchParams;
-    timestamp: string;
-    resultSummary: string;
-  }>;
-  suggestions: {
-    makes: SPASuggestion[];
-    models: SPASuggestion[];
-    years: number[];
-  };
-  loading: boolean;
-  error: SPAError | null;
-}
-
-// MISSING TYPES - ADD THESE:
 export interface ManufacturerConfigData {
   make: string;
   model: string;
@@ -321,26 +168,10 @@ export interface ManufacturerConfigData {
   basePrice: number;
   currency: string;
   configuratorUrl: string;
-  availableOptions: Array<{
-    category: string;
-    name: string;
-    price: number;
-    description: string;
-  }>;
-  colors: Array<{
-    name: string;
-    type: 'standard' | 'metallic' | 'special';
-    price?: number;
-  }>;
-  interiorOptions: Array<{
-    name: string;
-    price: number;
-  }>;
-  packages: Array<{
-    name: string;
-    price: number;
-    options: string[];
-  }>;
+  availableOptions: any[];
+  colors: any[];
+  interiorOptions: any[];
+  packages: any[];
   engine?: string;
   horsepower?: number;
   acceleration?: number;
@@ -359,26 +190,99 @@ export interface SPAServiceResponse<T> {
   cached: boolean;
 }
 
-export interface MarketData {
-  source: 'autotrader' | 'carscom' | 'classiccom' | 'bringatrailer';
-  listings: Array<{
-    title: string;
+export interface ManufacturerPricing {
+  basePrice: number;
+  currency: string;
+  options: Array<{
+    name: string;
     price: number;
-    mileage?: number;
-    year?: number;
-    location?: string;
-    dealerName?: string;
-    listingUrl?: string;
-    images?: string[];
+    currency: string;
   }>;
-  marketAnalysis: {
-    averagePrice: number;
-    priceRange: {
-      min: number;
-      max: number;
-    };
-    inventoryCount: number;
-    averageMileage?: number;
-    pricePerMile?: number;
+}
+
+export interface ManufacturerConfigData {
+  make: string;
+  model: string;
+  year: number;
+  basePrice: number;
+  currency: string;
+  configuratorUrl: string;
+  availableOptions: any[];
+  colors: any[];
+  interiorOptions: any[];
+  packages: any[];
+  engine?: string;
+  horsepower?: number;
+  acceleration?: number;
+}
+
+export interface ManufacturerData {
+  make: string;
+  model: string;
+  year: number;
+  trim?: string;
+  bodyType?: string;
+  pricing: ManufacturerPricing;
+  specifications?: {
+    engine?: string;
+    power?: string;
+    torque?: string;
+    transmission?: string;
+    drivetrain?: string;
+    acceleration?: string;
+    topSpeed?: string;
+    fuelEconomy?: string;
   };
+  colors?: Array<{
+    name: string;
+    type: 'standard' | 'metallic' | 'special';
+    price?: number;
+    imageUrl?: string;
+  }>;
+  dataSource: string;
+  configuratorUrl?: string;
+  lastUpdated: string;
+}
+
+// ADD these missing exports:
+export interface SPASuggestion {
+  type: 'make' | 'model' | 'year';
+  value: string;
+  displayName: string;
+  count?: number;
+  popular?: boolean;
+}
+
+export interface ManufacturerConfigData {
+  make: string;
+  model: string;
+  year: number;
+  basePrice: number;
+  currency: string;
+  configuratorUrl: string;
+  availableOptions: Array<{
+    category: string;
+    name: string;
+    price: number;
+    description: string;
+  }>;
+  colors: string[];
+  interiorOptions: string[];
+  packages: string[];
+  engine?: string;
+  horsepower?: number;
+  acceleration?: number;
+}
+
+export interface SPAServiceResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: {
+    code: string;
+    message: string;
+    recoverable?: boolean;
+    retryAfter?: number;
+  };
+  processingTime: number;
+  cached: boolean;
 }

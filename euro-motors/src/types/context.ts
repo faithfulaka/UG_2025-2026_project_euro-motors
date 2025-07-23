@@ -11,6 +11,12 @@ export interface CartItem {
   price: number;
   quantity: number;
   selectedOptions?: string[];
+  car?: { // ADD THIS PROPERTY
+    make: string;
+    model: string;
+    year: number;
+    price: number;
+  };
   rentalDates?: {
     startDate: Date;
     endDate: Date;

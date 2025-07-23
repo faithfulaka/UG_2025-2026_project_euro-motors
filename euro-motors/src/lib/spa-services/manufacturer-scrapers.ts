@@ -23,9 +23,9 @@ class RealManufacturerScraperService {
   private browser: Browser | null = null;
   private cache = new Map<string, { data: any; expiresAt: number }>();
   private cacheTimeout = 60 * 60 * 1000; // 1 hour cache for manufacturer data
-      
+
   private async delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   // 🏭 MANUFACTURER CONFIGURATIONS (Real URLs & Selectors)
@@ -189,7 +189,7 @@ class RealManufacturerScraperService {
       // Wait for cookie banner and accept
       await page.waitForSelector(config.cookieAccept, { timeout: 5000 });
       await page.click(config.cookieAccept);
-      await page.waitForTimeout(1000);
+      await this.delay(1000);
       console.log('✅ Cookies accepted');
     } catch (error) {
       console.log('⚠️ No cookie banner found or already accepted');
@@ -208,7 +208,7 @@ class RealManufacturerScraperService {
         await page.click(`${config.countrySelector} [data-country="GB"], [value="UK"], [data-value="en-GB"]`);
       }
       
-      await page.waitForTimeout(2000);
+      await this.delay(2000);
       console.log(`✅ Region set to ${config.region}`);
     } catch (error) {
       console.log('⚠️ Could not set region, using default');
@@ -287,35 +287,49 @@ class RealManufacturerScraperService {
         }
       }
 
-      // Try to find and select the model
-      let modelFound = false;
-      if (config.selectors.models) {
-        try {
-          modelFound = await page.evaluate((modelSelector, targetModel) => {
-            const modelElements = document.querySelectorAll(modelSelector);
-            
-            for (const element of modelElements) {
-              const text = element.textContent?.toLowerCase() || '';
-              if (text.includes(targetModel.toLowerCase())) {
-                (element as HTMLElement).click();
-                return true;
-              }
-            }
-            return false;
-          }, config.selectors.models, model);
-
-          if (modelFound) {
-            console.log(`✅ Found and selected model: ${model}`);
-            await page.waitForTimeout(3000); // Wait for model to load
+  // Try to find and select the model
+  let modelFound = false;
+  if (config.selectors.models) {
+    try {
+      modelFound = await page.evaluate((modelSelector, targetModel) => {
+        const modelElements = document.querySelectorAll(modelSelector);
+        
+        for (const element of modelElements) {
+          const text = element.textContent?.toLowerCase() || '';
+          if (text.includes(targetModel.toLowerCase())) {
+            (element as HTMLElement).click();
+            return true;
           }
-        } catch (error) {
-          console.log('⚠️ Could not auto-select model, scraping general data');
         }
+        return false;
+      }, config.selectors.models, model);
+
+      if (modelFound) {
+        console.log(`✅ Found and selected model: ${model}`);
+        await this.delay(3000); // Wait for model to load
       }
+    } catch (error) {
+      console.log('⚠️ Could not auto-select model, scraping general data');
+    }
+  }
 
       // Extract pricing and configuration data
-      const scrapedData = await page.evaluate((selectors, manufacturer, model, year) => {
-        const data: any = {
+const scrapedData = await page.evaluate((selectors: any, manufacturer: string, model: string, year?: number): {
+  make: string;
+  model: string;
+  year: number;
+  basePrice: number;
+  currency: string;
+  configuratorUrl: string;
+  availableOptions: Array<{ category: string; name: string; price: number; description: string }>;
+  colors: any[];
+  interiorOptions: any[];
+  packages: any[];
+  engine?: string;
+  horsepower?: number;
+  acceleration?: number;
+} => {
+  const data = {
           make: manufacturer,
           model: model,
           year: year || new Date().getFullYear(),
@@ -352,7 +366,6 @@ class RealManufacturerScraperService {
                 name: text.replace(/£[\d,]+/, '').trim(),
                 price: priceMatch ? parseInt(priceMatch[1].replace(/,/g, '')) : 0,
                 description: ''
-              });
             }
           });
         }
@@ -414,14 +427,15 @@ class RealManufacturerScraperService {
         cached: false
       };
 
-    } catch (error: any) {
-      console.error(`🚨 Manufacturer scraping error for ${manufacturer}:`, error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`🚨 Manufacturer scraping error for ${manufacturer}:`, errorMessage);
       
       return {
         success: false,
         error: {
           code: 'SCRAPING_FAILED',
-          message: `Failed to scrape ${manufacturer}: ${error.message}`,
+          message: `Failed to scrape ${manufacturer}: ${errorMessage}`,
           recoverable: true,
           retryAfter: 300 // 5 minutes
         },
@@ -475,8 +489,90 @@ class RealManufacturerScraperService {
   }
 }
 
-// Export singleton
 export const manufacturerScraperService = new RealManufacturerScraperService();
+
+export const manufacturerScraper = {
+  scrapeWithDelay: async (make: string, model: string, year?: number): Promise<{
+    error?: string;
+    dataSource: string;
+    bodyType?: string;
+    performanceData?: {
+      engine: string;
+      horsePower: string;
+      torque: string;
+      acceleration060: string;
+      topSpeed: string;
+      transmission: string;
+      driveType: string;
+      weight: string;
+    };
+    pricingData?: {
+      baseMSRP: number;
+      currentMarketRange: string;
+      averageDealerPrice: number;
+      dealerInventoryCount: number;
+      priceTrend: string;
+    };
+    popularConfigurations?: {
+      mostSelectedOptions: Array<{
+        name: string;
+        price: number;
+      }>;
+    };
+  }> => {
+    console.log(`🏭 Manufacturer scraper legacy call: ${make} ${model}`);
+    
+    try {
+      const result = await manufacturerScraperService.scrapeManufacturerData(make, model, year);
+      
+      if (!result.success) {
+        return { 
+          error: result.error?.message || 'Scraping failed',
+          dataSource: 'Manufacturer Configurator'
+        };
+      }
+      
+      const data = result.data;
+      
+      // Convert to legacy format expected by search route
+      return {
+        dataSource: `${make.charAt(0).toUpperCase() + make.slice(1)} Configurator`,
+        bodyType: 'Coupe', // Default, could be enhanced
+        performanceData: {
+          engine: data?.engine || 'N/A',
+          horsePower: data?.horsepower ? `${data.horsepower} hp` : 'N/A',
+          torque: 'N/A',
+          acceleration060: data?.acceleration ? `${data.acceleration} seconds` : 'N/A',
+          topSpeed: 'N/A',
+          transmission: 'N/A',
+          driveType: 'N/A',
+          weight: 'N/A'
+        },
+        pricingData: {
+          baseMSRP: data?.basePrice || 0,
+          currentMarketRange: data?.basePrice ? `£${Math.round(data.basePrice * 0.9).toLocaleString()} - £${Math.round(data.basePrice * 1.1).toLocaleString()}` : 'N/A',
+          averageDealerPrice: data?.basePrice || 0,
+          dealerInventoryCount: 1,
+          priceTrend: 'Manufacturer pricing'
+        },
+        popularConfigurations: {
+          mostSelectedOptions: data?.availableOptions?.slice(0, 10).map(opt => ({
+            name: opt.name,
+            price: opt.price
+          })) || []
+        }
+      };
+      
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Manufacturer scraper error:', errorMessage);
+      return { 
+        error: 'Manufacturer scraping failed',
+        dataSource: 'Manufacturer Configurator'
+      };
+    }
+  }
+};
 
 // Graceful cleanup on process exit
 process.on('exit', () => {
