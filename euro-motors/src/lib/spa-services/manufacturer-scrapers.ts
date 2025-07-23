@@ -97,26 +97,26 @@ class RealManufacturerScraperService {
       cookieAccept: '.uc-accept-all-button, .cookie-accept'
     },
 
-    lamborghini: {
+      lamborghini: {
       baseUrl: 'https://configurator.lamborghini.com',
       currency: 'EUR', // Usually EUR, will convert to GBP
       region: 'EU',
       selectors: {
         models: '.model-selector, .car-model',
         basePrice: '.base-price, .starting-from',
-        totalPrice: '.total-price, '.configuration-total',
+        totalPrice: '.total-price, .configuration-total',
         options: '.option-category, .customization-item'
       },
       waitSelectors: ['.price-info', '.configurator-loaded'],
       cookieAccept: '.cookie-accept, #cookie-consent-accept'
     },
 
-    astonmartin: {
+      astonmartin: {
       baseUrl: 'https://configurator.astonmartin.com',
       currency: 'GBP',
       region: 'UK',
       selectors: {
-        models: '.model-card, '.vehicle-overview',
+        models: '.model-card, .vehicle-overview',
         basePrice: '.price-from, .starting-price',
         totalPrice: '.total-price, .configured-total',
         options: '.option-item, .equipment-line'

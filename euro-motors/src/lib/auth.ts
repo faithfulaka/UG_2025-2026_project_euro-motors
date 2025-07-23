@@ -9,7 +9,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_change_in_producti
 export function verifyToken(token: string) {
   try {
     return jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
-  } catch (error) { //'error' is defined but never used.
+  } catch (error) {
+    // Log the error for debugging
+    console.error('Token verification error:', error);
     throw new Error('Invalid token');
   }
 }
