@@ -3,61 +3,12 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { BuyCar, RentalCar } from '@/types/cars';
-import { ContextSPAResult } from '@/types/spa';
-
-interface CartItem {
-  id: string;
-  type: 'buy' | 'rent';
-  car: BuyCar | RentalCar;
-  quantity: number;
-  selectedOptions?: string[];
-  rentalDates?: {
-    startDate: Date;
-    endDate: Date;
-    duration: 'HOURLY' | 'DAILY' | 'WEEKLY';
-  };
-}
-
-interface CarFilters {
-  make?: string;
-  model?: string;
-  yearRange?: { min: number; max: number };
-  priceRange?: { min: number; max: number };
-  bodyType?: string;
-  transmission?: string;
-  fuelType?: string;
-}
-
-interface TradeInData {
-  registrationNumber: string;
-  make?: string;
-  model: string;
-  year?: number;
-  mileage: number;
-  condition: 'excellent' | 'good' | 'fair' | 'poor';
-  estimatedValue?: number;
-  images?: string[];
-  dvlaData?: {
-    make?: string;
-    model?: string;
-    year?: number;
-    fuelType?: string;
-    engineCapacity?: number;
-    co2Emissions?: number;
-    taxStatus?: string;
-    motStatus?: string;
-  };
-  userInputData?: {
-    accidentHistory: boolean;
-    numberOfAccidents?: number;
-    previousOwners: number;
-    fullServiceHistory: boolean;
-    hasModifications: boolean;
-    interiorCondition: number;
-    exteriorCondition: number;
-    conditionDetails?: string;
-  };
-}
+import { 
+  CartItem, 
+  CarFilters, 
+  ContextSPAResult, 
+  TradeInVehicle 
+} from '@/types/context';
 
 interface CarContextType {
   // Cart Management
@@ -78,7 +29,7 @@ interface CarContextType {
   updateFilters: (filters: Partial<CarFilters>) => void;
   clearFilters: () => void;
 
-  // SPA Integration - FIXED TYPES
+  // SPA Integration (FIXED TYPES)
   spaSearchResults: ContextSPAResult[];
   addSPAResult: (result: ContextSPAResult) => void;
   clearSPAResults: () => void;
@@ -88,8 +39,8 @@ interface CarContextType {
   addToRecentlyViewed: (carId: string) => void;
 
   // Trade-in Data
-  tradeInData: TradeInData | null;
-  setTradeInData: (data: TradeInData) => void;
+  tradeInData: TradeInVehicle | null;
+  setTradeInData: (data: TradeInVehicle) => void;
   clearTradeInData: () => void;
 
   // Loading States
@@ -105,7 +56,7 @@ export function CarProvider({ children }: { children: ReactNode }) {
   const [searchFilters, setSearchFilters] = useState<CarFilters>({});
   const [spaSearchResults, setSpaSearchResults] = useState<ContextSPAResult[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<string[]>([]);
-  const [tradeInDataState, setTradeInDataState] = useState<TradeInData | null>(null);
+  const [tradeInData, setTradeInDataState] = useState<TradeInVehicle | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Load saved data from localStorage on mount
@@ -114,7 +65,6 @@ export function CarProvider({ children }: { children: ReactNode }) {
       const savedCart = localStorage.getItem('euroMotorsCart');
       const savedFavorites = localStorage.getItem('euroMotorsFavorites');
       const savedRecentlyViewed = localStorage.getItem('euroMotorsRecentlyViewed');
-      const savedSPAResults = localStorage.getItem('euroMotorsSPAResults');
       
       if (savedCart) {
         const parsedCart: CartItem[] = JSON.parse(savedCart);
@@ -127,15 +77,6 @@ export function CarProvider({ children }: { children: ReactNode }) {
       if (savedRecentlyViewed) {
         const parsedRecentlyViewed: string[] = JSON.parse(savedRecentlyViewed);
         setRecentlyViewed(parsedRecentlyViewed);
-      }
-      if (savedSPAResults) {
-        const parsedSPAResults: ContextSPAResult[] = JSON.parse(savedSPAResults);
-        // Convert date strings back to Date objects
-        const restoredResults = parsedSPAResults.map(result => ({
-          ...result,
-          searchedAt: new Date(result.searchedAt)
-        }));
-        setSpaSearchResults(restoredResults);
       }
     } catch (error) {
       console.error('Error loading saved car data:', error);
@@ -161,17 +102,11 @@ export function CarProvider({ children }: { children: ReactNode }) {
     }
   }, [recentlyViewed]);
 
-  useEffect(() => {
-    if (spaSearchResults.length > 0) {
-      localStorage.setItem('euroMotorsSPAResults', JSON.stringify(spaSearchResults));
-    }
-  }, [spaSearchResults]);
-
   // Cart Management
   const addToCart = (item: Omit<CartItem, 'id'>) => {
     const newItem: CartItem = {
       ...item,
-      id: `${item.type}-${item.car.id}-${Date.now()}`,
+      id: `${item.type}-${item.carId}-${Date.now()}`,
     };
     setCartItems(prev => [...prev, newItem]);
   };
@@ -187,28 +122,7 @@ export function CarProvider({ children }: { children: ReactNode }) {
 
   // Calculate cart total
   const cartTotal = cartItems.reduce((total, item) => {
-    if (item.type === 'buy') {
-      return total + (item.car as BuyCar).price * item.quantity;
-    } else {
-      const rentalCar = item.car as RentalCar;
-      const { rentalDates } = item;
-      if (rentalDates) {
-        const days = Math.ceil(
-          (rentalDates.endDate.getTime() - rentalDates.startDate.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        switch (rentalDates.duration) {
-          case 'HOURLY':
-            return total + rentalCar.hourlyRate * days * 24;
-          case 'DAILY':
-            return total + rentalCar.dailyRate * days;
-          case 'WEEKLY':
-            return total + rentalCar.weeklyRate * Math.ceil(days / 7);
-          default:
-            return total + rentalCar.dailyRate * days;
-        }
-      }
-    }
-    return total;
+    return total + (item.price * item.quantity);
   }, 0);
 
   // Favorites Management
@@ -233,21 +147,13 @@ export function CarProvider({ children }: { children: ReactNode }) {
     setSearchFilters({});
   };
 
-  // SPA Integration - FIXED
+  // SPA Integration (FIXED)
   const addSPAResult = (result: ContextSPAResult) => {
-    setSpaSearchResults(prev => {
-      // Remove any existing result with the same make/model/year
-      const filtered = prev.filter(r => 
-        !(r.make === result.make && r.model === result.model && r.year === result.year)
-      );
-      // Add new result at the beginning and keep only last 10
-      return [result, ...filtered].slice(0, 10);
-    });
+    setSpaSearchResults(prev => [result, ...prev.slice(0, 9)]); // Keep last 10 searches
   };
 
   const clearSPAResults = () => {
     setSpaSearchResults([]);
-    localStorage.removeItem('euroMotorsSPAResults');
   };
 
   // Recently Viewed
@@ -259,7 +165,7 @@ export function CarProvider({ children }: { children: ReactNode }) {
   };
 
   // Trade-in Data
-  const setTradeInData = (data: TradeInData) => {
+  const setTradeInData = (data: TradeInVehicle) => {
     setTradeInDataState(data);
   };
 
@@ -286,7 +192,7 @@ export function CarProvider({ children }: { children: ReactNode }) {
     updateFilters,
     clearFilters,
 
-    // SPA Integration - FIXED
+    // SPA Integration
     spaSearchResults,
     addSPAResult,
     clearSPAResults,
@@ -296,7 +202,7 @@ export function CarProvider({ children }: { children: ReactNode }) {
     addToRecentlyViewed,
 
     // Trade-in Data
-    tradeInData: tradeInDataState,
+    tradeInData,
     setTradeInData,
     clearTradeInData,
 
