@@ -1,6 +1,6 @@
 // prisma/seed.js - COMPLETE FINAL VERSION (No TypeScript Errors)
-const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcryptjs');
+import { PrismaClient } from '@prisma/client';
+import { hash } from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -8,7 +8,7 @@ async function main() {
   console.log('🚀 Starting database seed with complete SPA data...');
 
   // Create admin user
-  const adminPassword = await bcrypt.hash('Admin123!', 10);
+  const adminPassword = await hash('Admin123!', 10);
   await prisma.user.upsert({
     where: { email: 'admin@euromotors.com' },
     update: {},
@@ -21,7 +21,7 @@ async function main() {
   });
 
   // Create regular user
-  const userPassword = await bcrypt.hash('User123!', 10);
+  const userPassword = await hash('User123!', 10);
   await prisma.user.upsert({
     where: { email: 'user@example.com' },
     update: {},
