@@ -1,4 +1,5 @@
-// src/app/api/spa/models/route.ts - Real CarQuery Models API
+// src/app/api/spa/models/route.ts - COMPLETE FIXED FILE
+
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { carQueryService } from '@/lib/carquery';
@@ -128,7 +129,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('❌ SPA Models API error:', error);
     
-    // Fix: searchParams is not defined here, use empty string for make
     const response: SPAModelsResponse = {
       success: false,
       models: [],
@@ -155,7 +155,6 @@ async function getDatabaseModels(make: string): Promise<string[]> {
         where: { 
           make: { 
             contains: make
-           
           }
         },
         select: { model: true },
@@ -165,7 +164,6 @@ async function getDatabaseModels(make: string): Promise<string[]> {
         where: { 
           make: { 
             contains: make
-           
           }
         },
         select: { model: true },
@@ -187,25 +185,20 @@ async function getDatabaseModels(make: string): Promise<string[]> {
   }
 }
 
+// Fixed CarQuery models function
 async function getCarQueryModels(make: string): Promise<string[]> {
   try {
-    const result = await carQueryService.getModels(make);
-    if ('error' in result) {
-      console.error(`❌ CarQuery models error for ${make}:`, result.error);
-      return [];
-    }
-    if ('data' in result) {
-      console.log(`🔍 CarQuery models for ${make}: ${result.data.length}`);
-      return result.data;
-    }
-    console.error(`❌ Unexpected CarQuery models result for ${make}:`, result);
+    // CarQuery service now returns string[] directly, not wrapped in result object
+    const models = await carQueryService.getModels(make);
+    console.log(`🔍 CarQuery models for ${make}: ${models.length}`);
+    return models;
+    
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`❌ CarQuery models error for ${make}:`, errorMessage);
     return [];
-    } catch (error: unknown) {
-      const err = error as Error;
-      console.error(`❌ CarQuery models error for ${make}:`, err);
-      return [];
-    }
   }
+}
 
 // POST method for cache management
 export async function POST(request: NextRequest) {

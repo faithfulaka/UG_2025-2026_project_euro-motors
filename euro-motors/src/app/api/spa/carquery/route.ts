@@ -1,4 +1,5 @@
-// src/app/api/spa/carquery/route.ts 
+// src/app/api/spa/carquery/route.ts - COMPLETE FIXED FILE
+
 import { NextRequest, NextResponse } from 'next/server';
 import { carQueryService } from '@/lib/carquery';
 
@@ -15,12 +16,12 @@ export async function GET(request: NextRequest) {
 
     switch (action) {
       case 'makes':
-        const makesResult = await carQueryService.getMakes(search || undefined);
+        const makes = await carQueryService.getMakes(search || undefined);
         return NextResponse.json({
-          success: makesResult.success,
-          data: makesResult.data || [],
-          cached: makesResult.cached,
-          error: makesResult.error || null
+          success: true,
+          data: makes,
+          cached: false,
+          error: null
         });
 
       case 'models':
@@ -31,12 +32,12 @@ export async function GET(request: NextRequest) {
           }, { status: 400 });
         }
         
-        const modelsResult = await carQueryService.getModels(make, search || undefined);
+        const models = await carQueryService.getModels(make, search || undefined);
         return NextResponse.json({
-          success: modelsResult.success,
-          data: modelsResult.data || [],
-          cached: modelsResult.cached,
-          error: modelsResult.error || null
+          success: true,
+          data: models,
+          cached: false,
+          error: null
         });
 
       case 'years':
@@ -47,12 +48,12 @@ export async function GET(request: NextRequest) {
           }, { status: 400 });
         }
         
-        const yearsResult = await carQueryService.getYears(make, model);
+        const years = await carQueryService.getYears(make, model);
         return NextResponse.json({
-          success: yearsResult.success,
-          data: yearsResult.data || [],
-          cached: yearsResult.cached,
-          error: yearsResult.error || null
+          success: true,
+          data: years,
+          cached: false,
+          error: null
         });
 
       case 'cardata':
@@ -63,17 +64,17 @@ export async function GET(request: NextRequest) {
           }, { status: 400 });
         }
         
-        const carDataResult = await carQueryService.getCarData(
+        const carData = await carQueryService.getCarData(
           make, 
           model, 
           year ? parseInt(year) : new Date().getFullYear()
         );
         
         return NextResponse.json({
-          success: carDataResult.success,
-          data: carDataResult.data || null,
-          cached: carDataResult.cached,
-          error: carDataResult.error || null
+          success: carData !== null,
+          data: carData,
+          cached: false,
+          error: carData === null ? { code: 'NO_DATA', message: 'No car data found' } : null
         });
 
       default:
@@ -86,14 +87,15 @@ export async function GET(request: NextRequest) {
         }, { status: 400 });
     }
 
-  } catch (error: any) {
-    console.error('🚨 CarQuery API Error:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'CarQuery API request failed';
+    console.error('🚨 CarQuery API Error:', errorMessage);
     
     return NextResponse.json({
       success: false,
       error: {
         code: 'API_ERROR',
-        message: error.message || 'CarQuery API request failed',
+        message: errorMessage,
         recoverable: true
       }
     }, { status: 500 });
@@ -115,16 +117,16 @@ export async function POST(request: NextRequest) {
     console.log(`📦 CarQuery Batch: ${requests.length} requests`);
 
     const results = await Promise.allSettled(
-      requests.map(async (req: any) => {
+      requests.map(async (req: { action: string; make?: string; model?: string; year?: number; search?: string }) => {
         switch (req.action) {
           case 'makes':
             return await carQueryService.getMakes(req.search);
           case 'models':
-            return await carQueryService.getModels(req.make, req.search);
+            return await carQueryService.getModels(req.make || '', req.search);
           case 'years':
-            return await carQueryService.getYears(req.make, req.model);
+            return await carQueryService.getYears(req.make || '', req.model || '');
           case 'cardata':
-            return await carQueryService.getCarData(req.make, req.model, req.year);
+            return await carQueryService.getCarData(req.make || '', req.model || '', req.year || new Date().getFullYear());
           default:
             throw new Error(`Invalid action: ${req.action}`);
         }
@@ -134,7 +136,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       results: results.map(result => 
-        result.status === 'fulfilled' ? result.value : { 
+        result.status === 'fulfilled' ? { success: true, data: result.value } : { 
           success: false, 
           error: { message: result.reason.message } 
         }
@@ -146,14 +148,15 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (error: any) {
-    console.error('🚨 CarQuery Batch Error:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Batch request failed';
+    console.error('🚨 CarQuery Batch Error:', errorMessage);
     
     return NextResponse.json({
       success: false,
       error: {
         code: 'BATCH_ERROR',
-        message: error.message || 'Batch request failed'
+        message: errorMessage
       }
     }, { status: 500 });
   }

@@ -1,4 +1,4 @@
-// src/lib/carquery.ts - Enhanced CarQuery Service with Rate Limiting
+// src/lib/carquery.ts 
 export interface CarQueryResponse {
   Makes?: Array<{make_id: string; make_display: string; make_is_common: string}>;
   Models?: Array<{model_name: string; model_make_id: string}>;
@@ -43,14 +43,6 @@ export interface CarQueryResponse {
   }>;
 }
 
-
-interface CarQuerySuccess<T> {
-  success: true;
-  data: T;
-  cached: boolean;
-  timestamp: string;
-}
-
 interface CarQueryError {
   success: false;
   error: {
@@ -60,11 +52,18 @@ interface CarQueryError {
   };
 }
 
+interface CarQuerySuccess<T> {
+  success: true;
+  data: T;
+  cached: boolean;
+  timestamp: string;
+}
+
 type CarQueryResult<T> = CarQuerySuccess<T> | CarQueryError;
 
 class CarQueryService {
   private baseUrl = 'https://www.carqueryapi.com/api/0.3/';
-  private cache = new Map<string, { data: any; timestamp: number }>();
+  private cache = new Map<string, { data: unknown; timestamp: number }>();
   private requestCount = 0;
   private requestWindow = Date.now();
   
@@ -74,7 +73,7 @@ class CarQueryService {
   private readonly CACHE_TTL = 30 * 60 * 1000; // 30 minutes
   private readonly REQUEST_TIMEOUT = 10000; // 10 seconds
 
-  private async apiCall(endpoint: string, params: Record<string, string> = {}): Promise<CarQueryResult<any>> {
+  private async apiCall(endpoint: string, params: Record<string, string> = {}): Promise<CarQueryResult<CarQueryResponse>> {
     try {
       // Check rate limiting
       const now = Date.now();
@@ -103,7 +102,7 @@ class CarQueryService {
         console.log(`✅ CarQuery cache hit: ${cacheKey}`);
         return {
           success: true,
-          data: cached.data,
+          data: cached.data as CarQueryResponse,
           cached: true,
           timestamp: new Date().toISOString()
         };
@@ -191,26 +190,22 @@ class CarQueryService {
     }
   }
 
- async getMakes(search?: string): Promise<CarQueryResult<string[]>> {
+  async getMakes(search?: string): Promise<string[]> {
     try {
       const result = await this.apiCall('getMakes');
       
       if (!result.success) {
-        return result as CarQueryError;
+        console.error('CarQuery getMakes error:', result.error);
+        return [];
       }
 
       if (!result.data.Makes || !Array.isArray(result.data.Makes)) {
-        return {
-          success: false,
-          error: {
-            code: 'NO_DATA_FOUND',
-            message: 'No makes data returned from CarQuery API'
-          }
-        };
+        console.warn('CarQuery getMakes: No makes data');
+        return [];
       }
 
       let makes = result.data.Makes
-        .map((make: any) => make.make_display)
+        .map((make: { make_display: string }) => make.make_display)
         .filter((make: string) => make && make.trim())
         .sort();
 
@@ -222,56 +217,35 @@ class CarQueryService {
       }
 
       console.log(`✅ CarQuery getMakes: ${makes.length} makes retrieved`);
-      
-      return {
-        success: true,
-        data: makes,
-        cached: result.cached,
-        timestamp: result.timestamp
-      };
+      return makes;
 
     } catch (error) {
       console.error('CarQuery getMakes error:', error);
-      return {
-        success: false,
-        error: {
-          code: 'API_ERROR',
-          message: error instanceof Error ? error.message : 'Unknown CarQuery error'
-        }
-      };
+      return [];
     }
   }
 
- async getModels(make: string, search?: string): Promise<CarQueryResult<string[]>> {
+  async getModels(make: string, search?: string): Promise<string[]> {
     try {
       if (!make || !make.trim()) {
-        return {
-          success: false,
-          error: {
-            code: 'INVALID_INPUT',
-            message: 'Make parameter is required'
-          }
-        };
+        console.warn('CarQuery getModels: Empty make provided');
+        return [];
       }
 
       const result = await this.apiCall('getModels', { make: make.trim() });
       
       if (!result.success) {
-        return result as CarQueryError;
+        console.error('CarQuery getModels error:', result.error);
+        return [];
       }
 
       if (!result.data.Models || !Array.isArray(result.data.Models)) {
-        return {
-          success: false,
-          error: {
-            code: 'NO_DATA_FOUND',
-            message: `No models data found for ${make}`
-          }
-        };
+        console.warn(`CarQuery getModels: No models data for ${make}`);
+        return [];
       }
 
       let models = result.data.Models
-        .map((model: any) => model.model_name)
+        .map((model: { model_name: string }) => model.model_name)
         .filter((model: string) => model && model.trim())
         .sort();
 
@@ -283,26 +257,13 @@ class CarQueryService {
       }
 
       console.log(`✅ CarQuery getModels for ${make}: ${models.length} models retrieved`);
-      
-      return {
-        success: true,
-        data: models,
-        cached: result.cached,
-        timestamp: result.timestamp
-      };
+      return models;
 
     } catch (error) {
       console.error('CarQuery getModels error:', error);
-      return {
-        success: false,
-        error: {
-          code: 'API_ERROR',
-          message: error instanceof Error ? error.message : 'Unknown CarQuery error'
-        }
-      };
+      return [];
     }
   }
-
 
   async getTrims(make: string, model: string, year?: number): Promise<CarQueryResponse['Trims']> {
     try {
@@ -364,7 +325,7 @@ class CarQueryService {
     }
   }
 
-  async getCarData(make: string, model: string, year: number): Promise<any> {
+  async getCarData(make: string, model: string, year: number): Promise<unknown> {
     try {
       const trims = await this.getTrims(make, model, year);
       

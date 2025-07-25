@@ -1,4 +1,5 @@
-// src/app/api/spa/manufacturer/route.ts
+// src/app/api/spa/manufacturer/route.ts - COMPLETE FIXED FILE
+
 import { NextRequest, NextResponse } from 'next/server';
 import { manufacturerScraperService } from '@/lib/spa-services/manufacturer-scrapers';
 
@@ -40,8 +41,9 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (error) {
-    console.error('🚨 Manufacturer Scraper API Error:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Manufacturer scraper failed';
+    console.error('🚨 Manufacturer Scraper API Error:', errorMessage);
     
     return NextResponse.json({
       success: false,
@@ -77,8 +79,9 @@ export async function GET() {
       }
     });
 
-  } catch (error: any) {
-    console.error('🚨 Manufacturer Info API Error:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to get manufacturer info';
+    console.error('🚨 Manufacturer Info API Error:', errorMessage);
     
     return NextResponse.json({
       success: false,

@@ -214,44 +214,40 @@ class MarketScraperService {
       }
 
       // Extract listing data
-    const listings = await page.evaluate((selectors: any, priceExtractorStr: string) => {
-    const priceExtractor = new Function('text', `return ${priceExtractorStr.replace(/^[^{]*{|}[^}]*$/g, '')}`);
-    const listingElements = document.querySelectorAll(selectors.listings);
-    const results: any[] = [];
-
-    for (let i = 0; i < Math.min(listingElements.length, 20); i++) {
-      const element = listingElements[i];
-
-      const titleElement = element.querySelector(selectors.title);
-      const priceElement = element.querySelector(selectors.price);
-      const mileageElement = selectors.mileage ? element.querySelector(selectors.mileage) : null;
-      const locationElement = selectors.location ? element.querySelector(selectors.location) : null;
-      const dealerElement = selectors.dealer ? element.querySelector(selectors.dealer) : null;
-      const imageElement = selectors.image ? element.querySelector(selectors.image) : null;
-      const urlElement = selectors.url ? element.querySelector(selectors.url) : null;
-
-      const title = titleElement?.textContent?.trim() || '';
-      const priceText = priceElement?.textContent?.trim() || '';
-      const price = priceExtractor(priceText);
-
-      if (title && price > 0) {
-        const mileageText = mileageElement?.textContent?.trim() || '';
-        const mileageMatch = mileageText.match(/(\d+(?:,\d+)*)/);
-
-        results.push({
-          title,
-          price,
-          mileage: mileageMatch ? parseInt(mileageMatch[1].replace(/,/g, '')) : undefined,
-          location: locationElement?.textContent?.trim() || '',
-          dealerName: dealerElement?.textContent?.trim() || '',
-          listingUrl: (urlElement as HTMLAnchorElement)?.href || urlElement?.getAttribute('href') || '',
-          images: imageElement ? [(imageElement as HTMLImageElement).src || imageElement.getAttribute('src')] : []
-        });
+     const listings = await page.evaluate((selectors: any, priceExtractorStr: string) => {
+      const priceExtractor = new Function('text', `return ${priceExtractorStr.replace(/^[^{]*{|}[^}]*$/g, '')}`);
+      const listingElements = document.querySelectorAll(selectors.listings);
+      const results: any[] = [];
+              for (let i = 0; i < Math.min(listingElements.length, 20); i++) {
+        const element = listingElements[i];
+        
+        const titleElement = element.querySelector(selectors.title);
+        const priceElement = element.querySelector(selectors.price);
+        const mileageElement = selectors.mileage ? element.querySelector(selectors.mileage) : null;
+        const locationElement = selectors.location ? element.querySelector(selectors.location) : null;
+        const dealerElement = selectors.dealer ? element.querySelector(selectors.dealer) : null;
+        const imageElement = selectors.image ? element.querySelector(selectors.image) : null;
+        const urlElement = selectors.url ? element.querySelector(selectors.url) : null;
+                const title = titleElement?.textContent?.trim() || '';
+        const priceText = priceElement?.textContent?.trim() || '';
+        const price = priceExtractor(priceText);
+                if (title && price > 0) {
+          const mileageText = mileageElement?.textContent?.trim() || '';
+          const mileageMatch = mileageText.match(/(\d+(?:,\d+)*)/);
+          
+          results.push({
+            title,
+            price,
+            mileage: mileageMatch ? parseInt(mileageMatch[1].replace(/,/g, '')) : undefined,
+            location: locationElement?.textContent?.trim() || '',
+            dealerName: dealerElement?.textContent?.trim() || '',
+            listingUrl: (urlElement as HTMLAnchorElement)?.href || urlElement?.getAttribute('href') || '',
+            images: imageElement ? [(imageElement as HTMLImageElement).src || imageElement.getAttribute('src')] : []
+          });
+        }
       }
-    }
-
-    return results;
-  }, scraper.selectors, scraper.priceExtractor.toString());
+           return results;  
+}, scraper.selectors, scraper.priceExtractor.toString());
 
       // Calculate market analysis
       const validListings = listings.filter(l => l.price > 0);

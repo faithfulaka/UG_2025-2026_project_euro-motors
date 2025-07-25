@@ -366,6 +366,7 @@ const scrapedData = await page.evaluate((selectors: any, manufacturer: string, m
                 name: text.replace(/£[\d,]+/, '').trim(),
                 price: priceMatch ? parseInt(priceMatch[1].replace(/,/g, '')) : 0,
                 description: ''
+              });
             }
           });
         }

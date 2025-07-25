@@ -2,6 +2,24 @@
 import puppeteer from 'puppeteer';
 import { MarketData, MarketListing } from '@/types/spa';
 
+interface AutotraderScrapingResult {
+  success: boolean;
+  data?: {
+    listings: Array<{
+      title: string;
+      price: string;
+      specs?: string;
+      url: string;
+    }>;
+    averagePrice: number;
+    priceRange: string;
+    inventoryCount: number;
+    dataSource: string;
+  };
+  error?: string;
+  retryAfter?: number;
+}
+
 interface ScrapingResult {
   success: boolean;
   data?: MarketData;

@@ -1,9 +1,9 @@
-// src/app/api/spa/makes/route.ts - Real CarQuery Makes API
+// src/app/api/spa/makes/route.ts - COMPLETE FIXED FILE
+
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { carQueryService } from '@/lib/carquery';
 import { SPAMakesResponse } from '@/types/spa';
-// import { SPASuggestion } from '@/types/spa'; // Removed unused import as per instructions
 
 // In-memory cache for makes (30 minutes TTL)
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
@@ -130,12 +130,10 @@ async function getDatabaseMakes(): Promise<string[]> {
       prisma.buyCar.findMany({
         select: { make: true },
         distinct: ['make']
-        
       }),
       prisma.rentalCar.findMany({
         select: { make: true },
         distinct: ['make']
-        
       })
     ]);
 
@@ -153,18 +151,12 @@ async function getDatabaseMakes(): Promise<string[]> {
   }
 }
 
-
-
 // Get makes from CarQuery API
 async function getCarQueryMakes(): Promise<string[]> {
   try {
-    const makesResult = await carQueryService.getMakes();
-    if ('error' in makesResult) {
-      console.error('❌ CarQuery makes error:', makesResult.error);
-      return [];
-    }
-    console.log(`🔍 CarQuery makes: ${makesResult.length}`);
-    return makesResult;
+    const makes = await carQueryService.getMakes();
+    console.log(`🔍 CarQuery makes: ${makes.length}`);
+    return makes;
     
   } catch (error) {
     console.error('❌ CarQuery makes error:', error);

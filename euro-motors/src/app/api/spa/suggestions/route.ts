@@ -1,8 +1,17 @@
-// src/app/api/spa/suggestions/route.ts 
+// src/app/api/spa/suggestions/route.ts - COMPLETE FIXED FILE
+
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { carQueryService } from '@/lib/carquery';
-import { SPASuggestion } from '@/types/spa';
+
+// Define SPASuggestion interface locally since it might be missing from types
+interface SPASuggestion {
+  type: 'make' | 'model' | 'year';
+  value: string;
+  displayName: string;
+  count?: number;
+  popular?: boolean;
+}
 
 // Cache for suggestions to improve performance
 const suggestionsCache = new Map<string, { data: SPASuggestion[]; expiresAt: number }>();
@@ -42,8 +51,8 @@ export async function GET(request: NextRequest) {
 
     // 🚗 GET MAKES (Database + CarQuery)
     if (type === 'makes') {
-      // Get makes from database
-      const dbMakes = await prisma.$queryRaw<{ make: string; count: number }[]>`
+      // Get makes from database with proper typing
+      const dbMakesRaw = await prisma.$queryRaw<{ make: string; count: bigint }[]>`
         SELECT DISTINCT make, COUNT(*) as count
         FROM (
           SELECT make FROM BuyCar WHERE make LIKE ${`%${search}%`}
@@ -55,28 +64,32 @@ export async function GET(request: NextRequest) {
         LIMIT 15
       `;
 
-      // Add database makes
-      suggestions = dbMakes.map(item => ({
+      // Convert database results to suggestions
+      suggestions = dbMakesRaw.map(item => ({
         type: 'make' as const,
         value: item.make,
         displayName: item.make,
-        count: item.count,
-        popular: item.count > 1
+        count: Number(item.count),
+        popular: Number(item.count) > 0
       }));
 
       // Enhance with CarQuery API makes if we have few results
       if (suggestions.length < 10) {
         try {
-          const carQueryResult = await carQueryService.getMakes(search);
-          if (carQueryResult.success && carQueryResult.data) {
-            // Merge CarQuery results (avoid duplicates)
-            const existingMakes = new Set(suggestions.map(s => s.value.toLowerCase()));
-            const newMakes = carQueryResult.data.filter(
-              make => !existingMakes.has(make.value.toLowerCase())
-            );
-            
-            suggestions = [...suggestions, ...newMakes].slice(0, 20);
-          }
+          const carQueryMakes = await carQueryService.getMakes(search);
+          // Merge CarQuery results (avoid duplicates)
+          const existingMakes = new Set(suggestions.map(s => s.value.toLowerCase()));
+          const newMakes: SPASuggestion[] = carQueryMakes
+            .filter(make => !existingMakes.has(make.toLowerCase()))
+            .map(make => ({
+              type: 'make' as const,
+              value: make,
+              displayName: make,
+              count: 0,
+              popular: false
+            }));
+          
+          suggestions = [...suggestions, ...newMakes].slice(0, 20);
         } catch (error) {
           console.error('⚠️ CarQuery makes error:', error);
         }
@@ -87,8 +100,8 @@ export async function GET(request: NextRequest) {
 
     // 🏷️ GET MODELS (Database + CarQuery for specific make)
     else if (type === 'models' && make) {
-      // Get models from database
-      const dbModels = await prisma.$queryRaw<{ model: string; count: number; year: number }[]>`
+      // Get models from database with proper typing
+      const dbModelsRaw = await prisma.$queryRaw<{ model: string; count: bigint; year: number }[]>`
         SELECT DISTINCT model, COUNT(*) as count, MAX(year) as year
         FROM (
           SELECT model, year FROM BuyCar WHERE make = ${make} AND model LIKE ${`%${search}%`}
@@ -101,27 +114,32 @@ export async function GET(request: NextRequest) {
       `;
 
       // Add database models
-      suggestions = dbModels.map(item => ({
+      suggestions = dbModelsRaw.map(item => ({
         type: 'model' as const,
         value: item.model,
-        displayName: `${item.model} (${item.year})`,
-        count: item.count,
-        popular: item.count > 0
+        displayName: `${item.model} (${Number(item.year)})`,
+        count: Number(item.count),
+        popular: Number(item.count) > 0
       }));
 
       // Enhance with CarQuery API models
       if (suggestions.length < 10) {
         try {
-          const carQueryResult = await carQueryService.getModels(make, search);
-          if (carQueryResult.success && carQueryResult.data) {
-            // Merge CarQuery results (avoid duplicates)
-            const existingModels = new Set(suggestions.map(s => s.value.toLowerCase()));
-            const newModels = carQueryResult.data
-              .filter(model => !existingModels.has(model.value.toLowerCase()))
-              .slice(0, 10);
-            
-            suggestions = [...suggestions, ...newModels].slice(0, 20);
-          }
+          const carQueryModels = await carQueryService.getModels(make, search);
+          // Merge CarQuery results (avoid duplicates)
+          const existingModels = new Set(suggestions.map(s => s.value.toLowerCase()));
+          const newModels: SPASuggestion[] = carQueryModels
+            .filter(model => !existingModels.has(model.toLowerCase()))
+            .slice(0, 10)
+            .map(model => ({
+              type: 'model' as const,
+              value: model,
+              displayName: model,
+              count: 0,
+              popular: false
+            }));
+          
+          suggestions = [...suggestions, ...newModels].slice(0, 20);
         } catch (error) {
           console.error('⚠️ CarQuery models error:', error);
         }
@@ -132,8 +150,8 @@ export async function GET(request: NextRequest) {
 
     // 📅 GET YEARS (Database + CarQuery for specific make/model)
     else if (type === 'years' && make && model) {
-      // Get years from database
-      const dbYears = await prisma.$queryRaw<{ year: number; count: number }[]>`
+      // Get years from database with proper typing
+      const dbYearsRaw = await prisma.$queryRaw<{ year: number; count: bigint }[]>`
         SELECT DISTINCT year, COUNT(*) as count
         FROM (
           SELECT year FROM BuyCar WHERE make = ${make} AND model = ${model}
@@ -146,27 +164,32 @@ export async function GET(request: NextRequest) {
       `;
 
       // Add database years
-      suggestions = dbYears.map(item => ({
+      suggestions = dbYearsRaw.map(item => ({
         type: 'year' as const,
-        value: item.year.toString(),
-        displayName: `${item.year} (${item.count} available)`,
-        count: item.count,
-        popular: item.year >= new Date().getFullYear() - 3
+        value: Number(item.year).toString(),
+        displayName: `${Number(item.year)} (${Number(item.count)} available)`,
+        count: Number(item.count),
+        popular: Number(item.year) >= new Date().getFullYear() - 3
       }));
 
       // Enhance with CarQuery API years if we have few results
       if (suggestions.length < 5) {
         try {
-          const carQueryResult = await carQueryService.getYears(make, model);
-          if (carQueryResult.success && carQueryResult.data) {
-            // Merge CarQuery results (avoid duplicates)
-            const existingYears = new Set(suggestions.map(s => s.value));
-            const newYears = carQueryResult.data
-              .filter(year => !existingYears.has(year.value))
-              .slice(0, 8);
-            
-            suggestions = [...suggestions, ...newYears].slice(0, 15);
-          }
+          const carQueryYears = await carQueryService.getYears(make, model);
+          // Merge CarQuery results (avoid duplicates)
+          const existingYears = new Set(suggestions.map(s => s.value));
+          const newYears: SPASuggestion[] = carQueryYears
+            .filter(year => !existingYears.has(year.toString()))
+            .slice(0, 8)
+            .map(year => ({
+              type: 'year' as const,
+              value: year.toString(),
+              displayName: year.toString(),
+              count: 0,
+              popular: year >= new Date().getFullYear() - 3
+            }));
+          
+          suggestions = [...suggestions, ...newYears].slice(0, 15);
         } catch (error) {
           console.error('⚠️ CarQuery years error:', error);
         }
@@ -225,14 +248,15 @@ export async function GET(request: NextRequest) {
       }
     });
 
-  } catch (error: any) {
-    console.error('🚨 SPA Suggestions Error:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch suggestions';
+    console.error('🚨 SPA Suggestions Error:', errorMessage);
     
     return NextResponse.json({
       success: false,
       error: {
         code: 'SUGGESTIONS_FAILED',
-        message: error.message || 'Failed to fetch suggestions',
+        message: errorMessage,
         recoverable: true
       }
     }, { status: 500 });
@@ -254,7 +278,7 @@ export async function POST(request: NextRequest) {
     console.log(`📦 Batch suggestions request: ${requests.length} requests`);
 
     const results = await Promise.allSettled(
-      requests.map(async (req: any) => {
+      requests.map(async (req: { type: string; make?: string; model?: string; search?: string }) => {
         const url = new URL(`http://localhost:3000/api/spa/suggestions`);
         url.searchParams.set('type', req.type);
         if (req.make) url.searchParams.set('make', req.make);
@@ -283,14 +307,15 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (error: any) {
-    console.error('🚨 Batch Suggestions Error:', error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Batch request failed';
+    console.error('🚨 Batch Suggestions Error:', errorMessage);
     
     return NextResponse.json({
       success: false,
       error: {
         code: 'BATCH_FAILED',
-        message: error.message || 'Batch request failed'
+        message: errorMessage
       }
     }, { status: 500 });
   }
