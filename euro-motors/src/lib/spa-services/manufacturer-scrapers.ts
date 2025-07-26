@@ -1,4 +1,4 @@
-// src/lib/spa-services/manufacturer-scrapers.ts 
+// src/lib/spa-services/manufacturer-scrapers.ts - FULLY FIXED VERSION
 import puppeteer, { Browser, Page } from 'puppeteer';
 
 // Define interfaces locally to avoid import issues
@@ -40,7 +40,6 @@ interface SPAServiceResponse<T> {
   error?: {
     code: string;
     message: string;
-    recoverable?: boolean;
     retryAfter?: number;
   };
   processingTime: number;
@@ -62,6 +61,23 @@ interface ScraperConfig {
   waitSelectors?: string[];
   cookieAccept?: string;
   countrySelector?: string;
+}
+
+// FIXED: Properly typed interface for page.evaluate return
+interface ScrapedManufacturerData {
+  make: string;
+  model: string;
+  year: number;
+  basePrice: number;
+  currency: string;
+  configuratorUrl: string;
+  availableOptions: Array<{ category: string; name: string; price: number; description: string }>;
+  colors: Array<unknown>;
+  interiorOptions: Array<unknown>;
+  packages: Array<unknown>;
+  engine?: string;
+  horsepower?: number;
+  acceleration?: number;
 }
 
 class RealManufacturerScraperService {
@@ -279,8 +295,7 @@ class RealManufacturerScraperService {
         success: false,
         error: {
           code: 'NO_DATA_FOUND',
-          message: `Manufacturer ${manufacturer} not supported. Available: ${Object.keys(this.manufacturerConfigs).join(', ')}`,
-          recoverable: false
+          message: `Manufacturer ${manufacturer} not supported. Available: ${Object.keys(this.manufacturerConfigs).join(', ')}`
         },
         processingTime: Date.now() - startTime,
         cached: false
@@ -343,6 +358,7 @@ class RealManufacturerScraperService {
         }
       }
 
+      // FIXED: Properly typed page.evaluate with explicit return type
       const scrapedData = await page.evaluate((
         selectors: {
           basePrice?: string;
@@ -351,34 +367,24 @@ class RealManufacturerScraperService {
         manufacturer: string, 
         model: string, 
         currentYear?: number
-      ): {
-        make: string;
-        model: string;
-        year: number;
-        basePrice: number;
-        currency: string;
-        configuratorUrl: string;
-        availableOptions: Array<{ category: string; name: string; price: number; description: string }>;
-        colors: Array<unknown>;
-        interiorOptions: Array<unknown>;
-        packages: Array<unknown>;
-        engine?: string;
-        horsepower?: number;
-        acceleration?: number;
-      } => {
-        const data = {
+      ): ScrapedManufacturerData => {
+        const data: ScrapedManufacturerData = {
           make: manufacturer,
           model: model,
           year: currentYear || new Date().getFullYear(),
           basePrice: 0,
           currency: 'GBP',
           configuratorUrl: window.location.href,
-          availableOptions: [] as Array<{ category: string; name: string; price: number; description: string }>,
+          availableOptions: [],
           colors: [],
           interiorOptions: [],
-          packages: []
+          packages: [],
+          engine: undefined,
+          horsepower: undefined,
+          acceleration: undefined
         };
 
+        // Extract base price
         if (selectors.basePrice) {
           const priceElement = document.querySelector(selectors.basePrice);
           if (priceElement) {
@@ -390,6 +396,7 @@ class RealManufacturerScraperService {
           }
         }
 
+        // Extract options
         if (selectors.options) {
           const optionElements = document.querySelectorAll(selectors.options);
           Array.from(optionElements).slice(0, 20).forEach((element) => {
@@ -406,6 +413,7 @@ class RealManufacturerScraperService {
           });
         }
 
+        // Extract additional data from page text
         const pageText = document.body.textContent || '';
         const engineMatch = pageText.match(/(\d+\.?\d*L?\s*V?\d*\s*[^,\n]*(?:engine|motor|turbo|hybrid))/i);
         if (engineMatch) {
@@ -425,11 +433,13 @@ class RealManufacturerScraperService {
         return data;
       }, config.selectors, manufacturer, model, year);
 
+      // Convert EUR to GBP if needed
       if (config.currency === 'EUR' && scrapedData.basePrice > 0) {
         scrapedData.basePrice = Math.round(scrapedData.basePrice * 0.86);
         scrapedData.currency = 'GBP';
       }
 
+      // FIXED: Properly access all properties with fallbacks
       const manufacturerData: ManufacturerConfigData = {
         make: manufacturer.charAt(0).toUpperCase() + manufacturer.slice(1),
         model: model,
@@ -441,9 +451,9 @@ class RealManufacturerScraperService {
         colors: scrapedData.colors as Array<{ name: string; type: 'standard' | 'metallic' | 'special'; price?: number }> || [],
         interiorOptions: scrapedData.interiorOptions as Array<{ name: string; price: number }> || [],
         packages: scrapedData.packages as Array<{ name: string; price: number; options: string[] }> || [],
-        engine: scrapedData.engine,
-        horsepower: scrapedData.horsepower,
-        acceleration: scrapedData.acceleration
+        engine: scrapedData.engine || undefined,
+        horsepower: scrapedData.horsepower || undefined,
+        acceleration: scrapedData.acceleration || undefined
       };
 
       this.cache.set(cacheKey, {
@@ -469,7 +479,6 @@ class RealManufacturerScraperService {
         error: {
           code: 'SCRAPING_FAILED',
           message: `Failed to scrape ${manufacturer}: ${errorMessage}`,
-          recoverable: true,
           retryAfter: 300
         },
         processingTime: Date.now() - startTime,
@@ -499,8 +508,8 @@ class RealManufacturerScraperService {
         await this.browser.close();
         this.browser = null;
         console.log('✅ Browser closed successfully');
-      } catch (error) {
-        console.error('❌ Error closing browser:', error);
+      } catch (cleanupError) {
+        console.error('❌ Error closing browser:', cleanupError);
       }
     }
   }

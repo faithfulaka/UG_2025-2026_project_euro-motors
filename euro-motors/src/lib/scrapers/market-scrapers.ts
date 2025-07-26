@@ -1,21 +1,7 @@
-// src/lib/scrapers/market-scrapers.ts
+// src/lib/scrapers/market-scrapers.ts - FULLY FIXED VERSION
 import puppeteer, { Browser, Page } from 'puppeteer';
 
-// Define interfaces locally to avoid import issues
-interface MarketListing {
-  title: string;
-  price: string;
-  priceNumeric: number;
-  mileage?: string;
-  year?: number;
-  location?: string;
-  dealer?: string;
-  specs?: string;
-  url: string;
-  imageUrl?: string;
-  datePosted?: string;
-}
-
+// FIXED: Remove unused MarketListing interface - define only what's needed locally
 interface MarketData {
   source: string;
   listings: Array<{
@@ -31,7 +17,7 @@ interface MarketData {
   averagePrice: number;
   priceRange: string;
   inventoryCount: number;
-  priceDistribution?: {
+  priceDistribution: {
     min: number;
     max: number;
     median: number;
@@ -53,7 +39,6 @@ interface SPAServiceResponse<T> {
   error?: {
     code: string;
     message: string;
-    recoverable?: boolean;
     retryAfter?: number;
   };
   processingTime: number;
@@ -271,6 +256,7 @@ class MarketScraperService {
         return null;
       }
 
+      // FIXED: Properly typed page.evaluate
       const listings = await page.evaluate((
         selectors: {
           listings: string;
@@ -355,8 +341,12 @@ class MarketScraperService {
       const avgPrice = prices.length > 0 ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0;
       const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
       const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
+      
+      // FIXED: Calculate median properly
       const sortedPrices = [...prices].sort((a, b) => a - b);
       const median = sortedPrices.length > 0 ? sortedPrices[Math.floor(sortedPrices.length / 2)] : 0;
+      const q1 = sortedPrices.length > 0 ? sortedPrices[Math.floor(sortedPrices.length * 0.25)] : 0;
+      const q3 = sortedPrices.length > 0 ? sortedPrices[Math.floor(sortedPrices.length * 0.75)] : 0;
 
       console.log(`✅ ${scraper.name}: Found ${validListings.length} listings, avg price: £${avgPrice.toLocaleString()}`);
 
@@ -372,7 +362,9 @@ class MarketScraperService {
         priceDistribution: {
           min: minPrice,
           max: maxPrice,
-          median
+          median,
+          q1,
+          q3
         },
         dataSource: scraper.name,
         searchParams: { make, model, year },
@@ -425,8 +417,8 @@ class MarketScraperService {
         if (sourceKey !== sourceKeys[sourceKeys.length - 1]) {
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
-      } catch (error) {
-        console.error(`❌ Failed to scrape ${sourceKey}:`, error);
+      } catch (marketError) {
+        console.error(`❌ Failed to scrape ${sourceKey}:`, marketError);
         results.push(null);
       }
     }
@@ -439,7 +431,6 @@ class MarketScraperService {
         error: {
           code: 'NO_DATA_FOUND',
           message: `No market data found for ${make} ${model}`,
-          recoverable: true,
           retryAfter: 300
         },
         processingTime: Date.now() - startTime,
@@ -447,11 +438,15 @@ class MarketScraperService {
       };
     }
 
+    // FIXED: Proper aggregation with all required properties
     const minPrices = validResults
-      .map(r => r.priceDistribution?.min || 0)
+      .map(r => r.priceDistribution.min)
       .filter(p => p > 0);
     const maxPrices = validResults
-      .map(r => r.priceDistribution?.max || 0);
+      .map(r => r.priceDistribution.max);
+    const allMedians = validResults
+      .map(r => r.priceDistribution.median)
+      .filter(m => m > 0);
 
     const aggregatedData: MarketData = {
       source: 'autotrader',
@@ -464,7 +459,9 @@ class MarketScraperService {
       priceDistribution: {
         min: Math.min(...minPrices),
         max: Math.max(...maxPrices),
-        median: 0
+        median: allMedians.length > 0 ? Math.round(allMedians.reduce((a, b) => a + b, 0) / allMedians.length) : 0,
+        q1: validResults.reduce((sum, r) => sum + (r.priceDistribution.q1 || 0), 0) / validResults.length,
+        q3: validResults.reduce((sum, r) => sum + (r.priceDistribution.q3 || 0), 0) / validResults.length
       },
       dataSource: 'Multi-source aggregation',
       searchParams: { make, model, year },
@@ -492,8 +489,8 @@ class MarketScraperService {
         await this.browser.close();
         this.browser = null;
         console.log('✅ Market scraper browser closed');
-      } catch (error) {
-        console.error('❌ Error closing market scraper browser:', error);
+      } catch (cleanupError) {
+        console.error('❌ Error closing market scraper browser:', cleanupError);
       }
     }
   }

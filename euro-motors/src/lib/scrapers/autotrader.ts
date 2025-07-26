@@ -1,4 +1,4 @@
-// src/lib/scrapers/autotrader.ts - Enhanced Real Autotrader Scraper
+// src/lib/scrapers/autotrader.ts - FULLY FIXED VERSION
 import puppeteer from 'puppeteer';
 import { MarketData, MarketListing } from '@/types/spa';
 
@@ -33,7 +33,7 @@ class AutotraderScraper {
   }
 
   private async respectRateLimit(): Promise<void> {
-    const currentTime = Date.now(); // FIXED: Use descriptive variable name
+    const currentTime = Date.now();
     const timeSinceLastRequest = currentTime - this.lastRequestTime;
     
     if (timeSinceLastRequest < this.requestDelay) {
@@ -127,15 +127,15 @@ class AutotraderScraper {
         // Wait for results to load
         await this.delay(2000);
 
-        // Handle cookie consent if present
+        // Handle cookie consent if present - FIXED: Remove unused variable
         try {
           const acceptCookies = await page.$('#onetrust-accept-btn-handler');
           if (acceptCookies) {
             await acceptCookies.click();
             await this.delay(1000);
           }
-        } catch (cookieError) {
-          // FIXED: Remove unused variable and use descriptive error handling
+        } catch {
+          // FIXED: Removed unused 'cookieError' variable
           console.log('⚠️ Cookie consent not found, continuing...');
         }
 
@@ -221,8 +221,8 @@ class AutotraderScraper {
                 url: url || '',
                 index
               };
-            } catch (listingError) {
-              console.error('Error extracting car data:', listingError);
+            } catch (listingExtractionError) {
+              console.error('Error extracting car data:', listingExtractionError);
               return {
                 title: `Car ${index + 1}`,
                 price: '£0',
@@ -320,22 +320,22 @@ class AutotraderScraper {
         throw browserError;
       }
       
-    } catch (error) {
-      console.error('❌ Autotrader scraping error:', error);
+    } catch (scrapingError) {
+      console.error('❌ Autotrader scraping error:', scrapingError);
       
       let errorMessage = 'Unknown scraping error';
       let retryAfter = 60; // Default 1 minute retry
       
-      if (error instanceof Error) {
-        errorMessage = error.message;
+      if (scrapingError instanceof Error) {
+        errorMessage = scrapingError.message;
         
-        if (error.message.includes('timeout') || error.message.includes('TimeoutError')) {
+        if (scrapingError.message.includes('timeout') || scrapingError.message.includes('TimeoutError')) {
           errorMessage = 'Autotrader page load timeout';
           retryAfter = 30;
-        } else if (error.message.includes('blocked') || error.message.includes('403')) {
+        } else if (scrapingError.message.includes('blocked') || scrapingError.message.includes('403')) {
           errorMessage = 'Autotrader blocked request';
           retryAfter = 300; // 5 minutes
-        } else if (error.message.includes('rate limit') || error.message.includes('429')) {
+        } else if (scrapingError.message.includes('rate limit') || scrapingError.message.includes('429')) {
           errorMessage = 'Autotrader rate limited';
           retryAfter = 180; // 3 minutes
         }

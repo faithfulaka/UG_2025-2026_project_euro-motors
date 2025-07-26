@@ -1,4 +1,4 @@
-// src/types/spa.ts 
+// src/types/spa.ts - COMPLETE FIXED VERSION
 
 // Base SPA Search Parameters
 export interface SPASearchParams {
@@ -372,18 +372,4 @@ export interface SPASearchContext {
   };
   loading: boolean;
   error: SPAError | null;
-}
-
-export interface MarketListing {
-  title: string;
-  price: string;
-  priceNumeric: number; // ADD this missing property
-  mileage?: string;
-  year?: number;
-  location?: string;
-  dealer?: string;
-  specs?: string;
-  url: string;
-  imageUrl?: string;
-  datePosted?: string;
 }

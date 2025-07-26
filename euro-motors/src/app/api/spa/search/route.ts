@@ -1,4 +1,4 @@
-// src/app/api/spa/search/route.ts - Enhanced Real SPA with Live Data
+// src/app/api/spa/search/route.ts - FULLY FIXED VERSION
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { carQueryService } from '@/lib/carquery';
@@ -183,31 +183,31 @@ async function searchDatabase(make: string, model: string, year?: number): Promi
     if (buyCars.length === 0) return null;
 
     const car = buyCars[0];
-    let supercarData = null;
-    let performanceData = null;
-    let pricingData = null;
+    let supercarData: { bodyType?: string } | null = null;
+    let performanceData: Record<string, unknown> | null = null;
+    let pricingData: Record<string, unknown> | null = null;
     let addedOptions: string[] = [];
     
     try {
       if (car.supercarData) {
         supercarData = typeof car.supercarData === 'string' 
           ? JSON.parse(car.supercarData) 
-          : car.supercarData;
+          : car.supercarData as { bodyType?: string };
       }
       if (car.performanceData) {
         performanceData = typeof car.performanceData === 'string'
           ? JSON.parse(car.performanceData)
-          : car.performanceData;
+          : car.performanceData as Record<string, unknown>;
       }
       if (car.pricingData) {
         pricingData = typeof car.pricingData === 'string'
           ? JSON.parse(car.pricingData)
-          : car.pricingData;
+          : car.pricingData as Record<string, unknown>;
       }
       if (car.addedOptions) {
         addedOptions = typeof car.addedOptions === 'string'
           ? JSON.parse(car.addedOptions)
-          : car.addedOptions;
+          : car.addedOptions as string[];
       }
     } catch (parseError) {
       console.error('JSON parsing error:', parseError);
@@ -217,10 +217,19 @@ async function searchDatabase(make: string, model: string, year?: number): Promi
       make: car.make,
       model: car.model,
       year: car.year,
-      trim: car.trim,
+      trim: car.trim || undefined,
       bodyType: supercarData?.bodyType || 'Unknown',
       
-      performanceData: performanceData || {
+      performanceData: performanceData ? {
+        engine: (performanceData.engine as string) || 'N/A',
+        horsePower: (performanceData.horsePower as string) || 'N/A',
+        torque: (performanceData.torque as string) || 'N/A',
+        acceleration060: (performanceData.acceleration060 as string) || 'N/A',
+        topSpeed: (performanceData.topSpeed as string) || 'N/A',
+        transmission: (performanceData.transmission as string) || 'N/A',
+        driveType: (performanceData.driveType as string) || 'N/A',
+        weight: (performanceData.weight as string) || 'N/A'
+      } : {
         engine: 'N/A',
         horsePower: 'N/A',
         torque: 'N/A',
@@ -232,13 +241,13 @@ async function searchDatabase(make: string, model: string, year?: number): Promi
       },
       
       pricingData: pricingData ? {
-        baseMSRP: pricingData.baseMSRP,
-        currentMarketRange: pricingData.currentMarketRange,
-        averageDealerPrice: pricingData.averageDealerPrice || car.price,
-        dealerInventoryCount: pricingData.dealerInventoryCount || 1,
-        priceTrend: pricingData.priceTrend || 'Stable'
+        baseMSRP: (pricingData.baseMSRP as number) || undefined,
+        currentMarketRange: (pricingData.currentMarketRange as string) || 'N/A',
+        averageDealerPrice: (pricingData.averageDealerPrice as number) || car.price,
+        dealerInventoryCount: (pricingData.dealerInventoryCount as number) || 1,
+        priceTrend: (pricingData.priceTrend as string) || 'Stable'
       } : {
-        baseMSRP: car.baseMSRP,
+        baseMSRP: car.baseMSRP || undefined,
         currentMarketRange: `£${Math.round(car.price * 0.95).toLocaleString()} - £${Math.round(car.price * 1.05).toLocaleString()}`,
         averageDealerPrice: car.price,
         dealerInventoryCount: 1,
@@ -268,21 +277,79 @@ async function searchDatabase(make: string, model: string, year?: number): Promi
   }
 }
 
-// CarQuery API search (enhanced)
+// CarQuery API search (enhanced) - FULLY FIXED
 async function searchCarQuery(make: string, model: string, year?: number): Promise<ComprehensiveSPAData | null> {
   try {
     const carData = await carQueryService.getCarData(make, model, year || 2022);
     
     if (!carData) return null;
 
+    // FIXED: Create properly typed objects instead of trying to assign unknown types
+    const typedCarData = carData as {
+      basicSpecifications?: {
+        make?: string;
+        model?: string;
+        year?: number;
+        bodyType?: string;
+        engine?: string;
+        engineCC?: string;
+        cylinders?: string;
+        doors?: number;
+        seats?: number;
+        drivetrain?: string;
+        transmission?: string;
+        fuelType?: string;
+      };
+      performanceData?: {
+        engine?: string;
+        horsePower?: string;
+        torque?: string;
+        acceleration060?: string;
+        topSpeed?: string;
+        transmission?: string;
+        driveType?: string;
+        weight?: string;
+        fuelEconomy?: string;
+      };
+    };
+
+    // FIXED: Create compliant basicSpecifications object
+    const basicSpecs = typedCarData.basicSpecifications ? {
+      make: typedCarData.basicSpecifications.make || make,
+      model: typedCarData.basicSpecifications.model || model,
+      year: typedCarData.basicSpecifications.year || year || 2022,
+      bodyType: typedCarData.basicSpecifications.bodyType || 'Unknown',
+      engine: typedCarData.basicSpecifications.engine || 'N/A',
+      engineCC: typedCarData.basicSpecifications.engineCC || undefined,
+      cylinders: typedCarData.basicSpecifications.cylinders || undefined,
+      doors: typedCarData.basicSpecifications.doors || 4,
+      seats: typedCarData.basicSpecifications.seats || 5,
+      drivetrain: typedCarData.basicSpecifications.drivetrain || undefined,
+      transmission: typedCarData.basicSpecifications.transmission || undefined,
+      fuelType: typedCarData.basicSpecifications.fuelType || undefined
+    } : undefined;
+
+    // FIXED: Create compliant performanceData object
+    const perfData = typedCarData.performanceData ? {
+      engine: typedCarData.performanceData.engine || 'N/A',
+      horsePower: typedCarData.performanceData.horsePower || 'N/A',
+      torque: typedCarData.performanceData.torque || 'N/A',
+      acceleration060: typedCarData.performanceData.acceleration060 || 'N/A',
+      topSpeed: typedCarData.performanceData.topSpeed || 'N/A',
+      transmission: typedCarData.performanceData.transmission || 'N/A',
+      driveType: typedCarData.performanceData.driveType || 'N/A',
+      weight: typedCarData.performanceData.weight || 'N/A',
+      fuelEconomy: typedCarData.performanceData.fuelEconomy || undefined
+    } : undefined;
+
     return {
       make,
       model,
       year: year || 2022,
-      bodyType: (carData as Record<string, unknown>).basicSpecifications?.bodyType || 'Unknown',
+      bodyType: basicSpecs?.bodyType || 'Unknown',
       
-      basicSpecifications: (carData as Record<string, unknown>).basicSpecifications,
-      performanceData: (carData as Record<string, unknown>).performanceData,
+      basicSpecifications: basicSpecs,
+      performanceData: perfData,
       
       pricingData: {
         baseMSRP: 0,
@@ -375,12 +442,13 @@ async function searchMarketData(make: string, model: string, year?: number): Pro
         listings: marketData.listings.map((listing: { 
           title: string; 
           price: string; 
+          priceNumeric?: number;
           specs?: string; 
           url: string; 
         }) => ({
           title: listing.title,
           price: listing.price,
-          priceNumeric: parseFloat(listing.price.replace(/[^\d]/g, '')) || 0,
+          priceNumeric: listing.priceNumeric || parseFloat(listing.price.replace(/[^\d]/g, '')) || 0,
           specs: listing.specs,
           url: listing.url
         })),
@@ -400,7 +468,7 @@ async function searchMarketData(make: string, model: string, year?: number): Pro
       },
       
       dataSource: 'Autotrader UK Market Data',
-      searchQuery: { make, model, year: year || undefined, dataSource: 'market' },
+      searchQuery: { make, model, year, dataSource: 'market' },
       timestamp: new Date().toISOString()
     };
     
@@ -450,7 +518,7 @@ async function comprehensiveSearch(make: string, model: string, year?: number): 
       
       // Combine pricing data from multiple sources
       pricingData: {
-        baseMSRP: mfgData?.pricingData?.baseMSRP || dbData?.pricingData?.baseMSRP || 0,
+        baseMSRP: mfgData?.pricingData?.baseMSRP || dbData?.pricingData?.baseMSRP,
         currentMarketRange: marketData?.pricingData?.currentMarketRange || 
                            dbData?.pricingData?.currentMarketRange || 'N/A',
         averageDealerPrice: marketData?.pricingData?.averageDealerPrice || 
@@ -504,8 +572,8 @@ export async function DELETE() {
       message: 'Search cache cleared successfully'
     });
     
-  } catch (err) {
-    console.error('Cache clear error:', err);
+  } catch (deleteError) {
+    console.error('Cache clear error:', deleteError);
     return NextResponse.json(
       { error: 'Failed to clear cache' },
       { status: 500 }
