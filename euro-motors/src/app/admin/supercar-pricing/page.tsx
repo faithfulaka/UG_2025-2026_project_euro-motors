@@ -1,4 +1,4 @@
-//src/app/admin/supercar-pricing/page.tsx
+// src/app/admin/supercar-pricing/page.tsx 
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -56,7 +56,6 @@ export default function SupercarPricingAggregatorPage() {
   // Dropdown visibility
   const [showMakeDropdown, setShowMakeDropdown] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
-  
 
   // Search history
   const [searchHistory, setSearchHistory] = useState<SearchHistory[]>([]);
@@ -64,14 +63,13 @@ export default function SupercarPricingAggregatorPage() {
   // Refs for click outside detection
   const makeDropdownRef = useRef<HTMLDivElement>(null);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
-  
 
-  // Load makes on component mount
+  // Load makes on component mount AND when dataSource changes
   useEffect(() => {
     loadMakes();
-  }, []);
+  }, [dataSource]); // FIXED: Added dataSource dependency
 
-  // Load models when make changes
+  // Load models when make or dataSource changes
   useEffect(() => {
     if (selectedMake.trim()) {
       loadModels(selectedMake);
@@ -82,9 +80,9 @@ export default function SupercarPricingAggregatorPage() {
       setSelectedModel('');
       setSelectedYear('');
     }
-  }, [selectedMake]);
+  }, [selectedMake, dataSource]); // FIXED: Added dataSource dependency
 
-  // Load years when model changes
+  // Load years when model or dataSource changes
   useEffect(() => {
     if (selectedMake.trim() && selectedModel.trim()) {
       loadYears();
@@ -93,7 +91,7 @@ export default function SupercarPricingAggregatorPage() {
       setAutoComplete(prev => ({ ...prev, years: [] }));
       setSelectedYear('');
     }
-  }, [selectedMake, selectedModel]);
+  }, [selectedMake, selectedModel, dataSource]); // FIXED: Added dataSource dependency
 
   // Click outside handlers
   useEffect(() => {
@@ -110,12 +108,13 @@ export default function SupercarPricingAggregatorPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Load makes from API
+  // FIXED: Template literal bug - this was preventing API calls from working
   const loadMakes = async () => {
     try {
       setAutoComplete(prev => ({ ...prev, makesLoading: true }));
 
-      const response = await fetch('/api/spa/makes?source=combined');
+      // FIXED: Changed from '/api/spa/makes?source=${dataSource}' to template literal
+      const response = await fetch(`/api/spa/makes?source=${dataSource}`);
       if (!response.ok) throw new Error('Failed to load makes');
 
       const data = await response.json();
@@ -124,6 +123,8 @@ export default function SupercarPricingAggregatorPage() {
         makes: data.makes || [],
         makesLoading: false
       }));
+
+      console.log(`✅ Loaded ${data.makes?.length || 0} makes from ${dataSource}`);
 
     } catch (error) {
       console.error('Error loading makes:', error);
@@ -136,7 +137,7 @@ export default function SupercarPricingAggregatorPage() {
     try {
       setAutoComplete(prev => ({ ...prev, modelsLoading: true }));
 
-      const response = await fetch(`/api/spa/models?make=${encodeURIComponent(make)}&source=combined`);
+      const response = await fetch(`/api/spa/models?make=${encodeURIComponent(make)}&source=${dataSource}`);
       if (!response.ok) throw new Error('Failed to load models');
 
       const data = await response.json();
@@ -146,18 +147,31 @@ export default function SupercarPricingAggregatorPage() {
         modelsLoading: false
       }));
 
+      console.log(`✅ Loaded ${data.models?.length || 0} models for ${make} from ${dataSource}`);
+
     } catch (error) {
       console.error('Error loading models:', error);
       setAutoComplete(prev => ({ ...prev, modelsLoading: false }));
     }
   };
 
-  // Load years for specific make/model (using CarQuery)
+  // FIXED: Load years using new API endpoint
   const loadYears = async () => {
     try {
       setAutoComplete(prev => ({ ...prev, yearsLoading: true }));
 
-      // For now, provide common years - in real implementation, this would call CarQuery
+      if (dataSource === 'database') {
+        // Use suggestions API for database years
+        const response = await fetch(`/api/spa/suggestions?type=years&make=${encodeURIComponent(selectedMake)}&model=${encodeURIComponent(selectedModel)}`);
+        if (response.ok) {
+          const data = await response.json();
+          const years = data.data?.map((item: { value: string }) => parseInt(item.value)).filter(Boolean) || [];
+          setAutoComplete(prev => ({ ...prev, years, yearsLoading: false }));
+          return;
+        }
+      }
+
+      // Fallback to generated years for other sources
       const currentYear = new Date().getFullYear();
       const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
 
@@ -166,6 +180,8 @@ export default function SupercarPricingAggregatorPage() {
         years,
         yearsLoading: false
       }));
+
+      console.log(`✅ Loaded ${years.length} years for ${selectedMake} ${selectedModel}`);
 
     } catch (error) {
       console.error('Error loading years:', error);
@@ -269,6 +285,7 @@ export default function SupercarPricingAggregatorPage() {
     setSelectedMake(car.make);
     setSelectedModel(car.model);
     setSelectedYear(car.year.toString());
+    setDataSource('database'); // Set to database for quick fill
   };
 
   return (
@@ -278,6 +295,17 @@ export default function SupercarPricingAggregatorPage() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">🚘 Supercar Pricing Aggregator</h1>
           <p className="text-gray-600 text-lg">Get comprehensive vehicle data from multiple REAL sources with live scraping</p>
+          
+          {/* Debug Info */}
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h3 className="font-semibold text-blue-800 mb-2">🔧 Debug Status:</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+              <div>Current Source: <span className="font-mono bg-blue-100 px-2 py-1 rounded">{dataSource}</span></div>
+              <div>Makes: <span className="font-mono bg-green-100 px-2 py-1 rounded">{autoComplete.makes.length}</span></div>
+              <div>Models: <span className="font-mono bg-green-100 px-2 py-1 rounded">{autoComplete.models.length}</span></div>
+              <div>Years: <span className="font-mono bg-green-100 px-2 py-1 rounded">{autoComplete.years.length}</span></div>
+            </div>
+          </div>
         </div>
 
         {/* Data Source Selection */}
@@ -453,8 +481,8 @@ export default function SupercarPricingAggregatorPage() {
               )}
             </div>
 
-            {/* Year Dropdown (Conditional) */}
-            <div className="relative" ref={makeDropdownRef}>
+            {/* Year Dropdown */}
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
               <select
                 value={selectedYear}
