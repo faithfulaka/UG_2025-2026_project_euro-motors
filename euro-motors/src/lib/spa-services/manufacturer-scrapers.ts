@@ -1,6 +1,51 @@
 // src/lib/spa-services/manufacturer-scrapers.ts 
 import puppeteer, { Browser, Page } from 'puppeteer';
-import { ManufacturerConfigData, SPAServiceResponse } from '@/types/spa';
+
+// Define interfaces locally to avoid import issues
+interface ManufacturerConfigData {
+  make: string;
+  model: string;
+  year: number;
+  basePrice: number;
+  currency: string;
+  configuratorUrl: string;
+  availableOptions: Array<{
+    category: string;
+    name: string;
+    price: number;
+    description: string;
+  }>;
+  colors: Array<{
+    name: string;
+    type: 'standard' | 'metallic' | 'special';
+    price?: number;
+  }>;
+  interiorOptions: Array<{
+    name: string;
+    price: number;
+  }>;
+  packages: Array<{
+    name: string;
+    price: number;
+    options: string[];
+  }>;
+  engine?: string;
+  horsepower?: number;
+  acceleration?: number;
+}
+
+interface SPAServiceResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: {
+    code: string;
+    message: string;
+    recoverable?: boolean;
+    retryAfter?: number;
+  };
+  processingTime: number;
+  cached: boolean;
+}
 
 interface ScraperConfig {
   baseUrl: string;
@@ -21,7 +66,7 @@ interface ScraperConfig {
 
 class RealManufacturerScraperService {
   private browser: Browser | null = null;
-  private cache = new Map<string, { data: any; expiresAt: number }>();
+  private cache = new Map<string, { data: ManufacturerConfigData; expiresAt: number }>();
   private cacheTimeout = 60 * 60 * 1000; // 1 hour cache for manufacturer data
 
   private async delay(ms: number): Promise<void> {
@@ -101,7 +146,7 @@ class RealManufacturerScraperService {
       cookieAccept: '.uc-accept-all-button, .cookie-accept'
     },
 
-      lamborghini: {
+    lamborghini: {
       baseUrl: 'https://configurator.lamborghini.com',
       currency: 'EUR', // Usually EUR, will convert to GBP
       region: 'EU',
@@ -115,7 +160,7 @@ class RealManufacturerScraperService {
       cookieAccept: '.cookie-accept, #cookie-consent-accept'
     },
 
-      astonmartin: {
+    astonmartin: {
       baseUrl: 'https://configurator.astonmartin.com',
       currency: 'GBP',
       region: 'UK',
@@ -158,7 +203,6 @@ class RealManufacturerScraperService {
     }
   };
 
-  // 🚀 INITIALIZE BROWSER WITH OPTIMAL SETTINGS
   private async initBrowser(): Promise<Browser> {
     if (this.browser && this.browser.isConnected()) {
       return this.browser;
@@ -181,41 +225,36 @@ class RealManufacturerScraperService {
     return this.browser;
   }
 
-  // 🍪 HANDLE COOKIES AND GDPR
   private async handleCookiesAndGDPR(page: Page, config: ScraperConfig): Promise<void> {
     if (!config.cookieAccept) return;
 
     try {
-      // Wait for cookie banner and accept
       await page.waitForSelector(config.cookieAccept, { timeout: 5000 });
       await page.click(config.cookieAccept);
       await this.delay(1000);
       console.log('✅ Cookies accepted');
-    } catch (error) {
+    } catch {
       console.log('⚠️ No cookie banner found or already accepted');
     }
   }
 
-  // 🌍 SET REGION AND CURRENCY
   private async setRegionAndCurrency(page: Page, config: ScraperConfig): Promise<void> {
     if (!config.countrySelector) return;
 
     try {
       await page.waitForSelector(config.countrySelector, { timeout: 3000 });
       
-      // Select appropriate region
       if (config.region === 'UK') {
         await page.click(`${config.countrySelector} [data-country="GB"], [value="UK"], [data-value="en-GB"]`);
       }
       
       await this.delay(2000);
       console.log(`✅ Region set to ${config.region}`);
-    } catch (error) {
+    } catch {
       console.log('⚠️ Could not set region, using default');
     }
   }
 
-  // 🔍 UNIVERSAL SCRAPER FOR ANY MANUFACTURER
   async scrapeManufacturerData(
     manufacturer: string, 
     model: string, 
@@ -224,7 +263,6 @@ class RealManufacturerScraperService {
     const startTime = Date.now();
     const cacheKey = `${manufacturer}-${model}-${year || 'current'}`;
     
-    // Check cache first
     const cached = this.cache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       return {
@@ -249,100 +287,98 @@ class RealManufacturerScraperService {
       };
     }
 
-    let browser: Browser | null = null;
     let page: Page | null = null;
 
     try {
-      browser = await this.initBrowser();
+      const browser = await this.initBrowser();
       page = await browser.newPage();
       
-      // Set optimal page settings
       await page.setViewport({ width: 1920, height: 1080 });
       await page.setExtraHTTPHeaders({
         'Accept-Language': 'en-GB,en;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br'
       });
 
-      // Navigate to configurator
       console.log(`🌐 Navigating to ${manufacturer} configurator...`);
       await page.goto(config.baseUrl, { 
         waitUntil: 'networkidle2',
         timeout: 30000 
       });
 
-      // Handle cookies and GDPR
       await this.handleCookiesAndGDPR(page, config);
-      
-      // Set region if needed
       await this.setRegionAndCurrency(page, config);
 
-      // Wait for key elements to load
       if (config.waitSelectors) {
         for (const selector of config.waitSelectors) {
           try {
             await page.waitForSelector(selector, { timeout: 10000 });
-          } catch (error) {
+          } catch {
             console.log(`⚠️ Timeout waiting for ${selector}, continuing...`);
           }
         }
       }
 
-  // Try to find and select the model
-  let modelFound = false;
-  if (config.selectors.models) {
-    try {
-      modelFound = await page.evaluate((modelSelector, targetModel) => {
-        const modelElements = document.querySelectorAll(modelSelector);
-        
-        for (const element of modelElements) {
-          const text = element.textContent?.toLowerCase() || '';
-          if (text.includes(targetModel.toLowerCase())) {
-            (element as HTMLElement).click();
-            return true;
+      let modelFound = false;
+      if (config.selectors.models) {
+        try {
+          modelFound = await page.evaluate((modelSelector: string, targetModel: string) => {
+            const modelElements = document.querySelectorAll(modelSelector);
+            
+            for (const element of modelElements) {
+              const text = element.textContent?.toLowerCase() || '';
+              if (text.includes(targetModel.toLowerCase())) {
+                (element as HTMLElement).click();
+                return true;
+              }
+            }
+            return false;
+          }, config.selectors.models, model);
+
+          if (modelFound) {
+            console.log(`✅ Found and selected model: ${model}`);
+            await this.delay(3000);
           }
+        } catch {
+          console.log('⚠️ Could not auto-select model, scraping general data');
         }
-        return false;
-      }, config.selectors.models, model);
-
-      if (modelFound) {
-        console.log(`✅ Found and selected model: ${model}`);
-        await this.delay(3000); // Wait for model to load
       }
-    } catch (error) {
-      console.log('⚠️ Could not auto-select model, scraping general data');
-    }
-  }
 
-      // Extract pricing and configuration data
-const scrapedData = await page.evaluate((selectors: any, manufacturer: string, model: string, year?: number): {
-  make: string;
-  model: string;
-  year: number;
-  basePrice: number;
-  currency: string;
-  configuratorUrl: string;
-  availableOptions: Array<{ category: string; name: string; price: number; description: string }>;
-  colors: any[];
-  interiorOptions: any[];
-  packages: any[];
-  engine?: string;
-  horsepower?: number;
-  acceleration?: number;
-} => {
-  const data = {
+      const scrapedData = await page.evaluate((
+        selectors: {
+          basePrice?: string;
+          options?: string;
+        }, 
+        manufacturer: string, 
+        model: string, 
+        currentYear?: number
+      ): {
+        make: string;
+        model: string;
+        year: number;
+        basePrice: number;
+        currency: string;
+        configuratorUrl: string;
+        availableOptions: Array<{ category: string; name: string; price: number; description: string }>;
+        colors: Array<unknown>;
+        interiorOptions: Array<unknown>;
+        packages: Array<unknown>;
+        engine?: string;
+        horsepower?: number;
+        acceleration?: number;
+      } => {
+        const data = {
           make: manufacturer,
           model: model,
-          year: year || new Date().getFullYear(),
+          year: currentYear || new Date().getFullYear(),
           basePrice: 0,
           currency: 'GBP',
           configuratorUrl: window.location.href,
-          availableOptions: [],
+          availableOptions: [] as Array<{ category: string; name: string; price: number; description: string }>,
           colors: [],
           interiorOptions: [],
           packages: []
         };
 
-        // Extract base price
         if (selectors.basePrice) {
           const priceElement = document.querySelector(selectors.basePrice);
           if (priceElement) {
@@ -354,10 +390,9 @@ const scrapedData = await page.evaluate((selectors: any, manufacturer: string, m
           }
         }
 
-        // Extract options
         if (selectors.options) {
           const optionElements = document.querySelectorAll(selectors.options);
-          Array.from(optionElements).slice(0, 20).forEach((element, index) => {
+          Array.from(optionElements).slice(0, 20).forEach((element) => {
             const text = element.textContent?.trim() || '';
             if (text.length > 0 && text.length < 100) {
               const priceMatch = text.match(/£([\d,]+)/);
@@ -371,20 +406,17 @@ const scrapedData = await page.evaluate((selectors: any, manufacturer: string, m
           });
         }
 
-        // Try to extract engine info from page content
         const pageText = document.body.textContent || '';
         const engineMatch = pageText.match(/(\d+\.?\d*L?\s*V?\d*\s*[^,\n]*(?:engine|motor|turbo|hybrid))/i);
         if (engineMatch) {
           data.engine = engineMatch[1];
         }
 
-        // Try to extract horsepower
         const hpMatch = pageText.match(/(\d+)\s*(?:hp|bhp|ps|cv)/i);
         if (hpMatch) {
           data.horsepower = parseInt(hpMatch[1]);
         }
 
-        // Try to extract acceleration
         const accelMatch = pageText.match(/(\d+\.?\d*)\s*(?:sec|seconds?)\s*(?:to\s*)?(?:0-)?(?:100|60)/i);
         if (accelMatch) {
           data.acceleration = parseFloat(accelMatch[1]);
@@ -393,13 +425,11 @@ const scrapedData = await page.evaluate((selectors: any, manufacturer: string, m
         return data;
       }, config.selectors, manufacturer, model, year);
 
-      // Convert EUR to GBP if needed (rough conversion)
       if (config.currency === 'EUR' && scrapedData.basePrice > 0) {
-        scrapedData.basePrice = Math.round(scrapedData.basePrice * 0.86); // Rough EUR to GBP
+        scrapedData.basePrice = Math.round(scrapedData.basePrice * 0.86);
         scrapedData.currency = 'GBP';
       }
 
-      // Validate and enhance the data
       const manufacturerData: ManufacturerConfigData = {
         make: manufacturer.charAt(0).toUpperCase() + manufacturer.slice(1),
         model: model,
@@ -408,12 +438,14 @@ const scrapedData = await page.evaluate((selectors: any, manufacturer: string, m
         currency: 'GBP',
         configuratorUrl: scrapedData.configuratorUrl,
         availableOptions: scrapedData.availableOptions || [],
-        colors: scrapedData.colors || [],
-        interiorOptions: scrapedData.interiorOptions || [],
-        packages: scrapedData.packages || []
+        colors: scrapedData.colors as Array<{ name: string; type: 'standard' | 'metallic' | 'special'; price?: number }> || [],
+        interiorOptions: scrapedData.interiorOptions as Array<{ name: string; price: number }> || [],
+        packages: scrapedData.packages as Array<{ name: string; price: number; options: string[] }> || [],
+        engine: scrapedData.engine,
+        horsepower: scrapedData.horsepower,
+        acceleration: scrapedData.acceleration
       };
 
-      // Cache the result
       this.cache.set(cacheKey, {
         data: manufacturerData,
         expiresAt: Date.now() + this.cacheTimeout
@@ -438,7 +470,7 @@ const scrapedData = await page.evaluate((selectors: any, manufacturer: string, m
           code: 'SCRAPING_FAILED',
           message: `Failed to scrape ${manufacturer}: ${errorMessage}`,
           recoverable: true,
-          retryAfter: 300 // 5 minutes
+          retryAfter: 300
         },
         processingTime: Date.now() - startTime,
         cached: false
@@ -448,21 +480,19 @@ const scrapedData = await page.evaluate((selectors: any, manufacturer: string, m
       if (page) {
         try {
           await page.close();
-        } catch (e) {
-          console.log('⚠️ Error closing page:', e);
+        } catch {
+          console.log('⚠️ Error closing page');
         }
       }
     }
   }
 
-  // 📋 GET SUPPORTED MANUFACTURERS
   getSupportedManufacturers(): string[] {
     return Object.keys(this.manufacturerConfigs).map(key => 
       key.charAt(0).toUpperCase() + key.slice(1)
     );
   }
 
-  // 🧹 CLEANUP
   async cleanup(): Promise<void> {
     if (this.browser) {
       try {
@@ -475,7 +505,6 @@ const scrapedData = await page.evaluate((selectors: any, manufacturer: string, m
     }
   }
 
-  // 📊 CACHE MANAGEMENT
   clearCache(): void {
     this.cache.clear();
     console.log('✅ Manufacturer cache cleared');
@@ -535,10 +564,9 @@ export const manufacturerScraper = {
       
       const data = result.data;
       
-      // Convert to legacy format expected by search route
       return {
         dataSource: `${make.charAt(0).toUpperCase() + make.slice(1)} Configurator`,
-        bodyType: 'Coupe', // Default, could be enhanced
+        bodyType: 'Coupe',
         performanceData: {
           engine: data?.engine || 'N/A',
           horsePower: data?.horsepower ? `${data.horsepower} hp` : 'N/A',
@@ -575,7 +603,6 @@ export const manufacturerScraper = {
   }
 };
 
-// Graceful cleanup on process exit
 process.on('exit', () => {
   manufacturerScraperService.cleanup();
 });

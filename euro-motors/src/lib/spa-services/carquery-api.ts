@@ -40,6 +40,58 @@ interface CarQueryResponse {
   }>;
 }
 
+// FIXED: Define proper return types instead of using 'any'
+interface CarQueryTrim {
+  model_make_display: string;
+  model_name: string;
+  model_year: string;
+  model_body: string;
+  model_engine_cc: string;
+  model_engine_type: string;
+  model_engine_power_ps: string;
+  model_engine_power_rpm: string;
+  model_engine_torque_nm: string;
+  model_engine_torque_rpm: string;
+  model_0_to_100_kph: string;
+  model_top_speed_kph: string;
+  model_transmission_type: string;
+  model_drive: string;
+  model_weight_kg: string;
+  model_lkm_mixed: string;
+  model_seats: string;
+  model_doors: string;
+}
+
+interface SPAFormatData {
+  make: string;
+  model: string;
+  year: number;
+  bodyType: string;
+  performanceData: {
+    engine: string;
+    horsePower: string;
+    torque: string;
+    acceleration060: string;
+    topSpeed: string;
+    transmission: string;
+    driveType: string;
+    weight: string;
+    fuelEconomy: string;
+  };
+  specifications: {
+    engine: string;
+    horsePower: number;
+    transmission: string;
+    bodyType: string;
+    driveType: string;
+    seats: number;
+    doors: number;
+    weight: string;
+    topSpeed: string;
+    acceleration100: string;
+  };
+}
+
 class CarQueryAPI {
   private baseUrl = 'https://www.carqueryapi.com/api/0.3/';
 
@@ -79,8 +131,8 @@ class CarQueryAPI {
     }
   }
 
-  // Convert CarQuery data to our SPA format
-  convertToSPAFormat(carQueryData: any): any {
+  // FIXED: Convert CarQuery data to our SPA format with proper typing
+  convertToSPAFormat(carQueryData: { Trims?: CarQueryTrim[] }): SPAFormatData | null {
     const trim = carQueryData.Trims?.[0];
     if (!trim) return null;
 

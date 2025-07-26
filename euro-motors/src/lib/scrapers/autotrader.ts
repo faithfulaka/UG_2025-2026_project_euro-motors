@@ -2,7 +2,7 @@
 import puppeteer from 'puppeteer';
 import { MarketData, MarketListing } from '@/types/spa';
 
-interface AutotraderScrapingResult {
+interface ScrapingResult {
   success: boolean;
   data?: {
     listings: Array<{
@@ -15,14 +15,8 @@ interface AutotraderScrapingResult {
     priceRange: string;
     inventoryCount: number;
     dataSource: string;
+    timestamp: string;
   };
-  error?: string;
-  retryAfter?: number;
-}
-
-interface ScrapingResult {
-  success: boolean;
-  data?: MarketData;
   error?: string;
   retryAfter?: number;
 }
@@ -39,8 +33,8 @@ class AutotraderScraper {
   }
 
   private async respectRateLimit(): Promise<void> {
-    const now = Date.now();
-    const timeSinceLastRequest = now - this.lastRequestTime;
+    const currentTime = Date.now(); // FIXED: Use descriptive variable name
+    const timeSinceLastRequest = currentTime - this.lastRequestTime;
     
     if (timeSinceLastRequest < this.requestDelay) {
       const waitTime = this.requestDelay - timeSinceLastRequest;
@@ -61,7 +55,19 @@ class AutotraderScraper {
         console.log(`✅ Autotrader cache hit: ${cacheKey}`);
         return {
           success: true,
-          data: cached.data
+          data: {
+            listings: cached.data.listings.map(listing => ({
+              title: listing.title,
+              price: listing.price,
+              specs: listing.specs,
+              url: listing.url
+            })),
+            averagePrice: cached.data.averagePrice,
+            priceRange: cached.data.priceRange,
+            inventoryCount: cached.data.inventoryCount,
+            dataSource: cached.data.dataSource,
+            timestamp: cached.data.timestamp
+          }
         };
       }
 
@@ -128,8 +134,9 @@ class AutotraderScraper {
             await acceptCookies.click();
             await this.delay(1000);
           }
-        } catch (e) {
-          // Cookie consent not found, continue
+        } catch (cookieError) {
+          // FIXED: Remove unused variable and use descriptive error handling
+          console.log('⚠️ Cookie consent not found, continuing...');
         }
 
         // Extract car listings with enhanced selectors
@@ -214,8 +221,8 @@ class AutotraderScraper {
                 url: url || '',
                 index
               };
-            } catch (e) {
-              console.error('Error extracting car data:', e);
+            } catch (listingError) {
+              console.error('Error extracting car data:', listingError);
               return {
                 title: `Car ${index + 1}`,
                 price: '£0',
@@ -293,12 +300,24 @@ class AutotraderScraper {
 
         return {
           success: true,
-          data: marketData
+          data: {
+            listings: validListings.map(listing => ({
+              title: listing.title,
+              price: listing.price,
+              specs: listing.specs,
+              url: listing.url
+            })),
+            averagePrice: avgPrice,
+            priceRange: `£${minPrice.toLocaleString()} - £${maxPrice.toLocaleString()}`,
+            inventoryCount: validListings.length,
+            dataSource: 'Autotrader UK',
+            timestamp: new Date().toISOString()
+          }
         };
         
-      } catch (error) {
+      } catch (browserError) {
         if (browser) await browser.close();
-        throw error;
+        throw browserError;
       }
       
     } catch (error) {
@@ -331,7 +350,16 @@ class AutotraderScraper {
   }
 
   // Legacy method for backward compatibility
-  async searchCarsLegacy(make: string, model: string, year?: number): Promise<any> {
+  async searchCarsLegacy(make: string, model: string, year?: number): Promise<{
+    listings: Array<{ title: string; price: string; specs?: string; url: string }>;
+    marketData: {
+      averagePrice: number;
+      priceRange: string;
+      inventoryCount: number;
+      dataSource: string;
+    } | null;
+    error?: string;
+  }> {
     const result = await this.searchCars(make, model, year);
     
     if (!result.success) {

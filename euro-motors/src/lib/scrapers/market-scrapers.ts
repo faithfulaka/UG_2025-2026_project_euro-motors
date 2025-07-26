@@ -1,6 +1,64 @@
 // src/lib/scrapers/market-scrapers.ts
 import puppeteer, { Browser, Page } from 'puppeteer';
-import { MarketData, SPAServiceResponse } from '@/types/spa';
+
+// Define interfaces locally to avoid import issues
+interface MarketListing {
+  title: string;
+  price: string;
+  priceNumeric: number;
+  mileage?: string;
+  year?: number;
+  location?: string;
+  dealer?: string;
+  specs?: string;
+  url: string;
+  imageUrl?: string;
+  datePosted?: string;
+}
+
+interface MarketData {
+  source: string;
+  listings: Array<{
+    title: string;
+    price: number;
+    mileage?: number;
+    location: string;
+    dealerName: string;
+    listingUrl: string;
+    images: string[];
+    year: number;
+  }>;
+  averagePrice: number;
+  priceRange: string;
+  inventoryCount: number;
+  priceDistribution?: {
+    min: number;
+    max: number;
+    median: number;
+    q1?: number;
+    q3?: number;
+  };
+  dataSource: string;
+  searchParams: {
+    make: string;
+    model: string;
+    year?: number;
+  };
+  timestamp: string;
+}
+
+interface SPAServiceResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: {
+    code: string;
+    message: string;
+    recoverable?: boolean;
+    retryAfter?: number;
+  };
+  processingTime: number;
+  cached: boolean;
+}
 
 interface MarketScraper {
   name: string;
@@ -26,6 +84,10 @@ class MarketScraperService {
   private cache = new Map<string, { data: MarketData; expiresAt: number }>();
   private cacheTimeout = 45 * 60 * 1000; // 45 minutes cache for market data
 
+  private async delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   // 🏪 MARKET DATA SOURCES CONFIGURATION
   private marketScrapers: Record<string, MarketScraper> = {
     autotrader: {
@@ -45,7 +107,7 @@ class MarketScraperService {
         let url = `https://www.autotrader.co.uk/car-search?make=${encodeURIComponent(make)}`;
         if (model) url += `&model=${encodeURIComponent(model)}`;
         if (year) url += `&year-from=${year}&year-to=${year}`;
-        url += '&sort=relevance&radius=1500&postcode=sw1a1aa'; // London postcode for nationwide search
+        url += '&sort=relevance&radius=1500&postcode=sw1a1aa';
         return url;
       },
       priceExtractor: (text: string) => {
@@ -79,7 +141,7 @@ class MarketScraperService {
         const match = text.match(/\$?([\d,]+)/);
         if (match) {
           const usdPrice = parseInt(match[1].replace(/,/g, ''));
-          return Math.round(usdPrice * 0.79); // Convert USD to GBP (rough)
+          return Math.round(usdPrice * 0.79);
         }
         return 0;
       },
@@ -108,7 +170,7 @@ class MarketScraperService {
         const match = text.match(/[\$£]([\d,]+)/);
         if (match) {
           const price = parseInt(match[1].replace(/,/g, ''));
-          return text.includes('$') ? Math.round(price * 0.79) : price; // Convert if USD
+          return text.includes('$') ? Math.round(price * 0.79) : price;
         }
         return 0;
       }
@@ -136,14 +198,13 @@ class MarketScraperService {
         const match = text.match(/\$?([\d,]+)/);
         if (match) {
           const usdPrice = parseInt(match[1].replace(/,/g, ''));
-          return Math.round(usdPrice * 0.79); // Convert USD to GBP
+          return Math.round(usdPrice * 0.79);
         }
         return 0;
       }
     }
   };
 
-  // 🚀 INITIALIZE BROWSER
   private async initBrowser(): Promise<Browser> {
     if (this.browser && this.browser.isConnected()) {
       return this.browser;
@@ -164,7 +225,6 @@ class MarketScraperService {
     return this.browser;
   }
 
-  // 🔍 SCRAPE INDIVIDUAL MARKET SOURCE
   private async scrapeMarketSource(
     sourceKey: string, 
     make: string, 
@@ -194,104 +254,146 @@ class MarketScraperService {
         timeout: 30000 
       });
 
-      // Handle cookie consent
       if (scraper.cookieSelector) {
         try {
           await page.waitForSelector(scraper.cookieSelector, { timeout: 3000 });
           await page.click(scraper.cookieSelector);
-          await page.waitForTimeout(1000);
-        } catch (e) {
+          await this.delay(1000);
+        } catch {
           console.log(`⚠️ No cookie banner found for ${scraper.name}`);
         }
       }
 
-      // Wait for listings to load
       try {
         await page.waitForSelector(scraper.selectors.listings, { timeout: 10000 });
-      } catch (e) {
+      } catch {
         console.log(`⚠️ No listings found for ${scraper.name}`);
         return null;
       }
 
-      // Extract listing data
-     const listings = await page.evaluate((selectors: any, priceExtractorStr: string) => {
-      const priceExtractor = new Function('text', `return ${priceExtractorStr.replace(/^[^{]*{|}[^}]*$/g, '')}`);
-      const listingElements = document.querySelectorAll(selectors.listings);
-      const results: any[] = [];
-              for (let i = 0; i < Math.min(listingElements.length, 20); i++) {
-        const element = listingElements[i];
-        
-        const titleElement = element.querySelector(selectors.title);
-        const priceElement = element.querySelector(selectors.price);
-        const mileageElement = selectors.mileage ? element.querySelector(selectors.mileage) : null;
-        const locationElement = selectors.location ? element.querySelector(selectors.location) : null;
-        const dealerElement = selectors.dealer ? element.querySelector(selectors.dealer) : null;
-        const imageElement = selectors.image ? element.querySelector(selectors.image) : null;
-        const urlElement = selectors.url ? element.querySelector(selectors.url) : null;
-                const title = titleElement?.textContent?.trim() || '';
-        const priceText = priceElement?.textContent?.trim() || '';
-        const price = priceExtractor(priceText);
-                if (title && price > 0) {
-          const mileageText = mileageElement?.textContent?.trim() || '';
-          const mileageMatch = mileageText.match(/(\d+(?:,\d+)*)/);
-          
-          results.push({
-            title,
-            price,
-            mileage: mileageMatch ? parseInt(mileageMatch[1].replace(/,/g, '')) : undefined,
-            location: locationElement?.textContent?.trim() || '',
-            dealerName: dealerElement?.textContent?.trim() || '',
-            listingUrl: (urlElement as HTMLAnchorElement)?.href || urlElement?.getAttribute('href') || '',
-            images: imageElement ? [(imageElement as HTMLImageElement).src || imageElement.getAttribute('src')] : []
-          });
-        }
-      }
-           return results;  
-}, scraper.selectors, scraper.priceExtractor.toString());
+      const listings = await page.evaluate((
+        selectors: {
+          listings: string;
+          title: string;
+          price: string;
+          mileage?: string;
+          location?: string;
+          dealer?: string;
+          image?: string;
+          url?: string;
+        }, 
+        priceExtractorStr: string
+      ) => {
+        const priceExtractor = new Function('text', `return (${priceExtractorStr})(text)`);
+        const listingElements = document.querySelectorAll(selectors.listings);
+        const results: Array<{
+          title: string;
+          price: number;
+          mileage?: number;
+          location: string;
+          dealerName: string;
+          listingUrl: string;
+          images: string[];
+        }> = [];
 
-      // Calculate market analysis
+        for (let i = 0; i < Math.min(listingElements.length, 20); i++) {
+          const element = listingElements[i];
+          
+          const titleElement = element.querySelector(selectors.title);
+          const priceElement = element.querySelector(selectors.price);
+          const mileageElement = selectors.mileage ? element.querySelector(selectors.mileage) : null;
+          const locationElement = selectors.location ? element.querySelector(selectors.location) : null;
+          const dealerElement = selectors.dealer ? element.querySelector(selectors.dealer) : null;
+          const imageElement = selectors.image ? element.querySelector(selectors.image) : null;
+          const urlElement = selectors.url ? element.querySelector(selectors.url) : null;
+
+          const title = titleElement?.textContent?.trim() || '';
+          const priceText = priceElement?.textContent?.trim() || '';
+          const price = priceExtractor(priceText);
+
+          if (title && price > 0) {
+            const mileageText = mileageElement?.textContent?.trim() || '';
+            const mileageMatch = mileageText.match(/(\d+(?:,\d+)*)/);
+            
+            // FIXED: Proper null handling for URL
+            let listingUrl = '';
+            if (urlElement) {
+              const href = (urlElement as HTMLAnchorElement).href;
+              const attrHref = urlElement.getAttribute('href');
+              listingUrl = href || attrHref || '';
+            }
+            
+            // FIXED: Proper null handling for images
+            const imageUrls: string[] = [];
+            if (imageElement) {
+              const src = (imageElement as HTMLImageElement).src;
+              const attrSrc = imageElement.getAttribute('src');
+              const finalSrc = src || attrSrc;
+              if (finalSrc) {
+                imageUrls.push(finalSrc);
+              }
+            }
+            
+            results.push({
+              title,
+              price,
+              mileage: mileageMatch ? parseInt(mileageMatch[1].replace(/,/g, '')) : undefined,
+              location: locationElement?.textContent?.trim() || '',
+              dealerName: dealerElement?.textContent?.trim() || '',
+              listingUrl,
+              images: imageUrls
+            });
+          }
+        }
+
+        return results;
+      }, scraper.selectors, scraper.priceExtractor.toString());
+
       const validListings = listings.filter(l => l.price > 0);
       const prices = validListings.map(l => l.price);
-      const mileages = validListings.map(l => l.mileage).filter(m => m !== undefined) as number[];
 
-      const marketAnalysis = {
-        averagePrice: prices.length > 0 ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0,
-        priceRange: {
-          min: prices.length > 0 ? Math.min(...prices) : 0,
-          max: prices.length > 0 ? Math.max(...prices) : 0
-        },
-        inventoryCount: validListings.length,
-        averageMileage: mileages.length > 0 ? Math.round(mileages.reduce((a, b) => a + b, 0) / mileages.length) : undefined,
-        pricePerMile: mileages.length > 0 && prices.length > 0 ? 
-          Math.round((prices.reduce((a, b) => a + b, 0) / prices.length) / (mileages.reduce((a, b) => a + b, 0) / mileages.length) * 1000) / 1000 : undefined
-      };
+      const avgPrice = prices.length > 0 ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0;
+      const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+      const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
+      const sortedPrices = [...prices].sort((a, b) => a - b);
+      const median = sortedPrices.length > 0 ? sortedPrices[Math.floor(sortedPrices.length / 2)] : 0;
 
-      console.log(`✅ ${scraper.name}: Found ${validListings.length} listings, avg price: £${marketAnalysis.averagePrice.toLocaleString()}`);
+      console.log(`✅ ${scraper.name}: Found ${validListings.length} listings, avg price: £${avgPrice.toLocaleString()}`);
 
       return {
-        source: sourceKey as any,
+        source: sourceKey,
         listings: validListings.map(listing => ({
           ...listing,
           year: year || new Date().getFullYear()
         })),
-        marketAnalysis
+        averagePrice: avgPrice,
+        priceRange: `£${minPrice.toLocaleString()} - £${maxPrice.toLocaleString()}`,
+        inventoryCount: validListings.length,
+        priceDistribution: {
+          min: minPrice,
+          max: maxPrice,
+          median
+        },
+        dataSource: scraper.name,
+        searchParams: { make, model, year },
+        timestamp: new Date().toISOString()
       };
 
-    } catch (error: any) {
-      console.error(`🚨 Error scraping ${scraper.name}:`, error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`🚨 Error scraping ${scraper.name}:`, errorMessage);
       return null;
     } finally {
       if (page) {
         try {
           await page.close();
-        } catch (e) {
+        } catch {
           console.log(`⚠️ Error closing page for ${scraper.name}`);
         }
       }
     }
   }
 
-  // 🌐 SCRAPE ALL MARKET SOURCES
   async scrapeAllMarketData(
     make: string, 
     model: string, 
@@ -300,7 +402,6 @@ class MarketScraperService {
     const startTime = Date.now();
     const cacheKey = `market-${make}-${model}-${year || 'all'}`;
 
-    // Check cache
     const cached = this.cache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       return {
@@ -313,7 +414,6 @@ class MarketScraperService {
 
     console.log(`🔍 Starting market data scraping for ${make} ${model} ${year || 'all years'}`);
 
-    // Scrape all sources concurrently (with some delay to avoid being blocked)
     const results: (MarketData | null)[] = [];
     const sourceKeys = Object.keys(this.marketScrapers);
 
@@ -322,7 +422,6 @@ class MarketScraperService {
         const result = await this.scrapeMarketSource(sourceKey, make, model, year);
         results.push(result);
         
-        // Small delay between sources to be respectful
         if (sourceKey !== sourceKeys[sourceKeys.length - 1]) {
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
@@ -348,27 +447,30 @@ class MarketScraperService {
       };
     }
 
-    // Aggregate the data for caching
+    const minPrices = validResults
+      .map(r => r.priceDistribution?.min || 0)
+      .filter(p => p > 0);
+    const maxPrices = validResults
+      .map(r => r.priceDistribution?.max || 0);
+
     const aggregatedData: MarketData = {
-      source: 'autotrader', // Primary source
+      source: 'autotrader',
       listings: validResults.flatMap(r => r.listings),
-      marketAnalysis: {
-        averagePrice: Math.round(
-          validResults.reduce((sum, r) => sum + r.marketAnalysis.averagePrice, 0) / validResults.length
-        ),
-        priceRange: {
-          min: Math.min(...validResults.map(r => r.marketAnalysis.priceRange.min).filter(p => p > 0)),
-          max: Math.max(...validResults.map(r => r.marketAnalysis.priceRange.max))
-        },
-        inventoryCount: validResults.reduce((sum, r) => sum + r.marketAnalysis.inventoryCount, 0),
-        averageMileage: validResults
-          .map(r => r.marketAnalysis.averageMileage)
-          .filter((m): m is number => m !== undefined)
-          .reduce((sum, m, _, arr) => sum + m / arr.length, 0) || undefined
-      }
+      averagePrice: Math.round(
+        validResults.reduce((sum, r) => sum + r.averagePrice, 0) / validResults.length
+      ),
+      priceRange: `£${Math.min(...minPrices).toLocaleString()} - £${Math.max(...maxPrices).toLocaleString()}`,
+      inventoryCount: validResults.reduce((sum, r) => sum + r.inventoryCount, 0),
+      priceDistribution: {
+        min: Math.min(...minPrices),
+        max: Math.max(...maxPrices),
+        median: 0
+      },
+      dataSource: 'Multi-source aggregation',
+      searchParams: { make, model, year },
+      timestamp: new Date().toISOString()
     };
 
-    // Cache the aggregated result
     this.cache.set(cacheKey, {
       data: aggregatedData,
       expiresAt: Date.now() + this.cacheTimeout
@@ -384,7 +486,6 @@ class MarketScraperService {
     };
   }
 
-  // 🧹 CLEANUP
   async cleanup(): Promise<void> {
     if (this.browser) {
       try {
@@ -397,7 +498,6 @@ class MarketScraperService {
     }
   }
 
-  // 📊 CACHE STATS
   getCacheStats() {
     return {
       size: this.cache.size,
@@ -412,10 +512,8 @@ class MarketScraperService {
   }
 }
 
-// Export singleton
 export const marketScraperService = new MarketScraperService();
 
-// Cleanup on exit
 process.on('exit', () => {
   marketScraperService.cleanup();
 });

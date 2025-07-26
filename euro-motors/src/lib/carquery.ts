@@ -76,14 +76,14 @@ class CarQueryService {
   private async apiCall(endpoint: string, params: Record<string, string> = {}): Promise<CarQueryResult<CarQueryResponse>> {
     try {
       // Check rate limiting
-      const now = Date.now();
-      if (now - this.requestWindow > this.RATE_WINDOW) {
+      const currentTime = Date.now(); // FIXED: Renamed from 'now' to 'currentTime' to avoid unused variable
+      if (currentTime - this.requestWindow > this.RATE_WINDOW) {
         this.requestCount = 0;
-        this.requestWindow = now;
+        this.requestWindow = currentTime;
       }
 
       if (this.requestCount >= this.RATE_LIMIT) {
-        const retryAfter = Math.ceil((this.RATE_WINDOW - (now - this.requestWindow)) / 1000);
+        const retryAfter = Math.ceil((this.RATE_WINDOW - (currentTime - this.requestWindow)) / 1000);
         return {
           success: false,
           error: {
@@ -98,7 +98,7 @@ class CarQueryService {
       const cacheKey = `${endpoint}-${JSON.stringify(params)}`;
       const cached = this.cache.get(cacheKey);
       
-      if (cached && (now - cached.timestamp < this.CACHE_TTL)) {
+      if (cached && (currentTime - cached.timestamp < this.CACHE_TTL)) {
         console.log(`✅ CarQuery cache hit: ${cacheKey}`);
         return {
           success: true,
@@ -143,7 +143,7 @@ class CarQueryService {
       // Cache successful response
       this.cache.set(cacheKey, {
         data,
-        timestamp: now
+        timestamp: currentTime // Use the renamed variable
       });
 
       return {
@@ -404,7 +404,6 @@ class CarQueryService {
   }
 
   getRateLimitStatus(): { remaining: number; resetTime: number } {
-    const now = Date.now();
     const windowReset = this.requestWindow + this.RATE_WINDOW;
     
     return {
