@@ -1,36 +1,46 @@
 // src/app/api/spa/makes/route.ts
-import type { NextRequest } from "next/server";
-import { NextResponse }    from "next/server";
-import { prisma }          from "@/lib/prisma";
+import type { NextRequest } from 'next/server';
+import { NextResponse }    from 'next/server';
+import { prisma }          from '@/lib/prisma';
+import type { SPAMakesResponse } from '@/types/spa';
 
 export async function GET(request: NextRequest) {
-  const source = new URL(request.url).searchParams.get("source") ?? "combined";
+  const url    = new URL(request.url);
+  const source = (url.searchParams.get('source') as 'database' | 'combined') ?? 'combined';
 
-  // DATABASE ONLY
-  if (source === "database") {
-    const rows: { make: string }[] = await prisma.buyCar.findMany({
-      distinct: ["make"],
-      select:   { make: true },
+  let makes: string[];
+  if (source === 'database') {
+    const rows = await prisma.buyCar.findMany({
+      distinct: ['make'],
+      select:   { make: true }
     });
-    return NextResponse.json({ makes: rows.map(r => r.make) });
+    makes = rows.map(r => r.make);
+  } else {
+    // DB → CarQuery combined
+    const dbRows    = await prisma.buyCar.findMany({
+      distinct: ['make'],
+      select:   { make: true }
+    });
+    const dbMakes   = dbRows.map(r => r.make);
+
+    const resp      = await fetch(
+      'https://www.carqueryapi.com/api/0.3/?callback=?&cmd=getMakes'
+    );
+    const text      = await resp.text();
+    const jsonp     = text.replace(/^[^(]*\((.*)\)$/, '$1');
+    const parsed    = JSON.parse(jsonp) as { Makes: Array<{ make_display: string }> };
+    const apiMakes  = parsed.Makes.map(m => m.make_display);
+
+    makes = Array.from(new Set([...dbMakes, ...apiMakes])).sort();
   }
 
-  // FALLBACK: combine DB + CarQuery API
-  const dbRows: { make: string }[] = await prisma.buyCar.findMany({
-    distinct: ["make"],
-    select:   { make: true },
-  });
-  const dbMakes = dbRows.map(r => r.make);
+  const result: SPAMakesResponse = {
+    success: true,
+    makes,
+    source: source === 'database' ? 'database' : 'combined',
+    cached: false,
+    timestamp: new Date().toISOString()
+  };
 
-  const resp = await fetch(
-    "https://www.carqueryapi.com/api/0.3/?callback=?&cmd=getMakes"
-  );
-  const text = await resp.text();
-  // unwrap JSONP
-  const jsonp = text.replace(/^[^(]*\((.*)\)$/, "$1");
-  const parsed = JSON.parse(jsonp) as { Makes: { make_display: string }[] };
-  const apiMakes = parsed.Makes.map(m => m.make_display);
-
-  const combined = Array.from(new Set([...dbMakes, ...apiMakes])).sort();
-  return NextResponse.json({ makes: combined });
+  return NextResponse.json(result);
 }

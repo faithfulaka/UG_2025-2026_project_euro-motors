@@ -1,7 +1,7 @@
 // src/app/api/spa/manufacturer/route.ts - COMPLETE FIXED FILE
 
 import { NextRequest, NextResponse } from 'next/server';
-import { manufacturerScraperService } from '@/lib/spa-services/manufacturer-scrapers';
+import { manufacturerScraperService } from '@/lib/services/manufacturer';
 
 export async function POST(request: NextRequest) {
   try {
