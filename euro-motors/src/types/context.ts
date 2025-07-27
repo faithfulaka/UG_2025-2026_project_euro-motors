@@ -1,9 +1,9 @@
-// src/types/context.ts - FIXED CONTEXT TYPES WITH SPA INTEGRATION
-import { BuyCar, RentalCar } from './cars';
+// src/types/context.ts
+import { BuyCar, RentalCar } from "./cars";
 
 export interface CartItem {
   id: string;
-  type: 'buy' | 'rent';
+  type: "buy" | "rent";
   carId: string;
   carMake: string;
   carModel: string;
@@ -11,16 +11,11 @@ export interface CartItem {
   price: number;
   quantity: number;
   selectedOptions?: string[];
-  car?: { // ADD THIS PROPERTY
-    make: string;
-    model: string;
-    year: number;
-    price: number;
-  };
+  car?: { make: string; model: string; year: number; price: number };
   rentalDates?: {
     startDate: Date;
     endDate: Date;
-    duration: 'HOURLY' | 'DAILY' | 'WEEKLY';
+    duration: "HOURLY" | "DAILY" | "WEEKLY";
   };
   addedAt: Date;
 }
@@ -34,11 +29,10 @@ export interface CarFilters {
   transmission?: string;
   fuelType?: string;
   features?: string[];
-  sortBy?: 'price' | 'year' | 'make' | 'model';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: "price" | "year" | "make" | "model";
+  sortOrder?: "asc" | "desc";
 }
 
-// FIXED: Expanded SPASearchResult with all data sources
 export interface ContextSPAResult {
   id: string;
   make: string;
@@ -67,10 +61,10 @@ export interface ContextSPAResult {
       dealerInventoryCount?: number;
       priceTrend?: string;
     };
-    specifications?: any;
-    configurator?: any;
-    marketData?: any[];
-    ownershipCosts?: any;
+    specifications?: Record<string, unknown>;
+    configurator?: Record<string, unknown>;
+    marketData?: Record<string, unknown>[];
+    ownershipCosts?: Record<string, unknown>;
     dataSources?: {
       carQuery?: boolean;
       manufacturerOfficial?: boolean;
@@ -82,15 +76,22 @@ export interface ContextSPAResult {
       kbb?: boolean;
     };
     confidence?: {
-      specifications: 'high' | 'medium' | 'low';
-      pricing: 'high' | 'medium' | 'low';
-      marketData: 'high' | 'medium' | 'low';
-      overall: 'high' | 'medium' | 'low';
+      specifications: "high" | "medium" | "low";
+      pricing: "high" | "medium" | "low";
+      marketData: "high" | "medium" | "low";
+      overall: "high" | "medium" | "low";
     };
   };
   searchedAt: Date;
-  source: 'database' | 'carquery' | 'manufacturer' | 'market' | 'comprehensive' | 'mock';
+  source:
+    | "database"
+    | "carquery"
+    | "manufacturer"
+    | "market"
+    | "comprehensive"
+    | "mock";
 }
+
 
 export interface RecentlyViewed {
   carId: string;

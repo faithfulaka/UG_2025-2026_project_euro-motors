@@ -2,16 +2,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Keep Puppeteer/Chromium out of the normal bundle
   serverExternalPackages: [
     "puppeteer-core",
-    "@sparticuz/chromium"
+    "@sparticuz/chromium",
   ],
 
-  // Custom webpack only on server builds
   webpack(config, { isServer }) {
     if (isServer && config) {
-      // Exclude heavy libs from the server bundle
       config.externals = [
         ...(config.externals || []),
         {
@@ -21,8 +18,6 @@ const nextConfig: NextConfig = {
           "chrome-aws-lambda": "commonjs chrome-aws-lambda",
         },
       ];
-
-      // Disable built-in node modules & alias puppeteer → puppeteer-core
       config.resolve = {
         ...config.resolve,
         fallback: {
@@ -37,8 +32,6 @@ const nextConfig: NextConfig = {
           "puppeteer$": "puppeteer-core",
         },
       };
-
-      // Split scraping libs into their own chunk
       config.optimization = {
         ...(config.optimization || {}),
         splitChunks: {
@@ -59,12 +52,10 @@ const nextConfig: NextConfig = {
     return config;
   },
 
-  // Increase timeout for server‐side scraping
   serverRuntimeConfig: {
     maxDuration: 30, // seconds
   },
 
-  // Cache SPA API calls at the edge for 5 minutes
   async headers() {
     return [
       {
@@ -79,7 +70,6 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // Lock down external image domains
   images: {
     domains: [
       "images.unsplash.com",
@@ -90,25 +80,15 @@ const nextConfig: NextConfig = {
     unoptimized: false,
   },
 
-  // Strict build‐time linting
   typescript: { ignoreBuildErrors: false },
   eslint:      { ignoreDuringBuilds: false },
 
-  // Standalone output in production
   output: process.env.NODE_ENV === "production" ? "standalone" : undefined,
 
-  // Expose public env vars
-  env: {
-    CUSTOM_KEY: process.env.CUSTOM_KEY,
-  },
-
-  // Misc cleanup
   poweredByHeader: false,
   compress:        true,
   trailingSlash:   false,
-  devIndicators: {
-    position: "bottom-right",
-  },
+  devIndicators:  { position: "bottom-right" },
 };
 
 export default nextConfig;

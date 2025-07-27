@@ -1,240 +1,44 @@
-// src/app/api/spa/models/route.ts - COMPLETE FIXED FILE
+// src/app/api/spa/models/route.ts
+import type { NextRequest } from "next/server";
+import { NextResponse }    from "next/server";
+import { prisma }          from "@/lib/prisma";
 
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { carQueryService } from '@/lib/carquery';
-import { SPAModelsResponse } from '@/types/spa';
-
-// Cache for models (per make, 30 minutes TTL)
-const CACHE_TTL = 30 * 60 * 1000; 
-const modelsCache = new Map<string, {
-  data: string[];
-  timestamp: number;
-  source: 'carquery' | 'database' | 'combined';
-}>();
+interface DBModel { model: string }
+interface CQModels { Models: Array<{ model_name: string }> }
 
 export async function GET(request: NextRequest) {
-  const startTime = Date.now();
-  
-  try {
-    const url = new URL(request.url);
-    const searchParams = url.searchParams;
-    const make = searchParams.get('make') || '';
-    const source = (searchParams.get('source') as 'carquery' | 'database' | 'combined') ?? 'combined';
-    const query = searchParams.get('q') || ''; // For filtering models
-    
-    if (!make) {
-      return NextResponse.json({
-        success: false,
-        models: [],
-        make: '',
-        source: 'database',
-        cached: false,
-        timestamp: new Date().toISOString(),
-        error: {
-          code: 'MISSING_MAKE',
-          message: 'Make parameter is required',
-          source: 'spa-models-api'
-        }
-      } as SPAModelsResponse, { status: 400 });
-    }
+  const url    = new URL(request.url);
+  const make   = url.searchParams.get("make")   ?? "";
+  const source = url.searchParams.get("source") ?? "combined";
 
-    console.log(`🔍 SPA Models API called - Make: "${make}", Source: ${source}, Query: "${query}"`);
+  if (!make) {
+    return NextResponse.json({ models: [] });
+  }
 
-    // Check cache
-    const cacheKey = `${make}-${source}`;
-    const cached = modelsCache.get(cacheKey);
-    
-    if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
-      console.log(`✅ Returning cached models for ${make}`);
-      
-      let filteredModels = cached.data;
-      if (query) {
-        filteredModels = cached.data.filter(model => 
-          model.toLowerCase().includes(query.toLowerCase())
-        );
-      }
-      
-      const response: SPAModelsResponse = {
-        success: true,
-        models: filteredModels,
-        make,
-        source: cached.source,
-        cached: true,
-        timestamp: new Date().toISOString()
-      };
-      
-      return NextResponse.json(response);
-    }
-
-    let allModels: string[] = [];
-    let finalSource: 'carquery' | 'database' | 'combined' = source;
-
-    if (source === 'database') {
-      // Get models from database only
-      allModels = await getDatabaseModels(make);
-      finalSource = 'database';
-      
-    } else if (source === 'carquery') {
-      // Get models from CarQuery API only
-      allModels = await getCarQueryModels(make);
-      finalSource = 'carquery';
-      
-    } else {
-      // Combined approach (default)
-      const [dbModels, cqModels] = await Promise.allSettled([
-        getDatabaseModels(make),
-        getCarQueryModels(make)
-      ]);
-      
-      const dbResult = dbModels.status === 'fulfilled' ? dbModels.value : [];
-      const cqResult = cqModels.status === 'fulfilled' ? cqModels.value : [];
-      
-      // Combine and deduplicate, prioritizing database models
-      const combinedSet = new Set([...dbResult, ...cqResult]);
-      allModels = Array.from(combinedSet).sort();
-      finalSource = 'combined';
-      
-      console.log(`📊 Combined models for ${make} - DB: ${dbResult.length}, CarQuery: ${cqResult.length}, Combined: ${allModels.length}`);
-    }
-
-    // Filter if query provided
-    if (query) {
-      allModels = allModels.filter(model => 
-        model.toLowerCase().includes(query.toLowerCase())
-      );
-    }
-
-    // Update cache
-    modelsCache.set(cacheKey, {
-      data: allModels,
-      timestamp: Date.now(),
-      source: finalSource
+  if (source === "database") {
+    const rows = await prisma.buyCar.findMany({
+      where:    { make },
+      distinct: ["model"],
+      select:   { model: true },
     });
-
-    const response: SPAModelsResponse = {
-      success: true,
-      models: allModels,
-      make,
-      source: finalSource,
-      cached: false,
-      timestamp: new Date().toISOString()
-    };
-
-    const executionTime = Date.now() - startTime;
-    console.log(`✅ SPA Models API completed in ${executionTime}ms - Returned ${allModels.length} models for ${make}`);
-    
-    return NextResponse.json(response);
-
-  } catch (error) {
-    console.error('❌ SPA Models API error:', error);
-    
-    const response: SPAModelsResponse = {
-      success: false,
-      models: [],
-      make: '',
-      source: 'database',
-      cached: false,
-      timestamp: new Date().toISOString(),
-      error: {
-        code: 'MODELS_FETCH_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to fetch models',
-        source: 'spa-models-api'
-      }
-    };
-    
-    return NextResponse.json(response, { status: 500 });
+    return NextResponse.json({ models: rows.map(r => r.model) });
   }
-}
 
-// Get models from database for specific make
-async function getDatabaseModels(make: string): Promise<string[]> {
-  try {
-    const [buyModels, rentalModels] = await Promise.all([
-      prisma.buyCar.findMany({
-        where: { 
-          make: { 
-            contains: make
-          }
-        },
-        select: { model: true },
-        distinct: ['model']
-      }),
-      prisma.rentalCar.findMany({
-        where: { 
-          make: { 
-            contains: make
-          }
-        },
-        select: { model: true },
-        distinct: ['model']
-      })
-    ]);
+  const dbRows    = await prisma.buyCar.findMany({
+    where:    { make },
+    distinct: ["model"],
+    select:   { model: true },
+  });
+  const dbModels  = dbRows.map(r => r.model);
 
-    const allModels = [...new Set([
-      ...buyModels.map(car => car.model),
-      ...rentalModels.map(car => car.model)
-    ])].sort();
+  const resp       = await fetch(
+    `https://www.carqueryapi.com/api/0.3/?callback=?&cmd=getModels&make=${encodeURIComponent(make)}`
+  );
+  const text       = await resp.text();
+  const jsonp      = text.replace(/^[^(]*\((.*)\)$/, "$1");
+  const parsed     = JSON.parse(jsonp) as CQModels;
+  const apiModels  = parsed.Models.map(m => m.model_name);
 
-    console.log(`🗄️ Database models for ${make}: ${allModels.length}`);
-    return allModels;
-    
-  } catch (error) {
-    console.error(`❌ Database models error for ${make}:`, error);
-    return [];
-  }
-}
-
-// Fixed CarQuery models function
-async function getCarQueryModels(make: string): Promise<string[]> {
-  try {
-    // CarQuery service now returns string[] directly, not wrapped in result object
-    const models = await carQueryService.getModels(make);
-    console.log(`🔍 CarQuery models for ${make}: ${models.length}`);
-    return models;
-    
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`❌ CarQuery models error for ${make}:`, errorMessage);
-    return [];
-  }
-}
-
-// POST method for cache management
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    
-    if (body.action === 'clear_cache') {
-      const make = body.make;
-      
-      if (make) {
-        // Clear cache for specific make
-        const keysToDelete = Array.from(modelsCache.keys()).filter(key => key.startsWith(make));
-        keysToDelete.forEach(key => modelsCache.delete(key));
-        console.log(`🧹 Models cache cleared for ${make}`);
-      } else {
-        // Clear all cache
-        modelsCache.clear();
-        console.log('🧹 All models cache cleared');
-      }
-      
-      return NextResponse.json({
-        success: true,
-        message: make ? `Models cache cleared for ${make}` : 'All models cache cleared'
-      });
-    }
-    
-    return NextResponse.json(
-      { error: 'Invalid action' },
-      { status: 400 }
-    );
-    
-  } catch (error) {
-    console.error('❌ POST Models API error:', error);
-    return NextResponse.json(
-      { error: 'Failed to process request' },
-      { status: 500 }
-    );
-  }
+  const combined   = Array.from(new Set([...dbModels, ...apiModels])).sort();
+  return NextResponse.json({ models: combined });
 }
