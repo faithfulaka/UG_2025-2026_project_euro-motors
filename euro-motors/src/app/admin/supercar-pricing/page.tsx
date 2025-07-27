@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useCar } from '@/context/CarContext';
-import type { ComprehensiveSPAData, SPASearchParams } from '@/types/spa';
+import { ComprehensiveSPAData, SPASearchParams } from '@/types/spa';
 
 interface AutoCompleteState {
   makes: string[];
@@ -13,7 +15,7 @@ interface AutoCompleteState {
   yearsLoading: boolean;
 }
 
-interface SearchHistoryEntry {
+interface SearchHistory {
   id: string;
   params: SPASearchParams;
   timestamp: Date;
@@ -24,14 +26,21 @@ interface SearchHistoryEntry {
 export default function SupercarPricingAggregatorPage() {
   const { addSPAResult } = useCar();
 
-  // ── Form state ─────────────────────────────────────────────────────────────
+  // ── Search State ─────────────────────────────────────────────────────
+
+  const [selectedMake, setSelectedMake] = useState<string>('');
+  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<string>('');
   const [dataSource, setDataSource] = useState<
     'comprehensive' | 'database' | 'carquery' | 'manufacturer' | 'market'
   >('comprehensive');
 
-  const [selectedMake, setSelectedMake]   = useState<string>('');
-  const [selectedModel, setSelectedModel] = useState<string>('');
-  const [selectedYear, setSelectedYear]   = useState<string>('');
+  const [supercarData, setSupercarData] =
+    useState<ComprehensiveSPAData | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // ── Auto-complete State ─────────────────────────────────────────────
 
   const [autoComplete, setAutoComplete] = useState<AutoCompleteState>({
     makes: [],
@@ -42,55 +51,60 @@ export default function SupercarPricingAggregatorPage() {
     yearsLoading: false,
   });
 
-  const [showMakeDropdown, setShowMakeDropdown]   = useState<boolean>(false);
-  const [showModelDropdown, setShowModelDropdown] = useState<boolean>(false);
+  const [showMakeDropdown, setShowMakeDropdown] =
+    useState<boolean>(false);
+  const [showModelDropdown, setShowModelDropdown] =
+    useState<boolean>(false);
 
-  // ── Results + History ───────────────────────────────────────────────────────
-  const [supercarData, setSupercarData]   = useState<ComprehensiveSPAData | null>(null);
-  const [isLoading, setIsLoading]         = useState<boolean>(false);
-  const [error, setError]                 = useState<string | null>(null);
-  const [searchHistory, setSearchHistory] = useState<SearchHistoryEntry[]>([]);
+  const [searchHistory, setSearchHistory] =
+    useState<SearchHistory[]>([]);
 
-  // ── Dropdown refs ──────────────────────────────────────────────────────────
-  const makeDropdownRef  = useRef<HTMLDivElement>(null);
+  const makeDropdownRef = useRef<HTMLDivElement>(null);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
 
-  // ── Effects to load auto-complete data ────────────────────────────────────
+  // ── Effects ─────────────────────────────────────────────────────────
+
+  // load makes when datasource changes
   useEffect(() => {
     loadMakes();
   }, [dataSource]);
 
+  // load models when make or datasource changes
   useEffect(() => {
-    if (selectedMake) {
+    if (selectedMake.trim()) {
       loadModels(selectedMake);
       setSelectedModel('');
       setSelectedYear('');
     } else {
-      setAutoComplete(ac => ({ ...ac, models: [], years: [] }));
+      setAutoComplete(prev => ({ ...prev, models: [], years: [] }));
+      setSelectedModel('');
+      setSelectedYear('');
     }
   }, [selectedMake, dataSource]);
 
+  // load years when make+model or datasource changes
   useEffect(() => {
-    if (selectedMake && selectedModel) {
+    if (selectedMake.trim() && selectedModel.trim()) {
       loadYears();
       setSelectedYear('');
     } else {
-      setAutoComplete(ac => ({ ...ac, years: [] }));
+      setAutoComplete(prev => ({ ...prev, years: [] }));
+      setSelectedYear('');
     }
-  }, [selectedModel, dataSource]);
+  }, [selectedMake, selectedModel, dataSource]);
 
-  // Close dropdowns when clicking outside
+  // close dropdowns when clicking outside
   useEffect(() => {
-    const onClick = (ev: MouseEvent) => {
+    const onClick = (e: MouseEvent) => {
       if (
         makeDropdownRef.current &&
-        !makeDropdownRef.current.contains(ev.target as Node)
+        !makeDropdownRef.current.contains(e.target as Node)
       ) {
         setShowMakeDropdown(false);
       }
       if (
         modelDropdownRef.current &&
-        !modelDropdownRef.current.contains(ev.target as Node)
+        !modelDropdownRef.current.contains(e.target as Node)
       ) {
         setShowModelDropdown(false);
       }
@@ -99,247 +113,310 @@ export default function SupercarPricingAggregatorPage() {
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
-  // ── Data loaders ───────────────────────────────────────────────────────────
+  // ── Data Loading fns ────────────────────────────────────────────────
+
   async function loadMakes() {
-    setAutoComplete(ac => ({ ...ac, makesLoading: true }));
     try {
+      setAutoComplete(prev => ({ ...prev, makesLoading: true }));
       const res = await fetch(`/api/spa/makes?source=${dataSource}`);
       if (!res.ok) throw new Error('Failed to load makes');
       const json = await res.json();
-      setAutoComplete(ac => ({
-        ...ac,
-        makes: Array.isArray(json.makes) ? json.makes : [],
+      setAutoComplete(prev => ({
+        ...prev,
+        makes: json.makes || [],
         makesLoading: false,
       }));
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      setAutoComplete(ac => ({ ...ac, makesLoading: false }));
+      setAutoComplete(prev => ({ ...prev, makesLoading: false }));
     }
   }
 
   async function loadModels(make: string) {
-    setAutoComplete(ac => ({ ...ac, modelsLoading: true }));
     try {
+      setAutoComplete(prev => ({ ...prev, modelsLoading: true }));
       const res = await fetch(
-        `/api/spa/models?make=${encodeURIComponent(make)}&source=${dataSource}`
+        `/api/spa/models?make=${encodeURIComponent(
+          make
+        )}&source=${dataSource}`
       );
       if (!res.ok) throw new Error('Failed to load models');
       const json = await res.json();
-      setAutoComplete(ac => ({
-        ...ac,
-        models: Array.isArray(json.models) ? json.models : [],
+      setAutoComplete(prev => ({
+        ...prev,
+        models: json.models || [],
         modelsLoading: false,
       }));
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      setAutoComplete(ac => ({ ...ac, modelsLoading: false }));
+      setAutoComplete(prev => ({ ...prev, modelsLoading: false }));
     }
   }
 
   async function loadYears() {
-    setAutoComplete(ac => ({ ...ac, yearsLoading: true }));
     try {
+      setAutoComplete(prev => ({ ...prev, yearsLoading: true }));
       if (dataSource === 'database') {
         const res = await fetch(
-          `/api/spa/years?make=${encodeURIComponent(
+          `/api/spa/suggestions?type=years&make=${encodeURIComponent(
             selectedMake
           )}&model=${encodeURIComponent(selectedModel)}`
         );
-        if (!res.ok) throw new Error('Failed to load years');
-        const json = await res.json();
-        const yrs = Array.isArray(json.years)
-          ? json.years
-          : [];
-        setAutoComplete(ac => ({ ...ac, years: yrs, yearsLoading: false }));
-        return;
+        if (res.ok) {
+          const json = await res.json();
+          const yrs =
+            json.data
+              ?.map((i: { value: string }) =>
+                Number.parseInt(i.value, 10)
+              )
+              .filter(Boolean) || [];
+          setAutoComplete(prev => ({
+            ...prev,
+            years: yrs,
+            yearsLoading: false,
+          }));
+          return;
+        }
       }
+      // fallback: last 6 years
       const current = new Date().getFullYear();
       const yrs = Array.from({ length: 6 }, (_, i) => current - i);
-      setAutoComplete(ac => ({ ...ac, years: yrs, yearsLoading: false }));
-    } catch (err) {
+      setAutoComplete(prev => ({
+        ...prev,
+        years: yrs,
+        yearsLoading: false,
+      }));
+    } catch (err: unknown) {
       console.error(err);
-      setAutoComplete(ac => ({ ...ac, yearsLoading: false }));
+      setAutoComplete(prev => ({ ...prev, yearsLoading: false }));
     }
   }
 
-  // ── Helpers to filter dropdowns ────────────────────────────────────────────
-  function getFilteredMakes() {
-    if (!selectedMake) return autoComplete.makes.slice(0, 10);
-    return autoComplete.makes
-      .filter(m => m.toLowerCase().includes(selectedMake.toLowerCase()))
-      .slice(0, 10);
-  }
+  // ── Helpers ────────────────────────────────────────────────────────
 
-  function getFilteredModels() {
-    if (!selectedModel) return autoComplete.models.slice(0, 10);
-    return autoComplete.models
-      .filter(m => m.toLowerCase().includes(selectedModel.toLowerCase()))
-      .slice(0, 10);
-  }
+  const getFilteredMakes = () =>
+    !selectedMake
+      ? autoComplete.makes.slice(0, 10)
+      : autoComplete.makes
+          .filter(m =>
+            m.toLowerCase().includes(selectedMake.toLowerCase())
+          )
+          .slice(0, 10);
 
-  // ── Handle “Get Data” ──────────────────────────────────────────────────────
+  const getFilteredModels = () =>
+    !selectedModel
+      ? autoComplete.models.slice(0, 10)
+      : autoComplete.models
+          .filter(m =>
+            m.toLowerCase().includes(selectedModel.toLowerCase())
+          )
+          .slice(0, 10);
+
+  // ── Search fn ─────────────────────────────────────────────────────
+
   async function handleSearch() {
-    if (!selectedMake || !selectedModel) {
-      setError('Please select both make and model');
+    if (!selectedMake.trim() || !selectedModel.trim()) {
+      setError('Please select make and model');
       return;
     }
     setIsLoading(true);
     setError(null);
     setSupercarData(null);
 
-    const params: SPASearchParams = {
-      make: selectedMake,
-      model: selectedModel,
-      year: selectedYear ? parseInt(selectedYear, 10) : undefined,
-      dataSource,
-    };
-
     try {
+      const params: SPASearchParams = {
+        make: selectedMake.trim(),
+        model: selectedModel.trim(),
+        year: selectedYear ? Number(selectedYear) : undefined,
+        dataSource,
+      };
       const res = await fetch('/api/spa/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
       });
       const json = await res.json();
-      if (!json.success) {
+      if (!json.success)
         throw new Error(json.error?.message || 'Search failed');
-      }
-      const data: ComprehensiveSPAData = json.data;
-      setSupercarData(data);
 
-      // Add to global context
-      addSPAResult({
-        id: `${params.make}-${params.model}-${params.year ?? 'any'}-${Date.now()}`,
-        make: data.make,
-        model: data.model,
-        year: data.year,
-        data,
-        searchedAt: new Date(),
-        source: dataSource,
-      });
+      if (json.data) {
+        setSupercarData(json.data);
 
-      // Add to local history
-      setSearchHistory(h => [
-        {
+        // add to context history
+        addSPAResult({
+          id: `${selectedMake}-${selectedModel}-${
+            selectedYear || 'any'
+          }-${Date.now()}`,
+          make: selectedMake,
+          model: selectedModel,
+          year: selectedYear
+            ? Number(selectedYear)
+            : new Date().getFullYear(),
+          data: json.data,
+          searchedAt: new Date(),
+          source: dataSource,
+        });
+
+        const entry: SearchHistory = {
           id: Date.now().toString(),
           params,
           timestamp: new Date(),
-          resultSummary: `${data.make} ${data.model} — £${data.pricingData?.averageDealerPrice?.toLocaleString() ?? 'N/A'}`,
-          dataSource: data.dataSource,
-        },
-        ...h.slice(0, 9),
-      ]);
+          resultSummary: `${json.data.make} ${json.data.model} - £${
+            json.data.pricingData?.averageDealerPrice
+              ?.toLocaleString() ?? 'N/A'
+          }`,
+          dataSource: json.data.dataSource,
+        };
+        setSearchHistory(prev => [entry, ...prev.slice(0, 9)]);
+      } else {
+        setError('No data found for this vehicle');
+      }
     } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Search failed';
       console.error(err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
   }
 
-  // Quick-fill examples
+  // ── Quick-fill examples ──────────────────────────────────────────
+
   const availableCars = [
     { make: 'Bentley', model: 'Bentayga V8', year: 2022 },
     { make: 'Rolls Royce', model: 'Cullinan V12', year: 2022 },
     { make: 'Bentley', model: 'Continental GT V8', year: 2022 },
   ];
 
-  function handleQuickFill(car: { make: string; model: string; year: number }) {
-    setSelectedMake(car.make);
-    setSelectedModel(car.model);
-    setSelectedYear(car.year.toString());
+  const handleQuickFill = (c: {
+    make: string;
+    model: string;
+    year: number;
+  }) => {
+    setSelectedMake(c.make);
+    setSelectedModel(c.model);
+    setSelectedYear(c.year.toString());
     setDataSource('database');
-  }
+  };
 
-  // ── JSX ────────────────────────────────────────────────────────────────────
+  // ── JSX ─────────────────────────────────────────────────────────
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 text-black">
       <div className="max-w-7xl mx-auto px-4">
-
         {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold">🚘 Supercar Pricing Aggregator</h1>
-          <p className="mt-2 text-gray-700">
-            Get comprehensive vehicle data from multiple REAL sources with live scraping
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">
+            🚘 Supercar Pricing Aggregator
+          </h1>
+          <p className="text-lg text-gray-700">
+            Get comprehensive vehicle data from multiple REAL sources with
+            live scraping
           </p>
-        </header>
+        </div>
 
-        {/* Source Selector */}
-        <section className="mb-8 bg-white p-6 rounded-xl shadow">
-          <h2 className="text-2xl mb-4">Data Source Selection</h2>
+        {/* Source Selection */}
+        <div className="mb-8 bg-white p-6 rounded-xl shadow">
+          <h2 className="text-2xl font-semibold mb-4">
+            Data Source Selection
+          </h2>
           <div className="flex flex-wrap gap-2">
-            {(['comprehensive','carquery','manufacturer','market','database'] as const).map(src => (
+            {(
+              [
+                'comprehensive',
+                'carquery',
+                'manufacturer',
+                'market',
+                'database',
+              ] as const
+            ).map(src => (
               <button
                 key={src}
                 onClick={() => setDataSource(src)}
                 className={`px-4 py-2 rounded-lg border ${
-                  dataSource === src ? 'bg-blue-100 border-blue-500' : 'border-gray-300'
+                  dataSource === src
+                    ? 'bg-blue-100 border-blue-500'
+                    : 'border-gray-300'
                 }`}
               >
                 {src.charAt(0).toUpperCase() + src.slice(1)}
               </button>
             ))}
           </div>
-        </section>
+        </div>
 
         {/* Quick-Fill */}
-        <section className="mb-8 bg-white p-6 rounded-xl shadow">
-          <h2 className="text-2xl mb-4">Quick Fill from Database</h2>
+        <div className="mb-8 bg-white p-6 rounded-xl shadow">
+          <h2 className="text-2xl font-semibold mb-4">
+            Quick Fill from Database
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {availableCars.map((c,i) => (
+            {availableCars.map((c, i) => (
               <button
                 key={i}
                 onClick={() => handleQuickFill(c)}
                 className="p-4 border rounded hover:bg-blue-50 text-left"
               >
-                <h3 className="font-semibold">{c.make} {c.model}</h3>
+                <h3 className="font-semibold">
+                  {c.make} {c.model}
+                </h3>
                 <p className="text-sm text-gray-600">Year: {c.year}</p>
               </button>
             ))}
           </div>
-        </section>
+        </div>
 
         {/* Search Form */}
-        <section className="mb-8 bg-white p-6 rounded-xl shadow">
-          <h2 className="text-2xl mb-6">Search Vehicle</h2>
+        <div className="mb-8 bg-white p-6 rounded-xl shadow">
+          <h2 className="text-2xl font-semibold mb-6">Search Vehicle</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-
             {/* Make */}
             <div className="relative" ref={makeDropdownRef}>
               <label className="block mb-1">Make *</label>
               <input
                 type="text"
                 value={selectedMake}
-                onChange={e => { setSelectedMake(e.target.value); setShowMakeDropdown(true); }}
+                onChange={e => {
+                  setSelectedMake(e.target.value);
+                  setShowMakeDropdown(true);
+                }}
                 onFocus={() => setShowMakeDropdown(true)}
                 className="w-full p-3 border rounded"
                 placeholder="Type to search makes…"
               />
               {showMakeDropdown && (
                 <ul className="absolute z-50 w-full bg-white border rounded max-h-52 overflow-y-auto">
-                  {autoComplete.makesLoading
-                    ? <li className="p-2 text-center">Loading…</li>
-                    : getFilteredMakes().map((m,i) => (
-                        <li
-                          key={i}
-                          onClick={() => { setSelectedMake(m); setShowMakeDropdown(false); }}
-                          className="p-2 hover:bg-blue-50 cursor-pointer"
-                        >
-                          {m}
-                        </li>
-                      ))
-                  }
+                  {autoComplete.makesLoading ? (
+                    <li className="p-2 text-center">Loading…</li>
+                  ) : getFilteredMakes().length ? (
+                    getFilteredMakes().map((m, idx) => (
+                      <li
+                        key={idx}
+                        onClick={() => {
+                          setSelectedMake(m);
+                          setShowMakeDropdown(false);
+                        }}
+                        className="p-2 hover:bg-blue-50 cursor-pointer"
+                      >
+                        {m}
+                      </li>
+                    ))
+                  ) : (
+                    <li className="p-2 text-center">No makes found</li>
+                  )}
                 </ul>
               )}
             </div>
-
             {/* Model */}
             <div className="relative" ref={modelDropdownRef}>
               <label className="block mb-1">Model *</label>
               <input
                 type="text"
                 value={selectedModel}
-                onChange={e => { setSelectedModel(e.target.value); setShowModelDropdown(true); }}
+                onChange={e => {
+                  setSelectedModel(e.target.value);
+                  setShowModelDropdown(true);
+                }}
                 onFocus={() => setShowModelDropdown(true)}
                 disabled={!selectedMake}
                 className="w-full p-3 border rounded disabled:bg-gray-100"
@@ -347,22 +424,27 @@ export default function SupercarPricingAggregatorPage() {
               />
               {showModelDropdown && selectedMake && (
                 <ul className="absolute z-50 w-full bg-white border rounded max-h-52 overflow-y-auto">
-                  {autoComplete.modelsLoading
-                    ? <li className="p-2 text-center">Loading…</li>
-                    : getFilteredModels().map((m,i) => (
-                        <li
-                          key={i}
-                          onClick={() => { setSelectedModel(m); setShowModelDropdown(false); }}
-                          className="p-2 hover:bg-blue-50 cursor-pointer"
-                        >
-                          {m}
-                        </li>
-                      ))
-                  }
+                  {autoComplete.modelsLoading ? (
+                    <li className="p-2 text-center">Loading…</li>
+                  ) : getFilteredModels().length ? (
+                    getFilteredModels().map((m, idx) => (
+                      <li
+                        key={idx}
+                        onClick={() => {
+                          setSelectedModel(m);
+                          setShowModelDropdown(false);
+                        }}
+                        className="p-2 hover:bg-blue-50 cursor-pointer"
+                      >
+                        {m}
+                      </li>
+                    ))
+                  ) : (
+                    <li className="p-2 text-center">No models found</li>
+                  )}
                 </ul>
               )}
             </div>
-
             {/* Year */}
             <div>
               <label className="block mb-1">Year</label>
@@ -374,11 +456,12 @@ export default function SupercarPricingAggregatorPage() {
               >
                 <option value="">Select Year</option>
                 {autoComplete.years.map(y => (
-                  <option key={y} value={y}>{y}</option>
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
                 ))}
               </select>
             </div>
-
             {/* Button */}
             <div className="flex items-end">
               <button
@@ -390,12 +473,16 @@ export default function SupercarPricingAggregatorPage() {
               </button>
             </div>
           </div>
-          {error && <p className="mt-4 text-red-600">{error}</p>}
-        </section>
+          {error && (
+            <p className="mt-4 text-red-600">
+              ❌ {error}
+            </p>
+          )}
+        </div>
 
-        {/* History */}
+        {/* Recent Searches */}
         {searchHistory.length > 0 && (
-          <section className="mb-8 bg-white p-6 rounded-xl shadow">
+          <div className="mb-8 bg-white p-6 rounded-xl shadow">
             <h3 className="text-xl mb-4">Recent Searches</h3>
             <ul className="space-y-2">
               {searchHistory.slice(0, 5).map(h => (
@@ -408,7 +495,9 @@ export default function SupercarPricingAggregatorPage() {
                     onClick={() => {
                       setSelectedMake(h.params.make);
                       setSelectedModel(h.params.model);
-                      setSelectedYear(h.params.year?.toString() ?? '');
+                      setSelectedYear(
+                        h.params.year?.toString() ?? ''
+                      );
                       setDataSource(h.dataSource as any);
                     }}
                     className="text-blue-600"
@@ -418,38 +507,70 @@ export default function SupercarPricingAggregatorPage() {
                 </li>
               ))}
             </ul>
-          </section>
+          </div>
         )}
 
         {/* Results */}
         {supercarData && (
-          <section className="bg-white p-6 rounded-xl shadow space-y-6">
-            <header>
+          <div className="bg-white p-6 rounded-xl shadow space-y-6">
+            {/* Header */}
+            <div>
               <h2 className="text-2xl font-bold">
-                🔍 COMPREHENSIVE DATA: {supercarData.make} {supercarData.model}
+                🔍 COMPREHENSIVE DATA: {supercarData.make}{' '}
+                {supercarData.model}
               </h2>
               <p className="mt-1 text-gray-600">
-                Source: {supercarData.dataSource} • Year: {supercarData.year}
+                Source: {supercarData.dataSource} • Year:{' '}
+                {supercarData.year}
               </p>
-            </header>
+            </div>
 
-            {/* Basic Specs */}
+            {/* Basic Specifications */}
             {supercarData.basicSpecifications && (
               <div>
-                <h3 className="font-semibold text-blue-600 mb-2">📋 BASIC SPECIFICATIONS</h3>
+                <h3 className="font-semibold text-blue-600 mb-2">
+                  📋 BASIC SPECIFICATIONS
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div><strong>Make:</strong> {supercarData.basicSpecifications.make}</div>
-                  <div><strong>Model:</strong> {supercarData.basicSpecifications.model}</div>
-                  <div><strong>Year:</strong> {supercarData.basicSpecifications.year}</div>
-                  <div><strong>Body Type:</strong> {supercarData.basicSpecifications.bodyType}</div>
-                  <div><strong>Engine:</strong> {supercarData.basicSpecifications.engine}</div>
-                  <div><strong>Doors:</strong> {supercarData.basicSpecifications.doors}</div>
-                  <div><strong>Seats:</strong> {supercarData.basicSpecifications.seats}</div>
+                  <div>
+                    <strong>Make:</strong>{' '}
+                    {supercarData.basicSpecifications.make}
+                  </div>
+                  <div>
+                    <strong>Model:</strong>{' '}
+                    {supercarData.basicSpecifications.model}
+                  </div>
+                  <div>
+                    <strong>Year:</strong>{' '}
+                    {supercarData.basicSpecifications.year}
+                  </div>
+                  <div>
+                    <strong>Body Type:</strong>{' '}
+                    {supercarData.basicSpecifications.bodyType}
+                  </div>
+                  <div>
+                    <strong>Engine:</strong>{' '}
+                    {supercarData.basicSpecifications.engine}
+                  </div>
+                  <div>
+                    <strong>Doors:</strong>{' '}
+                    {supercarData.basicSpecifications.doors}
+                  </div>
+                  <div>
+                    <strong>Seats:</strong>{' '}
+                    {supercarData.basicSpecifications.seats}
+                  </div>
                   {supercarData.basicSpecifications.transmission && (
-                    <div><strong>Transmission:</strong> {supercarData.basicSpecifications.transmission}</div>
+                    <div>
+                      <strong>Transmission:</strong>{' '}
+                      {supercarData.basicSpecifications.transmission}
+                    </div>
                   )}
                   {supercarData.basicSpecifications.drivetrain && (
-                    <div><strong>Drivetrain:</strong> {supercarData.basicSpecifications.drivetrain}</div>
+                    <div>
+                      <strong>Drivetrain:</strong>{' '}
+                      {supercarData.basicSpecifications.drivetrain}
+                    </div>
                   )}
                 </div>
               </div>
@@ -458,18 +579,47 @@ export default function SupercarPricingAggregatorPage() {
             {/* Performance */}
             {supercarData.performanceData && (
               <div>
-                <h3 className="font-semibold text-green-600 mb-2">⚡ PERFORMANCE</h3>
+                <h3 className="font-semibold text-green-600 mb-2">
+                  ⚡ PERFORMANCE
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div><strong>Engine:</strong> {supercarData.performanceData.engine}</div>
-                  <div><strong>HP:</strong> {supercarData.performanceData.horsePower}</div>
-                  <div><strong>Torque:</strong> {supercarData.performanceData.torque}</div>
-                  <div><strong>0–60:</strong> {supercarData.performanceData.acceleration060}</div>
-                  <div><strong>Top Speed:</strong> {supercarData.performanceData.topSpeed}</div>
-                  <div><strong>Transmission:</strong> {supercarData.performanceData.transmission}</div>
-                  <div><strong>Drive Type:</strong> {supercarData.performanceData.driveType}</div>
-                  <div><strong>Weight:</strong> {supercarData.performanceData.weight}</div>
+                  <div>
+                    <strong>Engine:</strong>{' '}
+                    {supercarData.performanceData.engine}
+                  </div>
+                  <div>
+                    <strong>Horsepower:</strong>{' '}
+                    {supercarData.performanceData.horsePower}
+                  </div>
+                  <div>
+                    <strong>Torque:</strong>{' '}
+                    {supercarData.performanceData.torque}
+                  </div>
+                  <div>
+                    <strong>0-60 mph:</strong>{' '}
+                    {supercarData.performanceData.acceleration060}
+                  </div>
+                  <div>
+                    <strong>Top Speed:</strong>{' '}
+                    {supercarData.performanceData.topSpeed}
+                  </div>
+                  <div>
+                    <strong>Transmission:</strong>{' '}
+                    {supercarData.performanceData.transmission}
+                  </div>
+                  <div>
+                    <strong>Drive Type:</strong>{' '}
+                    {supercarData.performanceData.driveType}
+                  </div>
+                  <div>
+                    <strong>Weight:</strong>{' '}
+                    {supercarData.performanceData.weight}
+                  </div>
                   {supercarData.performanceData.fuelEconomy && (
-                    <div><strong>Fuel Economy:</strong> {supercarData.performanceData.fuelEconomy}</div>
+                    <div>
+                      <strong>Fuel Economy:</strong>{' '}
+                      {supercarData.performanceData.fuelEconomy}
+                    </div>
                   )}
                 </div>
               </div>
@@ -478,20 +628,47 @@ export default function SupercarPricingAggregatorPage() {
             {/* Pricing */}
             {supercarData.pricingData && (
               <div>
-                <h3 className="font-semibold text-red-600 mb-2">💰 PRICING DATA</h3>
+                <h3 className="font-semibold text-red-600 mb-2">
+                  💰 PRICING DATA
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {typeof supercarData.pricingData.baseMSRP === 'number' && (
-                    <div><strong>Base MSRP:</strong> £{supercarData.pricingData.baseMSRP.toLocaleString()}</div>
+                  {typeof supercarData.pricingData.baseMSRP ===
+                    'number' && (
+                    <div>
+                      <strong>Base MSRP:</strong> £
+                      {supercarData.pricingData.baseMSRP.toLocaleString()}
+                    </div>
                   )}
-                  <div><strong>Range:</strong> {supercarData.pricingData.currentMarketRange}</div>
-                  <div><strong>Avg Dealer:</strong> £{supercarData.pricingData.averageDealerPrice.toLocaleString()}</div>
-                  <div><strong>Inventory:</strong> {supercarData.pricingData.dealerInventoryCount}</div>
-                  <div><strong>Trend:</strong> {supercarData.pricingData.priceTrend}</div>
+                  <div>
+                    <strong>Current Range:</strong>{' '}
+                    {supercarData.pricingData.currentMarketRange}
+                  </div>
+                  <div>
+                    <strong>Avg Dealer Price:</strong> £
+                    {supercarData.pricingData.averageDealerPrice.toLocaleString()}
+                  </div>
+                  <div>
+                    <strong>Inventory:</strong>{' '}
+                    {supercarData.pricingData.dealerInventoryCount}
+                  </div>
+                  <div>
+                    <strong>Trend:</strong>{' '}
+                    {supercarData.pricingData.priceTrend}
+                  </div>
                   {supercarData.pricingData.priceDistribution && (
                     <>
-                      <div><strong>Min:</strong> £{supercarData.pricingData.priceDistribution.min.toLocaleString()}</div>
-                      <div><strong>Max:</strong> £{supercarData.pricingData.priceDistribution.max.toLocaleString()}</div>
-                      <div><strong>Median:</strong> £{supercarData.pricingData.priceDistribution.median.toLocaleString()}</div>
+                      <div>
+                        <strong>Min:</strong> £
+                        {supercarData.pricingData.priceDistribution.min.toLocaleString()}
+                      </div>
+                      <div>
+                        <strong>Max:</strong> £
+                        {supercarData.pricingData.priceDistribution.max.toLocaleString()}
+                      </div>
+                      <div>
+                        <strong>Median:</strong> £
+                        {supercarData.pricingData.priceDistribution.median.toLocaleString()}
+                      </div>
                     </>
                   )}
                 </div>
@@ -501,13 +678,20 @@ export default function SupercarPricingAggregatorPage() {
             {/* Popular Options */}
             {supercarData.popularOptions?.length && (
               <div>
-                <h3 className="font-semibold text-orange-600 mb-2">🔧 POPULAR OPTIONS</h3>
+                <h3 className="font-semibold text-orange-600 mb-2">
+                  🔧 POPULAR OPTIONS
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {supercarData.popularOptions.map((opt, idx) => (
-                    <div key={idx} className="flex items-center bg-gray-100 p-3 rounded">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                    <div
+                      key={idx}
+                      className="flex items-center bg-gray-100 p-3 rounded"
+                    >
+                      <span className="w-2 h-2 bg-blue-500 rounded-full mr-2" />
                       <span className="flex-1">{opt.name}</span>
-                      <span className="text-xs bg-gray-200 px-2 py-1 rounded">{opt.source}</span>
+                      <span className="text-xs bg-gray-200 px-2 py-1 rounded">
+                        {opt.source}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -517,23 +701,42 @@ export default function SupercarPricingAggregatorPage() {
             {/* Market Data */}
             {supercarData.marketData && (
               <div>
-                <h3 className="font-semibold text-indigo-600 mb-2">📊 MARKET DATA</h3>
+                <h3 className="font-semibold text-indigo-600 mb-2">
+                  📊 MARKET DATA
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                  <div><strong>Avg Price:</strong> £{supercarData.marketData.averagePrice.toLocaleString()}</div>
-                  <div><strong>Range:</strong> {supercarData.marketData.priceRange}</div>
-                  <div><strong>Listings:</strong> {supercarData.marketData.inventoryCount}</div>
-                  <div><strong>Source:</strong> {supercarData.marketData.dataSource}</div>
+                  <div>
+                    <strong>Avg Price:</strong> £
+                    {supercarData.marketData.averagePrice.toLocaleString()}
+                  </div>
+                  <div>
+                    <strong>Range:</strong>{' '}
+                    {supercarData.marketData.priceRange}
+                  </div>
+                  <div>
+                    <strong>Listings:</strong>{' '}
+                    {supercarData.marketData.inventoryCount}
+                  </div>
+                  <div>
+                    <strong>Source:</strong>{' '}
+                    {supercarData.marketData.dataSource}
+                  </div>
                 </div>
-                {supercarData.marketData.listings.length > 0 && (
-                  <ul className="space-y-2">
-                    {supercarData.marketData.listings.slice(0,5).map((l,i) => (
-                      <li key={i} className="p-3 bg-gray-100 rounded">
+                <ul className="space-y-2">
+                  {supercarData.marketData.listings
+                    .slice(0, 5)
+                    .map((l, i) => (
+                      <li
+                        key={i}
+                        className="p-3 bg-gray-100 rounded"
+                      >
                         <p className="font-medium">{l.title}</p>
-                        <p className="text-sm">{l.price} • {l.specs}</p>
+                        <p className="text-sm">
+                          {l.price} • {l.specs}
+                        </p>
                       </li>
                     ))}
-                  </ul>
-                )}
+                </ul>
               </div>
             )}
 
@@ -541,7 +744,8 @@ export default function SupercarPricingAggregatorPage() {
             <div className="flex flex-wrap gap-4 pt-4">
               <button
                 onClick={() => {
-                  const opts = supercarData.popularOptions?.map(o => o.name) ?? [];
+                  const opts =
+                    supercarData.popularOptions?.map(o => o.name) ?? [];
                   console.log('Options:', opts);
                   console.log('Full data:', supercarData);
                   alert(`Extracted ${opts.length} options—check console.`);
@@ -556,11 +760,15 @@ export default function SupercarPricingAggregatorPage() {
                     make: supercarData.make,
                     model: supercarData.model,
                     year: supercarData.year,
-                    dealerPrice: supercarData.pricingData?.averageDealerPrice,
+                    dealerPrice:
+                      supercarData.pricingData?.averageDealerPrice,
                     baseMSRP: supercarData.pricingData?.baseMSRP,
-                    addedOptions: supercarData.popularOptions?.map(o => o.name),
+                    addedOptions:
+                      supercarData.popularOptions?.map(o => o.name),
                   };
-                  navigator.clipboard.writeText(JSON.stringify(integration, null, 2));
+                  navigator.clipboard.writeText(
+                    JSON.stringify(integration, null, 2)
+                  );
                   alert('Copied integration JSON');
                 }}
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -577,7 +785,7 @@ export default function SupercarPricingAggregatorPage() {
                 📈 Analyze Results
               </button>
             </div>
-          </section>
+          </div>
         )}
       </div>
     </div>
