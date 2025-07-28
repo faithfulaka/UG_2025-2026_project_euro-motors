@@ -1,6 +1,8 @@
 import type { NextRequest }          from 'next/server';
 import     { NextResponse }         from 'next/server';
 import     { autotraderScraper }    from '@/lib/scrapers/autotrader';
+import { getBringATrailerAuctionHistory } from '@/lib/scrapers/bringatrailer';
+import { getParkersDepreciationAndOwnership } from '@/lib/scrapers/parkers';
 import     { carQueryService }      from '@/lib/services';
 import type { SPASearchParams, SPASearchResponse, ComprehensiveSPAData } from '@/types/spa';
 
@@ -37,6 +39,16 @@ export async function POST(req: NextRequest) {
   const manufacturerData = undefined;
 
   // 4) Package full result
+  // Fetch auction history from Bring a Trailer using make, model, year
+  const auctionHistory = await getBringATrailerAuctionHistory(params.make, params.model, params.year?.toString());
+
+  // Fetch depreciation and ownership costs from Parkers
+  const { depreciation: depreciationData, ownership: ownershipCosts } = await getParkersDepreciationAndOwnership(
+    params.make,
+    params.model,
+    params.year?.toString()
+  );
+
   const result: ComprehensiveSPAData = {
     make:                params.make,
     model:               params.model,
@@ -47,17 +59,28 @@ export async function POST(req: NextRequest) {
     manufacturerData,
     marketData:          marketR.data!,
     popularOptions:      [],
+    auctionHistory,
+    depreciationData,
+    ownershipCosts,
     dataSource:          'comprehensive',
-    searchParams:        params,
-    timestamp:           new Date().toISOString()
+    searchQuery:         params,
+    timestamp:           new Date().toISOString(),
+    dataSources: {
+      database: false,
+      carQuery: true,
+      manufacturer: false,
+      market: true
+    }
   };
 
   const body: SPASearchResponse = {
     success: true,
     data:    result,
     meta: {
-      searchParams: params,
-      executedAt:   new Date().toISOString()
+      searchQuery: params,
+      executionTime: 0, // Set to 0 or actual execution time if available
+      timestamp: new Date().toISOString(),
+      version: '1.0.0'
     }
   };
 

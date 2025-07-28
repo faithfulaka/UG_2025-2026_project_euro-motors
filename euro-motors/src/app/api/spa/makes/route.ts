@@ -22,9 +22,19 @@ export async function GET(request: NextRequest) {
     const resp     = await fetch(
       'https://www.carqueryapi.com/api/0.3/?callback=?&cmd=getMakes'
     );
-    const text     = await resp.text();
-    const jsonp    = text.replace(/^[^(]*\((.*)\)$/, '$1');
-    const parsed   = JSON.parse(jsonp) as { Makes: Array<{ make_display: string }> };
+    const text = await resp.text();
+    // Robust JSONP stripping for CarQuery
+    let jsonStr = text.trim();
+    if (jsonStr.startsWith('?(')) jsonStr = jsonStr.slice(2);
+    if (jsonStr.endsWith(');')) jsonStr = jsonStr.slice(0, -2);
+    else if (jsonStr.endsWith(';')) jsonStr = jsonStr.slice(0, -1);
+    // Fallback: find first { and last }
+    const firstBrace = jsonStr.indexOf('{');
+    const lastBrace = jsonStr.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1) {
+      jsonStr = jsonStr.slice(firstBrace, lastBrace + 1);
+    }
+    const parsed = JSON.parse(jsonStr) as { Makes: Array<{ make_display: string }> };
     const apiMakes = parsed.Makes.map(m => m.make_display);
 
     makes = Array.from(new Set([...dbMakes, ...apiMakes])).sort();
