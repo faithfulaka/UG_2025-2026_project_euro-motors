@@ -54,3 +54,27 @@ export async function getParkersDepreciationAndOwnership(make: string, model: st
     ownership: {}
   };
 }
+
+// --- Suggestion methods for multi-site merging (mocked, extendable) ---
+
+export async function getAvailableMakes(): Promise<string[]> {
+  // TODO: Implement real scraping; for now, mock a few makes
+  return ['Bentley', 'Ferrari', 'Porsche', 'Lamborghini', 'Pagani'];
+}
+
+export async function getAvailableModels(make: string): Promise<string[]> {
+  // TODO: Implement real scraping; for now, mock a few models per make
+  const models: Record<string, string[]> = {
+    Bentley: ['Continental GT', 'Flying Spur', 'Bentayga'],
+    Ferrari: ['488 GTB', 'F8 Tributo', 'SF90 Stradale'],
+    Porsche: ['911 Carrera', 'Cayenne', 'Panamera'],
+    Lamborghini: ['Aventador', 'Huracan', 'Urus'],
+    Pagani: ['Huayra', 'Zonda'],
+  };
+  return models[make] || [];
+}
+
+export async function getAvailableYears(make: string, model: string): Promise<number[]> {
+  // TODO: Implement real scraping; for now, mock a range
+  return [2024, 2023, 2022, 2021, 2020, 2019];
+}

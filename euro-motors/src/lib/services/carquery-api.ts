@@ -98,7 +98,9 @@ class CarQueryAPI {
   async getMakes(): Promise<CarQueryResponse> {
     try {
       const response = await fetch(`${this.baseUrl}?callback=?&cmd=getMakes`);
-      const data = await response.json();
+      const text = await response.text();
+      const jsonp = text.replace(/^[^(]*\((.*)\);?$/, '$1');
+      const data = JSON.parse(jsonp);
       return data;
     } catch (error) {
       console.error('CarQuery API getMakes error:', error);
@@ -109,7 +111,9 @@ class CarQueryAPI {
   async getModels(makeId: string): Promise<CarQueryResponse> {
     try {
       const response = await fetch(`${this.baseUrl}?callback=?&cmd=getModels&make=${makeId}`);
-      const data = await response.json();
+      const text = await response.text();
+      const jsonp = text.replace(/^[^(]*\((.*)\);?$/, '$1');
+      const data = JSON.parse(jsonp);
       return data;
     } catch (error) {
       console.error('CarQuery API getModels error:', error);
@@ -123,7 +127,9 @@ class CarQueryAPI {
       if (year) url += `&year=${year}`;
       
       const response = await fetch(url);
-      const data = await response.json();
+      const text = await response.text();
+      const jsonp = text.replace(/^[^(]*\((.*)\);?$/, '$1');
+      const data = JSON.parse(jsonp);
       return data;
     } catch (error) {
       console.error('CarQuery API getTrims error:', error);

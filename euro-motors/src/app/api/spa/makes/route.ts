@@ -34,8 +34,13 @@ export async function GET(request: NextRequest) {
     if (firstBrace !== -1 && lastBrace !== -1) {
       jsonStr = jsonStr.slice(firstBrace, lastBrace + 1);
     }
-    const parsed = JSON.parse(jsonStr) as { Makes: Array<{ make_display: string }> };
-    const apiMakes = parsed.Makes.map(m => m.make_display);
+    let apiMakes: string[] = [];
+    try {
+      const parsed = JSON.parse(jsonStr) as { Makes: Array<{ make_display: string }> };
+      apiMakes = Array.isArray(parsed.Makes) ? parsed.Makes.map(m => m.make_display) : [];
+    } catch (e) {
+      apiMakes = [];
+    }
 
     makes = Array.from(new Set([...dbMakes, ...apiMakes])).sort();
   }

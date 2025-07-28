@@ -12,6 +12,84 @@ interface ScrapingResult {
 
 export class AutotraderScraper {
   private baseUrl = 'https://www.autotrader.co.uk';
+  // ...existing fields...
+
+  /** Scrape all available makes from Autotrader */
+  public async getAvailableMakes(): Promise<string[]> {
+    const browser = await puppeteer.launch({
+      args: chromium.args,
+      executablePath: '/Applications/Chromium.app/Contents/MacOS/Chromium',
+      headless: true,
+    });
+    const page = await browser.newPage();
+    await page.goto(`${this.baseUrl}/car-search`, { waitUntil: 'networkidle2', timeout: 30000 });
+    await this.delay(1500);
+    // Accept cookies if present
+    const btn = await page.$('#onetrust-accept-btn-handler');
+    if (btn) { await btn.click(); await this.delay(500); }
+    // Scrape makes from dropdown
+    const makes: string[] = await page.evaluate(() => {
+      const select = document.querySelector('select[name="make"]');
+      if (!select) return [];
+      return Array.from(select.querySelectorAll('option'))
+        .map(opt => opt.textContent?.trim() || '')
+        .filter(v => v && v.toLowerCase() !== 'any make');
+    });
+    await browser.close();
+    return makes;
+  }
+
+  /** Scrape all available models for a given make from Autotrader */
+  public async getAvailableModels(make: string): Promise<string[]> {
+    const browser = await puppeteer.launch({
+      args: chromium.args,
+      executablePath: '/Applications/Chromium.app/Contents/MacOS/Chromium',
+      headless: true,
+    });
+    const page = await browser.newPage();
+    await page.goto(`${this.baseUrl}/car-search?make=${encodeURIComponent(make)}`, { waitUntil: 'networkidle2', timeout: 30000 });
+    await this.delay(1500);
+    // Accept cookies if present
+    const btn = await page.$('#onetrust-accept-btn-handler');
+    if (btn) { await btn.click(); await this.delay(500); }
+    // Scrape models from dropdown
+    const models: string[] = await page.evaluate(() => {
+      const select = document.querySelector('select[name="model"]');
+      if (!select) return [];
+      return Array.from(select.querySelectorAll('option'))
+        .map(opt => opt.textContent?.trim() || '')
+        .filter(v => v && v.toLowerCase() !== 'any model');
+    });
+    await browser.close();
+    return models;
+  }
+
+  /** Scrape all available years for a given make+model from Autotrader */
+  public async getAvailableYears(make: string, model: string): Promise<number[]> {
+    const browser = await puppeteer.launch({
+      args: chromium.args,
+      executablePath: '/Applications/Chromium.app/Contents/MacOS/Chromium',
+      headless: true,
+    });
+    const page = await browser.newPage();
+    await page.goto(`${this.baseUrl}/car-search?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`, { waitUntil: 'networkidle2', timeout: 30000 });
+    await this.delay(1500);
+    // Accept cookies if present
+    const btn = await page.$('#onetrust-accept-btn-handler');
+    if (btn) { await btn.click(); await this.delay(500); }
+    // Scrape years from dropdown
+    const years: number[] = await page.evaluate(() => {
+      const select = document.querySelector('select[name="year-from"]');
+      if (!select) return [];
+      return Array.from(select.querySelectorAll('option'))
+        .map(opt => parseInt(opt.textContent || '', 10))
+        .filter(y => !isNaN(y));
+    });
+    await browser.close();
+    // Return sorted and unique years (descending)
+    return Array.from(new Set(years)).sort((a, b) => b - a);
+  }
+
   private delayMs = 3000;
   private lastRequest = 0;
   private cache = new Map<string, { data: MarketData; time: number }>();
@@ -47,7 +125,7 @@ export class AutotraderScraper {
 
       const browser = await puppeteer.launch({
         args: chromium.args,
-        executablePath: await chromium.executablePath(),
+        executablePath: '/Applications/Chromium.app/Contents/MacOS/Chromium', // Use Homebrew Chromium for Mac
         headless: true,
       });
       const page = await browser.newPage();

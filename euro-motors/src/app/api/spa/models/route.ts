@@ -40,8 +40,13 @@ export async function GET(request: NextRequest) {
       if (firstBrace !== -1 && lastBrace !== -1) {
         jsonStr = jsonStr.slice(firstBrace, lastBrace + 1);
       }
-      const parsed = JSON.parse(jsonStr) as { Models: Array<{ model_name: string }> };
-      const apiModels = parsed.Models.map(m => m.model_name);
+      let apiModels: string[] = [];
+      try {
+        const parsed = JSON.parse(jsonStr) as { Models: Array<{ model_name: string }> };
+        apiModels = Array.isArray(parsed.Models) ? parsed.Models.map(m => m.model_name) : [];
+      } catch (e) {
+        apiModels = [];
+      }
 
       models = Array.from(new Set([...dbModels, ...apiModels])).sort();
     }

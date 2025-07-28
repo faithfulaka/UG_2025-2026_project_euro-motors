@@ -13,7 +13,7 @@ stages:
 - dast
 - staging
 - canary
-- production
+- production  
 - incremental rollout 10%
 - incremental rollout 25%
 - incremental rollout 50%
