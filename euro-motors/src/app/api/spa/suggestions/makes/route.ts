@@ -11,13 +11,21 @@ export async function GET() {
       bringatrailer.getAvailableMakes(),
       parkers.getAvailableMakes(),
     ]);
+    // Log all results for debugging
+    console.log('[API/makes] Scraper results:', results.map(r => ({ status: r.status, value: r.status === 'fulfilled' ? r.value : r.reason })));
     // Only keep fulfilled, non-empty arrays
     const allMakes = results
       .filter(r => r.status === 'fulfilled' && Array.isArray(r.value) && r.value.length > 0)
       .flatMap(r => (r.status === 'fulfilled' ? r.value : []));
-    const makes = Array.from(new Set(allMakes)).sort();
+    // Ensure all values are strings
+    const makes = Array.from(new Set(allMakes.map(m => String(m)))).sort();
+    if (makes.length === 0) {
+      console.error('[API/makes] All scrapers failed or returned empty.');
+      return NextResponse.json({ error: 'No makes found from any live source.' }, { status: 503 });
+    }
     return NextResponse.json({ makes });
   } catch (error) {
+    console.error('[API/makes] Critical error:', error);
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }
