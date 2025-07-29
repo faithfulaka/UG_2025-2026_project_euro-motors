@@ -20,7 +20,35 @@ export async function POST(req: NextRequest) {
     const { marketScraperService } = await import('@/lib/scrapers/market-scrapers');
     const response = await marketScraperService.scrapeAllMarketData(params.make, params.model, params.year);
     // response.data is MarketData[] | undefined
-    const firstMarketData = Array.isArray(response.data) && response.data.length > 0 ? response.data[0] : undefined;
+    // Map all listings to canonical MarketListing interface
+    const canonicalizeListing = (listing: Record<string, unknown>): import('@/types/spa').MarketListing => ({
+      title: typeof listing.title === 'string' ? listing.title : '',
+      price: typeof listing.price === 'string' ? listing.price : (typeof listing.price === 'number' ? `£${listing.price.toLocaleString()}` : ''),
+      priceNumeric: typeof listing.priceNumeric === 'number' ? listing.priceNumeric : (typeof listing.price === 'number' ? listing.price : 0),
+      mileage: typeof listing.mileage === 'string' ? listing.mileage : (listing.mileage ? String(listing.mileage) : undefined),
+      year: typeof listing.year === 'number' ? listing.year : undefined,
+      location: typeof listing.location === 'string' ? listing.location : '',
+      dealer: typeof listing.dealer === 'string' ? listing.dealer : (typeof listing.dealerName === 'string' ? listing.dealerName : ''),
+      specs: typeof listing.specs === 'string' ? listing.specs : '',
+      url: typeof listing.url === 'string' ? listing.url : (typeof listing.listingUrl === 'string' ? listing.listingUrl : ''),
+      imageUrl: typeof listing.imageUrl === 'string' ? listing.imageUrl : (Array.isArray(listing.images) && typeof listing.images[0] === 'string' ? listing.images[0] : undefined),
+      datePosted: typeof listing.datePosted === 'string' ? listing.datePosted : undefined
+    });
+    const firstMarketData = Array.isArray(response.data) && response.data.length > 0
+      ? {
+          ...response.data[0],
+          listings: Array.isArray(response.data[0].listings)
+            ? response.data[0].listings.map(canonicalizeListing)
+            : [],
+          priceDistribution: {
+            min: response.data[0].priceDistribution?.min ?? 0,
+            max: response.data[0].priceDistribution?.max ?? 0,
+            median: response.data[0].priceDistribution?.median ?? 0,
+            q1: response.data[0].priceDistribution?.q1 ?? 0,
+            q3: response.data[0].priceDistribution?.q3 ?? 0
+          }
+        }
+      : undefined;
     marketR = { success: response.success, data: firstMarketData };
   } catch (err) {
     console.error('[API/search] Error fetching market data:', err);
