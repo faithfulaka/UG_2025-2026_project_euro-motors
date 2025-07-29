@@ -1,4 +1,3 @@
-import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 // Only import scrapers that exist. Comment out broken or missing ones.
 
@@ -8,7 +7,7 @@ import { NextResponse } from 'next/server';
 
 
 
-export async function POST(req: NextRequest) {
+export async function POST() {
 
   // Use robust multi-source scraping for market data
 
