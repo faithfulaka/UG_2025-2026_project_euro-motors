@@ -1,26 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { autotraderScraper } from '@/lib/scrapers/autotrader';
-import * as bringatrailer from '@/lib/scrapers/bringatrailer';
-import * as parkers from '@/lib/scrapers/parkers';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   const url = new URL(request.url);
   const make = url.searchParams.get('make') || '';
   if (!make) return NextResponse.json({ models: [] });
   try {
-    // Query all sources for live model data
-    const results = await Promise.allSettled([
-      autotraderScraper.getAvailableModels(make),
-      bringatrailer.getAvailableModels(make),
-      parkers.getAvailableModels(make),
-    ]);
-    // Only keep fulfilled, non-empty arrays
-    const allModels = results
-      .filter(r => r.status === 'fulfilled' && Array.isArray(r.value) && r.value.length > 0)
-      .flatMap(r => (r.status === 'fulfilled' ? r.value : []));
-    const models = Array.from(new Set(allModels)).sort();
-    return NextResponse.json({ models });
+    const resp = await fetch(`http://localhost:4001/models?make=${encodeURIComponent(make)}`);
+    if (!resp.ok) {
+      return NextResponse.json({ error: 'Failed to fetch models from scraper backend' }, { status: 503 });
+    }
+    const data = await resp.json();
+    if (!data.models || !Array.isArray(data.models)) {
+      return NextResponse.json({ error: 'Invalid models data from scraper backend' }, { status: 500 });
+    }
+    return NextResponse.json({ models: data.models });
   } catch (error) {
+    console.error('[API/models] Critical error:', error);
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }

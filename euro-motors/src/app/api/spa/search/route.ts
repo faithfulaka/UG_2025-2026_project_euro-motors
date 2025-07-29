@@ -1,21 +1,47 @@
 import type { NextRequest }          from 'next/server';
 import     { NextResponse }         from 'next/server';
-import     { autotraderScraper }    from '@/lib/scrapers/autotrader';
-import { getBringATrailerAuctionHistory } from '@/lib/scrapers/bringatrailer';
-import { getParkersDepreciationAndOwnership } from '@/lib/scrapers/parkers';
-import { carQueryService } from '@/lib/services';
-import { porscheConfiguratorScraper } from '@/lib/scrapers/porsche';
-import { McLarenScraper } from '@/lib/scrapers/mclaren';
+// All scraping now proxied through scraper-backend
+// import { autotraderScraper } from '@/lib/scrapers/autotrader';
+// import { getBringATrailerAuctionHistory } from '@/lib/scrapers/bringatrailer';
+// import { getParkersDepreciationAndOwnership } from '@/lib/scrapers/parkers';
+// import { carQueryService } from '@/lib/services';
+// import { porscheConfiguratorScraper } from '@/lib/scrapers/porsche';
+// import { McLarenScraper } from '@/lib/scrapers/mclaren';
 import type { SPASearchParams, SPASearchResponse, ComprehensiveSPAData, ManufacturerData, ManufacturerPricing } from '@/types/spa';
 
 export async function POST(req: NextRequest) {
   const params = (await req.json()) as SPASearchParams;
 
-  // --- Scrape all sources in parallel ---
-  const [marketR, auctionHistory, parkersData, porscheData, mclarenData] = await Promise.all([
-    autotraderScraper.searchCars(params.make, params.model, params.year),
-    getBringATrailerAuctionHistory(params.make, params.model, params.year?.toString()),
-    getParkersDepreciationAndOwnership(params.make, params.model, params.year?.toString()),
+  // --- Fetch live market data from scraper-backend ---
+  let marketR: any = { success: false, data: null };
+  try {
+    const resp = await fetch('http://localhost:4001/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ make: params.make, model: params.model, year: params.year })
+    });
+    marketR = await resp.json();
+  } catch (err) {
+    console.error('[API/search] Error fetching market data:', err);
+  }
+
+  // Stubs for additional sources (to be implemented)
+  const auctionHistory: any[] = [];
+  const parkersData: any = null;
+  const porscheData: any = null;
+  const mclarenData: any = null;
+
+  // Compose response (minimal, only market data for now)
+  return NextResponse.json({
+    success: marketR.success,
+    data: {
+      marketData: marketR.data,
+      auctionHistory,
+      parkersData,
+      porscheData,
+      mclarenData,
+    }
+  });
     params.make?.toLowerCase() === 'porsche' ? porscheConfiguratorScraper.getCarPricing(params.model) : Promise.resolve(undefined),
     params.make?.toLowerCase() === 'mclaren' ? (new McLarenScraper()).getConfig(params.make, params.model, params.year) : Promise.resolve(undefined),
   ]);

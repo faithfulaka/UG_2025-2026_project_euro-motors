@@ -1,34 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { autotraderScraper } from '@/lib/scrapers/autotrader';
-import * as bringatrailer from '@/lib/scrapers/bringatrailer';
-import * as parkers from '@/lib/scrapers/parkers';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   const url = new URL(request.url);
   const make = url.searchParams.get('make') || '';
   const model = url.searchParams.get('model') || '';
   if (!make || !model) return NextResponse.json({ years: [] });
   try {
-    // Query all sources for live year data
-    const results = await Promise.allSettled([
-      autotraderScraper.getAvailableYears(make, model),
-      bringatrailer.getAvailableYears(make, model),
-      parkers.getAvailableYears(make, model),
-    ]);
-    // Only keep fulfilled, non-empty arrays
-    const allYears = results
-      .filter(r => r.status === 'fulfilled' && Array.isArray(r.value) && r.value.length > 0)
-      .flatMap(r => (r.status === 'fulfilled' ? r.value : []));
-    // Ensure all values are numbers and filter out NaN
-    const years = Array.from(new Set(
-      allYears
-        .map(y => typeof y === 'number' ? y : Number(y))
-        .filter((y): y is number => typeof y === 'number' && !isNaN(y))
-    )).sort((a, b) => b - a);
-    // Ensure all years are strings for type safety
-    const yearsAsStrings: string[] = Array.isArray(years) ? years.map(y => String(y)) : [];
-    return NextResponse.json({ years: yearsAsStrings });
+    const resp = await fetch(`http://localhost:4001/years?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`);
+    if (!resp.ok) {
+      return NextResponse.json({ error: 'Failed to fetch years from scraper backend' }, { status: 503 });
+    }
+    const data = await resp.json();
+    if (!data.years || !Array.isArray(data.years)) {
+      return NextResponse.json({ error: 'Invalid years data from scraper backend' }, { status: 500 });
+    }
+    return NextResponse.json({ years: data.years });
   } catch (error) {
+    console.error('[API/years] Critical error:', error);
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }
