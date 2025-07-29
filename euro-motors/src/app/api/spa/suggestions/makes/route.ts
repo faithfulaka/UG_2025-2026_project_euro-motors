@@ -9,11 +9,27 @@ export async function GET() {
     process.env.SKIP_AUTH = 'true';
   }
   try {
-    const makes = await scraper.getAvailableMakes();
-    return NextResponse.json({ makes });
+    let makes: string[] = await scraper.getAvailableMakes();
+    if (!Array.isArray(makes)) makes = [];
+    // Normalize and deduplicate
+    makes = Array.from(new Set(makes.map(m => m.trim()).filter(Boolean)));
+    console.log(`[API/makes] Returning ${makes.length} makes.`);
+    if (makes.length === 0) {
+      console.warn('[API/makes] No makes found from live scraper!');
+    }
+    return NextResponse.json({
+      makes,
+      source: 'autotrader-live',
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
     console.error('[API/makes] Critical error:', error);
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    return NextResponse.json({
+      makes: [],
+      error: (error as Error).message,
+      source: 'autotrader-live',
+      timestamp: new Date().toISOString()
+    }, { status: 500 });
   }
 }
 

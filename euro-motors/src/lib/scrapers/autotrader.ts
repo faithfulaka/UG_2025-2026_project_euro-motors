@@ -102,11 +102,14 @@ export class AutotraderScraper {
       headless: true,
     });
     const page = await browser.newPage();
-    await page.goto(`${this.baseUrl}/car-search?make=${encodeURIComponent(make)}`, { waitUntil: 'networkidle2', timeout: 30000 });
+    await page.goto(`${this.baseUrl}/car-search`, { waitUntil: 'networkidle2', timeout: 30000 });
     await this.delay(1500);
     // Accept cookies if present
     const btn = await page.$('#onetrust-accept-btn-handler');
     if (btn) { await btn.click(); await this.delay(500); }
+    // Select the make in the dropdown and wait for models to update
+    await page.select('select[name="make"]', make);
+    await this.delay(1200); // Wait for models dropdown to update via JS
     // Scrape models from dropdown
     const models: string[] = await page.evaluate(() => {
       const select = document.querySelector('select[name="model"]');
@@ -116,6 +119,9 @@ export class AutotraderScraper {
         .filter(v => v && v.toLowerCase() !== 'any model');
     });
     await browser.close();
+    if (models.length === 0) {
+      console.error('[AutotraderScraper] No models found for make:', make);
+    }
     return models;
   }
 
@@ -132,11 +138,17 @@ export class AutotraderScraper {
       headless: true,
     });
     const page = await browser.newPage();
-    await page.goto(`${this.baseUrl}/car-search?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`, { waitUntil: 'networkidle2', timeout: 30000 });
+    await page.goto(`${this.baseUrl}/car-search`, { waitUntil: 'networkidle2', timeout: 30000 });
     await this.delay(1500);
     // Accept cookies if present
     const btn = await page.$('#onetrust-accept-btn-handler');
     if (btn) { await btn.click(); await this.delay(500); }
+    // Select the make
+    await page.select('select[name="make"]', make);
+    await this.delay(1200);
+    // Select the model (wait for model dropdown to populate)
+    await page.select('select[name="model"]', model);
+    await this.delay(1200);
     // Scrape years from dropdown
     const years: number[] = await page.evaluate(() => {
       const select = document.querySelector('select[name="year-from"]');
@@ -146,6 +158,9 @@ export class AutotraderScraper {
         .filter(y => !isNaN(y));
     });
     await browser.close();
+    if (years.length === 0) {
+      console.error('[AutotraderScraper] No years found for make/model:', make, model);
+    }
     // Return sorted and unique years (descending)
     return Array.from(new Set(years)).sort((a, b) => b - a);
   }
