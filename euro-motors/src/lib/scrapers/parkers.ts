@@ -57,11 +57,13 @@ export async function getParkersDepreciationAndOwnership(make: string, model: st
 
 // --- Suggestion methods for multi-site merging (mocked, extendable) ---
 
-import puppeteer from 'puppeteer';
+// Dynamic import of puppeteer is used inside functions to avoid bundling issues.
+
 
 export async function getAvailableMakes(): Promise<string[]> {
   try {
-    const browser = await puppeteer.launch({ headless: true });
+    const puppeteer = (await import('puppeteer')).default;
+const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
     await page.goto('https://www.parkers.co.uk/cars/reviews/', { waitUntil: 'networkidle2', timeout: 30000 });
     // Scrape all make names from the reviews index
@@ -82,7 +84,8 @@ export async function getAvailableMakes(): Promise<string[]> {
 export async function getAvailableModels(make?: string): Promise<string[]> {
   if (!make) return [];
   try {
-    const browser = await puppeteer.launch({ headless: true });
+    const puppeteer = (await import('puppeteer')).default;
+const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
     // Go to the make reviews page, e.g. https://www.parkers.co.uk/bentley/reviews/
     await page.goto(`https://www.parkers.co.uk/${encodeURIComponent(make.toLowerCase())}/reviews/`, { waitUntil: 'networkidle2', timeout: 30000 });
@@ -104,7 +107,8 @@ export async function getAvailableModels(make?: string): Promise<string[]> {
 export async function getAvailableYears(make?: string, model?: string): Promise<string[]> {
   if (!make || !model) return [];
   try {
-    const browser = await puppeteer.launch({ headless: true });
+    const puppeteer = (await import('puppeteer')).default;
+const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
     // Go to the model's review page, e.g. https://www.parkers.co.uk/bentley/continental-gt/review/
     await page.goto(`https://www.parkers.co.uk/${encodeURIComponent(make.toLowerCase())}/${encodeURIComponent(model.toLowerCase().replace(/\s+/g, '-'))}/review/`, { waitUntil: 'networkidle2', timeout: 30000 });

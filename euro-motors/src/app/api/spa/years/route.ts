@@ -15,16 +15,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ years: [], make, model, source: 'autotrader-live', timestamp: new Date().toISOString() });
   }
   try {
-    const { AutotraderScraper } = await import('@/lib/scrapers/autotrader');
-    const scraper = new AutotraderScraper();
-    let years: (string|number)[] = await scraper.getAvailableYears(make, model);
-    if (!Array.isArray(years)) years = [];
+    const resp = await fetch(`http://localhost:4001/years?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`);
+    if (!resp.ok) throw new Error('Failed to fetch years from scraper backend');
+    let { years } = await resp.json();
     // Normalize, deduplicate, sort descending
-    years = Array.from(new Set(years.map(y => typeof y === 'string' ? y.trim() : y)))
+    years = Array.from(new Set((years as (string|number)[]).map((y: string|number) => typeof y === 'string' ? y.trim() : y)))
       .filter(Boolean)
-      .map(y => typeof y === 'string' ? parseInt(y, 10) : y)
-      .filter(y => typeof y === 'number' && !isNaN(y))
-      .sort((a, b) => b - a);
+      .sort((b: string|number, a: string|number) => Number(a) - Number(b));
     console.log(`[API/years] Returning ${years.length} years for make: ${make}, model: ${model}`);
     if (years.length === 0) {
       console.warn(`[API/years] No years found for make: ${make}, model: ${model} from live scraper!`);

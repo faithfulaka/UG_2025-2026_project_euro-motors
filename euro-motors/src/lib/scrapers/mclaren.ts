@@ -1,5 +1,6 @@
 // src/lib/scrapers/mclaren.ts
-import puppeteer from 'puppeteer-core';
+// Dynamic import of puppeteer-core is used inside functions to avoid bundling issues.
+
 import chromium from '@sparticuz/chromium';
 import type { ManufacturerData } from '@/types/spa';
 
@@ -13,7 +14,8 @@ export class McLarenScraper {
     year?: number
   ): Promise<ManufacturerData> {
     const url = `${this.baseUrl}/${model.toLowerCase()}`;
-    const browser = await puppeteer.launch({
+    const puppeteer = (await import('puppeteer-core')).default;
+const browser = await puppeteer.launch({
       args: chromium.args,
       executablePath: await chromium.executablePath(),
       headless: true

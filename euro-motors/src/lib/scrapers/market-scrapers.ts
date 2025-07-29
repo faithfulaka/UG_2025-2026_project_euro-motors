@@ -1,5 +1,6 @@
 // src/lib/scrapers/market-scrapers.ts - FULLY FIXED VERSION
-import puppeteer, { Browser, Page } from 'puppeteer';
+// DYNAMIC IMPORT: Do not statically import puppeteer to avoid client bundle issues
+import type { Browser, Page } from 'puppeteer';
 
 // FIXED: Remove unused MarketListing interface - define only what's needed locally
 interface MarketData {
@@ -195,7 +196,8 @@ class MarketScraperService {
       return this.browser;
     }
 
-    this.browser = await puppeteer.launch({
+    const puppeteerModule = await import('puppeteer');
+    this.browser = await puppeteerModule.default.launch({
       headless: true,
       args: [
         '--no-sandbox',

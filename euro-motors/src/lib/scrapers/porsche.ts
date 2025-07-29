@@ -1,5 +1,6 @@
 //src/lib/scrapers/porsche.ts
-import puppeteer from "puppeteer-core";
+// Dynamic import of puppeteer-core is used inside functions to avoid bundling issues.
+
 import chromium from "@sparticuz/chromium";
 
 export interface PorschePricingResult {
@@ -20,7 +21,8 @@ export class PorscheConfiguratorScraper {
   public async getAvailableModels(): Promise<string[]> {
     let browser = null;
     try {
-      browser = await puppeteer.launch({
+      const puppeteer = (await import('puppeteer-core')).default;
+browser = await puppeteer.launch({
         args: chromium.args,
         executablePath: await chromium.executablePath(),
       });
@@ -53,7 +55,8 @@ export class PorscheConfiguratorScraper {
   public async getAvailableYears(model: string): Promise<number[]> {
     let browser = null;
     try {
-      browser = await puppeteer.launch({
+      const puppeteer = (await import('puppeteer-core')).default;
+browser = await puppeteer.launch({
         args: chromium.args,
         executablePath: await chromium.executablePath(),
       });
@@ -100,7 +103,8 @@ export class PorscheConfiguratorScraper {
   async getCarPricing(model: string): Promise<PorschePricingResult> {
     let browser = null;
     try {
-      browser = await puppeteer.launch({
+      const puppeteer = (await import('puppeteer-core')).default;
+browser = await puppeteer.launch({
         args: chromium.args,
         executablePath: await chromium.executablePath(),
       });

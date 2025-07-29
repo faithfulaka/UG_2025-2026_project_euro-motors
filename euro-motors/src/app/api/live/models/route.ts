@@ -6,9 +6,9 @@ export async function GET(request: NextRequest) {
   const make = url.searchParams.get('make') || '';
   if (!make) return NextResponse.json({ models: [] });
   try {
-    const { AutotraderScraper } = await import('@/lib/scrapers/autotrader');
-    const scraper = new AutotraderScraper();
-    const models = await scraper.getAvailableModels(make);
+    const resp = await fetch(`http://localhost:4001/models?make=${encodeURIComponent(make)}`);
+    if (!resp.ok) throw new Error('Failed to fetch models from scraper backend');
+    const { models } = await resp.json();
     return NextResponse.json({ models });
   } catch (error) {
     console.error('[API/live/models] Error:', error);

@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
-import { AutotraderScraper } from '@/lib/scrapers/autotrader';
-
-const scraper = new AutotraderScraper();
 
 export async function GET(request: NextRequest) {
   // DEV ONLY: Bypass auth in development for backend test script
@@ -16,18 +13,80 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ models: [], make, source: 'autotrader-live', timestamp: new Date().toISOString() });
   }
   try {
-    let models: string[] = await scraper.getAvailableModels(make);
-    if (!Array.isArray(models)) models = [];
-    // Normalize and deduplicate
-    models = Array.from(new Set(models.map(m => m.trim()).filter(Boolean)));
-    console.log(`[API/models] Returning ${models.length} models for make: ${make}`);
-    if (models.length === 0) {
-      console.warn(`[API/models] No models found for make: ${make} from live scraper!`);
+    const sources = [];
+    const errors: string[] = [];
+    let allModels: string[] = [];
+
+    // 1. Autotrader UK (dynamic import)
+    try {
+      const { AutotraderScraper } = await import('@/lib/scrapers/autotrader');
+      const autotrader = new AutotraderScraper();
+      const models = await autotrader.getAvailableModels(make);
+      allModels = allModels.concat(models);
+      sources.push('autotrader');
+    } catch (e) {
+      errors.push('autotrader: ' + (e as Error).message);
     }
+
+    // 2. Bring a Trailer
+    try {
+      const { getAvailableModels: getBaTModels } = await import('@/lib/scrapers/bringatrailer');
+      const batModels = await getBaTModels(make);
+      if (Array.isArray(batModels)) {
+        allModels = allModels.concat(batModels);
+        sources.push('bringatrailer');
+      }
+    } catch (e) {
+      errors.push('bringatrailer: ' + (e as Error).message);
+    }
+
+    // 3. Parkers
+    try {
+      const { getAvailableModels: getParkersModels } = await import('@/lib/scrapers/parkers');
+      const parkersModels = await getParkersModels(make);
+      if (Array.isArray(parkersModels)) {
+        allModels = allModels.concat(parkersModels);
+        sources.push('parkers');
+      }
+    } catch (e) {
+      errors.push('parkers: ' + (e as Error).message);
+    }
+
+    // 4. Porsche Configurator (only for Porsche)
+    if (make.toLowerCase() === 'porsche') {
+      try {
+        const { getAvailableModels: getPorscheModels } = await import('@/lib/scrapers/porsche');
+        const porscheModels = await getPorscheModels();
+        if (Array.isArray(porscheModels)) {
+          allModels = allModels.concat(porscheModels);
+          sources.push('porsche');
+        }
+      } catch (e) {
+        errors.push('porsche: ' + (e as Error).message);
+      }
+    }
+
+    // 5. CarQuery API (global fallback)
+    try {
+      const { carQueryService } = await import('@/lib/services');
+      const cqModels = await carQueryService.getModels(make);
+      if (Array.isArray(cqModels)) {
+        allModels = allModels.concat(cqModels);
+        sources.push('carquery');
+      }
+    } catch (e) {
+      errors.push('carquery: ' + (e as Error).message);
+    }
+
+    // Deduplicate and normalize
+    allModels = Array.from(new Set(allModels.map((m) => (m || '').trim()).filter(Boolean)));
+    allModels.sort((a, b) => a.localeCompare(b));
+
     return NextResponse.json({
-      models,
+      models: allModels,
       make,
-      source: 'autotrader-live',
+      sources,
+      errors: errors.length ? errors : undefined,
       timestamp: new Date().toISOString()
     });
   } catch (error) {

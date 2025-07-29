@@ -2,11 +2,13 @@
 // This will be extended to fetch and parse auction history for a given make/model/year
 
 // --- Suggestion stubs for live dropdowns ---
-import puppeteer from 'puppeteer';
+// Dynamic import of puppeteer is used inside functions to avoid bundling issues.
+import type { Browser, Page } from 'puppeteer';
 
 export async function getAvailableMakes(): Promise<string[]> {
   try {
-    const browser = await puppeteer.launch({ headless: true });
+    const puppeteer = (await import('puppeteer')).default;
+const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
     await page.goto('https://bringatrailer.com/makes/', { waitUntil: 'networkidle2', timeout: 30000 });
     // Scrape all make names from the makes index
@@ -27,7 +29,8 @@ export async function getAvailableMakes(): Promise<string[]> {
 export async function getAvailableModels(make?: string): Promise<string[]> {
   if (!make) return [];
   try {
-    const browser = await puppeteer.launch({ headless: true });
+    const puppeteer = (await import('puppeteer')).default;
+const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
     // Go to the make's page, e.g. https://bringatrailer.com/make/porsche/
     await page.goto(`https://bringatrailer.com/make/${encodeURIComponent(make.toLowerCase())}/`, { waitUntil: 'networkidle2', timeout: 30000 });
@@ -57,7 +60,8 @@ export async function getAvailableModels(make?: string): Promise<string[]> {
 export async function getAvailableYears(make?: string, model?: string): Promise<string[]> {
   if (!make || !model) return [];
   try {
-    const browser = await puppeteer.launch({ headless: true });
+    const puppeteer = (await import('puppeteer')).default;
+const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
     // Search for all listings for this make/model and extract available years from listing titles
     await page.goto(`https://bringatrailer.com/make/${encodeURIComponent(make.toLowerCase())}/?q=${encodeURIComponent(model)}`, { waitUntil: 'networkidle2', timeout: 30000 });

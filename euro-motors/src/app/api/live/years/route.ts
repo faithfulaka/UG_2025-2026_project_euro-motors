@@ -7,9 +7,9 @@ export async function GET(request: NextRequest) {
   const model = url.searchParams.get('model') || '';
   if (!make || !model) return NextResponse.json({ years: [] });
   try {
-    const { AutotraderScraper } = await import('@/lib/scrapers/autotrader');
-    const scraper = new AutotraderScraper();
-    const years = await scraper.getAvailableYears(make, model);
+    const resp = await fetch(`http://localhost:4001/years?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`);
+    if (!resp.ok) throw new Error('Failed to fetch years from scraper backend');
+    const { years } = await resp.json();
     return NextResponse.json({ years });
   } catch (error) {
     console.error('[API/live/years] Error:', error);

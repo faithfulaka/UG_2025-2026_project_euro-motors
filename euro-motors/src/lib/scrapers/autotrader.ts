@@ -310,4 +310,4 @@ export class AutotraderScraper {
   }
 }
 
-export const autotraderScraper = new AutotraderScraper();
+// Removed top-level export of autotraderScraper to prevent static bundling issues.
