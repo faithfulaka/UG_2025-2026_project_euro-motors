@@ -9,6 +9,17 @@ const nextConfig: NextConfig = {
   ],
 
   webpack(config, { isServer }) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const webpack = require('webpack');
+    if (!isServer) {
+      // Ignore problematic deep-clone modules only in client builds
+      config.plugins = [
+        ...(config.plugins || []),
+        new webpack.IgnorePlugin({
+          resourceRegExp: /clone-deep|merge-deep/
+        })
+      ];
+    }
     if (isServer) {
       // Exclude full puppeteer, chrome-aws-lambda, etc.
       config.externals = [
@@ -29,7 +40,9 @@ const nextConfig: NextConfig = {
           fs: false,
           net: false,
           tls: false,
-          child_process: false
+          child_process: false,
+          'merge-deep': false,
+          'clone-deep': false
         },
         alias: {
           ...(config.resolve?.alias || {}),
