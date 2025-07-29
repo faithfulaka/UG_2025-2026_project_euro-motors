@@ -1,6 +1,21 @@
 // src/lib/scrapers/autotrader.ts
-import puppeteer from 'puppeteer-core';
+// --- PATCHED FOR STEALTH AND PROXY ---
 import chromium from '@sparticuz/chromium';
+// Dynamic import workaround for ESM/TS lint compliance
+// PuppeteerExtra singleton for lint/type compliance
+let PuppeteerExtraSingleton: unknown = null;
+async function getPuppeteerExtra() {
+  if (PuppeteerExtraSingleton) return PuppeteerExtraSingleton;
+  const puppeteerExtraImport = await import('puppeteer-extra');
+  const StealthPluginImport = await import('puppeteer-extra-plugin-stealth');
+  const puppeteerExtra = puppeteerExtraImport.default;
+  const StealthPlugin = StealthPluginImport.default;
+  puppeteerExtra.use(StealthPlugin());
+  PuppeteerExtraSingleton = puppeteerExtra;
+  return PuppeteerExtraSingleton;
+}
+// Optional: add proxy plugin setup here if needed
+// -----------------------------------------------
 import type { MarketData, MarketListing } from '@/types/spa';
 
 interface ScrapingResult {
@@ -16,32 +31,72 @@ export class AutotraderScraper {
 
   /** Scrape all available makes from Autotrader */
   public async getAvailableMakes(): Promise<string[]> {
-    const browser = await puppeteer.launch({
-      args: chromium.args,
-      executablePath: '/Applications/Chromium.app/Contents/MacOS/Chromium',
-      headless: true,
-    });
-    const page = await browser.newPage();
-    await page.goto(`${this.baseUrl}/car-search`, { waitUntil: 'networkidle2', timeout: 30000 });
-    await this.delay(1500);
-    // Accept cookies if present
-    const btn = await page.$('#onetrust-accept-btn-handler');
-    if (btn) { await btn.click(); await this.delay(500); }
-    // Scrape makes from dropdown
-    const makes: string[] = await page.evaluate(() => {
-      const select = document.querySelector('select[name="make"]');
-      if (!select) return [];
-      return Array.from(select.querySelectorAll('option'))
-        .map(opt => opt.textContent?.trim() || '')
-        .filter(v => v && v.toLowerCase() !== 'any make');
-    });
-    await browser.close();
-    return makes;
+    // --- PATCHED: Use puppeteer-extra with stealth, log each step, fallback to CarQuery API ---
+    let browser;
+    try {
+      const puppeteerExtraUnknown = await getPuppeteerExtra();
+      if (typeof puppeteerExtraUnknown !== 'object' || puppeteerExtraUnknown === null || typeof (puppeteerExtraUnknown as { launch?: unknown }).launch !== 'function') {
+        throw new Error('Failed to load puppeteer-extra with stealth');
+      }
+      const puppeteerExtra = puppeteerExtraUnknown as { launch: typeof import('puppeteer').launch };
+      browser = await puppeteerExtra.launch({
+        args: chromium.args,
+        executablePath: '/Applications/Chromium.app/Contents/MacOS/Chromium',
+        headless: true,
+        // Uncomment and set proxy if needed:
+        // args: [...chromium.args, '--proxy-server=http://your-proxy:port']
+      });
+      const page = await browser.newPage();
+      console.log('[AutotraderScraper] Navigating to car-search page...');
+      await page.goto(`${this.baseUrl}/car-search`, { waitUntil: 'networkidle2', timeout: 30000 });
+      await this.delay(1500);
+      // Accept cookies if present
+      const btn = await page.$('#onetrust-accept-btn-handler');
+      if (btn) { await btn.click(); await this.delay(500); }
+      // Scrape makes from dropdown
+      const makes: string[] = await page.evaluate(() => {
+        const select = document.querySelector('select[name="make"]');
+        if (!select) return [];
+        return Array.from(select.querySelectorAll('option'))
+          .map(opt => opt.textContent?.trim() || '')
+          .filter(v => v && v.toLowerCase() !== 'any make');
+      });
+      await browser.close();
+      console.log('[AutotraderScraper] Scraped makes:', makes);
+      if (makes.length > 0) return makes;
+      else throw new Error('No makes found after scraping.');
+    } catch (err) {
+      if (browser) await browser.close();
+      console.error('[AutotraderScraper] Stealth scraping failed:', err);
+      // --- Fallback: CarQuery API ---
+      try {
+        console.log('[AutotraderScraper] Falling back to CarQuery API...');
+        const res = await fetch('https://www.carqueryapi.com/api/0.3/?cmd=getMakes');
+        const data: Record<string, unknown> = await res.json();
+        // Type guard for CarQuery response
+        const makesArr = (typeof data === 'object' && data && Array.isArray((data as Record<string, unknown>).Makes))
+          ? (data as Record<string, unknown>).Makes as Array<Record<string, unknown>>
+          : [];
+        const makes = makesArr.map((m) =>
+          typeof m.make_display === 'string' ? m.make_display : (typeof m.make_id === 'string' ? m.make_id : '')
+        ).filter(Boolean);
+        console.log('[AutotraderScraper] CarQuery fallback makes:', makes);
+        return makes;
+      } catch (apiErr) {
+        console.error('[AutotraderScraper] CarQuery fallback failed:', apiErr);
+        return [];
+      }
+    }
   }
 
   /** Scrape all available models for a given make from Autotrader */
   public async getAvailableModels(make: string): Promise<string[]> {
-    const browser = await puppeteer.launch({
+    const puppeteerExtraUnknown = await getPuppeteerExtra();
+    if (typeof puppeteerExtraUnknown !== 'object' || puppeteerExtraUnknown === null || typeof (puppeteerExtraUnknown as { launch?: unknown }).launch !== 'function') {
+      throw new Error('Failed to load puppeteer-extra with stealth');
+    }
+    const puppeteerExtra = puppeteerExtraUnknown as { launch: typeof import('puppeteer').launch };
+    const browser = await puppeteerExtra.launch({
       args: chromium.args,
       executablePath: '/Applications/Chromium.app/Contents/MacOS/Chromium',
       headless: true,
@@ -66,7 +121,12 @@ export class AutotraderScraper {
 
   /** Scrape all available years for a given make+model from Autotrader */
   public async getAvailableYears(make: string, model: string): Promise<number[]> {
-    const browser = await puppeteer.launch({
+    const puppeteerExtraUnknown = await getPuppeteerExtra();
+    if (typeof puppeteerExtraUnknown !== 'object' || puppeteerExtraUnknown === null || typeof (puppeteerExtraUnknown as { launch?: unknown }).launch !== 'function') {
+      throw new Error('Failed to load puppeteer-extra with stealth');
+    }
+    const puppeteerExtra = puppeteerExtraUnknown as { launch: typeof import('puppeteer').launch };
+    const browser = await puppeteerExtra.launch({
       args: chromium.args,
       executablePath: '/Applications/Chromium.app/Contents/MacOS/Chromium',
       headless: true,
@@ -123,7 +183,12 @@ export class AutotraderScraper {
     try {
       await this.rateLimit();
 
-      const browser = await puppeteer.launch({
+      const puppeteerExtraUnknown = await getPuppeteerExtra();
+      if (typeof puppeteerExtraUnknown !== 'object' || puppeteerExtraUnknown === null || typeof (puppeteerExtraUnknown as { launch?: unknown }).launch !== 'function') {
+        throw new Error('Failed to load puppeteer-extra with stealth');
+      }
+      const puppeteerExtra = puppeteerExtraUnknown as { launch: typeof import('puppeteer').launch };
+      const browser = await puppeteerExtra.launch({
         args: chromium.args,
         executablePath: '/Applications/Chromium.app/Contents/MacOS/Chromium', // Use Homebrew Chromium for Mac
         headless: true,
