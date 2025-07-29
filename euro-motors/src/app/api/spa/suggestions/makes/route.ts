@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { AutotraderScraper } from '@/lib/scrapers/autotrader';
 
-const scraper = new AutotraderScraper();
 
 export async function GET() {
   // DEV ONLY: Bypass auth in development for backend test script
@@ -9,6 +7,8 @@ export async function GET() {
     process.env.SKIP_AUTH = 'true';
   }
   try {
+    const { AutotraderScraper } = await import('@/lib/scrapers/autotrader');
+    const scraper = new AutotraderScraper();
     let makes: string[] = await scraper.getAvailableMakes();
     if (!Array.isArray(makes)) makes = [];
     // Normalize and deduplicate

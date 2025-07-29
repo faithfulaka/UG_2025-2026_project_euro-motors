@@ -1,7 +1,7 @@
 // scripts/test-suggestions.ts
 // Run with: npx ts-node scripts/test-suggestions.ts
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+/* eslint-disable @typescript-eslint/no-var-requires */
 const nodeFetch = require('node-fetch');
 
 const BASE_URL = 'http://localhost:3000/api/spa/suggestions';

@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { AutotraderScraper } from '@/lib/scrapers/autotrader';
+import { NextResponse } from 'next/server';
 
-const scraper = new AutotraderScraper();
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
+    const { AutotraderScraper } = await import('@/lib/scrapers/autotrader');
+    const scraper = new AutotraderScraper();
     const makes = await scraper.getAvailableMakes();
     return NextResponse.json({ makes });
   } catch (error) {

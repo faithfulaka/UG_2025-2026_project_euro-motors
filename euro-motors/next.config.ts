@@ -10,13 +10,14 @@ const nextConfig: NextConfig = {
 
   webpack(config, { isServer }) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const webpack = require('webpack');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+const webpack = require('webpack');
     if (!isServer) {
       // Ignore problematic deep-clone modules only in client builds
       config.plugins = [
         ...(config.plugins || []),
         new webpack.IgnorePlugin({
-          resourceRegExp: /clone-deep|merge-deep/
+          resourceRegExp: /(\\|\/)clone-deep|(\\|\/)merge-deep/
         })
       ];
     }

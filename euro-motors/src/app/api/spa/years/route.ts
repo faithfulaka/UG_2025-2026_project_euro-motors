@@ -1,8 +1,6 @@
 // src/app/api/spa/years/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { AutotraderScraper } from '@/lib/scrapers/autotrader';
 
-const scraper = new AutotraderScraper();
 
 export async function GET(request: NextRequest) {
   // DEV ONLY: Bypass auth in development for backend test script
@@ -17,6 +15,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ years: [], make, model, source: 'autotrader-live', timestamp: new Date().toISOString() });
   }
   try {
+    const { AutotraderScraper } = await import('@/lib/scrapers/autotrader');
+    const scraper = new AutotraderScraper();
     let years: (string|number)[] = await scraper.getAvailableYears(make, model);
     if (!Array.isArray(years)) years = [];
     // Normalize, deduplicate, sort descending
