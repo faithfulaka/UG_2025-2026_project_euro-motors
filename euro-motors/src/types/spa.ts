@@ -14,7 +14,7 @@ export interface SPASuggestion {
   value: string;
   label: string;
   count?: number;
-  source: 'database' | 'carquery' | 'cache';
+  source: string; // was: 'database' | 'carquery' | 'cache'
   type: 'make' | 'model' | 'year';
   displayName: string;
   popular?: boolean;

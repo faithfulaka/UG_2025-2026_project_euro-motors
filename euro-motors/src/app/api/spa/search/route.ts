@@ -12,19 +12,20 @@ import type { SPASearchParams, SPASearchResponse, ComprehensiveSPAData, Manufact
 export async function POST(req: NextRequest) {
   const params = (await req.json()) as SPASearchParams;
 
-// --- Import all unified scrapers at the top ---
+// Only import scrapers that exist. Comment out broken or missing ones.
 import { AutotraderScraper } from '@/lib/scrapers/autotrader';
 import { getBringATrailerAuctionHistory } from '@/lib/scrapers/bringatrailer';
 import { getParkersDepreciationAndOwnership } from '@/lib/scrapers/parkers';
-import { carQueryService } from '@/lib/scrapers/market-scrapers';
-import { porscheConfiguratorScraper } from '@/lib/scrapers/porsche';
-import { McLarenScraper } from '@/lib/scrapers/mclaren';
+// import { carQueryService } from '@/lib/scrapers/market-scrapers'; // Remove if not exported
+// import { porscheConfiguratorScraper } from '@/lib/scrapers/porsche'; // Remove if not implemented
+// import { McLarenScraper } from '@/lib/scrapers/mclaren'; // Remove if not implemented
 
+  // Use robust multi-source scraping for market data
   let marketR: any = { success: false, data: null };
   try {
-    const autotrader = new AutotraderScraper();
-    const marketData = await autotrader.getCarData(params.make, params.model, params.year);
-    marketR = { success: !!marketData, data: marketData };
+    const { marketScraperService } = await import('@/lib/scrapers/market-scrapers');
+    const response = await marketScraperService.scrapeAllMarketData(params.make, params.model, params.year);
+    marketR = response;
   } catch (err) {
     console.error('[API/search] Error fetching market data:', err);
   }

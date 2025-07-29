@@ -5,6 +5,10 @@ import { AutotraderScraper } from '@/lib/scrapers/autotrader';
 const scraper = new AutotraderScraper();
 
 export async function GET(request: NextRequest) {
+  // DEV ONLY: Bypass auth in development for backend test script
+  if (process.env.NODE_ENV === 'development') {
+    process.env.SKIP_AUTH = 'true';
+  }
   const url = new URL(request.url);
   const make = url.searchParams.get('make') || '';
   if (!make) return NextResponse.json({ models: [] });

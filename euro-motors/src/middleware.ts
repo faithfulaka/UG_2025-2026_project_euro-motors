@@ -24,6 +24,11 @@ const publicRoutes = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
+  // DEV ONLY: Allow unauthenticated access to /api/spa/suggestions endpoints
+  if (process.env.NODE_ENV === 'development' && pathname.startsWith('/api/spa/suggestions')) {
+    return NextResponse.next();
+  }
+
   // Check if the route is public
   if (publicRoutes.some(route => pathname.startsWith(route))) {
     return NextResponse.next();
