@@ -201,8 +201,6 @@ export interface ManufacturerConfigData {
 }
 
 // Comprehensive SPA Result Types
-import type { AuctionHistory } from '@/lib/scrapers/bringatrailer';
-import type { DepreciationData, OwnershipCosts } from '@/lib/scrapers/parkers';
 
 export interface ComprehensiveSPAData {
   // Basic Info
@@ -268,14 +266,6 @@ export interface ComprehensiveSPAData {
     source: 'manufacturer' | 'market' | 'database';
   }>;
 
-  // Auction History (Bring a Trailer, etc.)
-  auctionHistory?: AuctionHistory;
-
-  // Depreciation Data (Parkers, etc.)
-  depreciationData?: DepreciationData;
-
-  // Ownership Costs (Parkers, etc.)
-  ownershipCosts?: OwnershipCosts;
 
   // Data Sources Used
   dataSources: {

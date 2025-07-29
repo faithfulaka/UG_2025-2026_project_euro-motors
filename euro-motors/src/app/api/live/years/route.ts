@@ -24,12 +24,18 @@ export async function GET(request: NextRequest) {
     // CarQuery getTrims returns trims with year info
     const carQueryResp = await axios.get(`https://www.carqueryapi.com/api/0.3/?cmd=getTrims&make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`);
     const data = carQueryResp.data;
-    let years: string[] = [];
+    interface CarQueryTrim {
+  year: number;
+  [key: string]: unknown;
+}
+
+
+let years: string[] = [];
     if (typeof data === 'string') {
       const json = JSON.parse(data.replace(/^\?\((.*)\);?$/, '$1'));
-      years = (json.Trims || []).map((t: any) => String(t.year)).filter(Boolean);
+      years = (json.Trims as CarQueryTrim[] || []).map((t) => String(t.year)).filter(Boolean);
     } else if (data.Trims) {
-      years = data.Trims.map((t: any) => String(t.year)).filter(Boolean);
+      years = (data.Trims as CarQueryTrim[]).map((t) => String(t.year)).filter(Boolean);
     }
     if (years.length > 0) {
       allYears = allYears.concat(years);
@@ -49,7 +55,14 @@ export async function GET(request: NextRequest) {
     for (const year of yearsToCheck) {
       try {
         const nhtsaResp = await axios.get(`https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMakeYear/make/${encodeURIComponent(make)}/modelyear/${year}?format=json`);
-        const models = (nhtsaResp.data.Results || []).map((m: any) => m.Model_Name?.toLowerCase());
+        // NHTSA API types
+interface NHTSAModelYear {
+  Make_ID: number;
+  Make_Name: string;
+  Model_ID: number;
+  Model_Name: string;
+}
+const models = (nhtsaResp.data.Results as NHTSAModelYear[] || []).map((m) => m.Model_Name?.toLowerCase());
         if (models.includes(model.toLowerCase())) {
           foundYears.push(String(year));
         }
@@ -83,55 +96,4 @@ export async function GET(request: NextRequest) {
     errors: errors.length ? errors : undefined,
     timestamp: new Date().toISOString()
   } as YearsResponse);
-
-        sources.push('BringATrailer');
-      }
-    }
-  } catch (err) {
-    errors.push('BringATrailer: ' + (err instanceof Error ? err.message : String(err)));
-  }
-
-  // 4. Autotrader UK (plain Puppeteer fallback, only if nothing found)
-  if (allYears.length === 0) {
-    try {
-      const puppeteer = (await import('puppeteer')).default;
-      const browser = await puppeteer.launch({ headless: true });
-      const page = await browser.newPage();
-      await page.goto('https://www.autotrader.co.uk/car-search', { waitUntil: 'networkidle2', timeout: 30000 });
-      await new Promise(r => setTimeout(r, 1500));
-      const btn = await page.$('#onetrust-accept-btn-handler');
-      if (btn) { await btn.click(); await new Promise(r => setTimeout(r, 500)); }
-      await page.select('select[name="make"]', make);
-      await new Promise(r => setTimeout(r, 1200));
-      await page.select('select[name="model"]', model);
-      await new Promise(r => setTimeout(r, 1200));
-      const years = await page.evaluate(() => {
-        const select = document.querySelector('select[name="year-from"]');
-        if (!select) return [];
-        return Array.from(select.querySelectorAll('option'))
-          .map(opt => opt.textContent?.trim() || '')
-          .filter(v => v && /^(19|20)\d{2}$/.test(v));
-      });
-      await browser.close();
-      if (years.length > 0) {
-        allYears = allYears.concat(years);
-        sources.push('AutotraderUK');
-      }
-    } catch (err) {
-      errors.push('AutotraderUK: ' + (err instanceof Error ? err.message : String(err)));
-    }
-  }
-
-  // Deduplicate and sort descending
-  allYears = Array.from(new Set(allYears.map(y => String(y).trim()).filter(Boolean)));
-  allYears.sort((a, b) => Number(b) - Number(a));
-
-  return NextResponse.json({
-    years: allYears,
-    sources,
-    errors: errors.length ? errors : undefined,
-    make,
-    model,
-    timestamp: new Date().toISOString()
-  });
 }

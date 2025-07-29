@@ -19,13 +19,22 @@ export async function GET() {
     const carQueryResp = await axios.get('https://www.carqueryapi.com/api/0.3/?cmd=getMakes');
     const data = carQueryResp.data;
     // CarQuery returns JSONP, so parse if needed
-    let makes: string[] = [];
+    interface CarQueryMake {
+  make_id: string;
+  make_display: string;
+  make_is_common?: string;
+  make_country?: string;
+  make_name?: string;
+}
+
+
+let makes: string[] = [];
     if (typeof data === 'string') {
       // Remove JSONP wrapper
       const json = JSON.parse(data.replace(/^\?\((.*)\);?$/, '$1'));
-      makes = (json.Makes || []).map((m: any) => m.make_display || m.make_name).filter(Boolean);
+      makes = (json.Makes as CarQueryMake[] || []).map((m) => m.make_display || m.make_name || '').filter(Boolean);
     } else if (data.Makes) {
-      makes = data.Makes.map((m: any) => m.make_display || m.make_name).filter(Boolean);
+      makes = (data.Makes as CarQueryMake[]).map((m) => m.make_display || m.make_name || '').filter(Boolean);
     }
     if (makes.length > 0) {
       allMakes = allMakes.concat(makes);
@@ -38,7 +47,12 @@ export async function GET() {
   // 2. NHTSA API
   try {
     const nhtsaResp = await axios.get('https://vpic.nhtsa.dot.gov/api/vehicles/GetAllMakes?format=json');
-    const makes = (nhtsaResp.data.Results || []).map((m: any) => m.Make_Name).filter(Boolean);
+    // NHTSA API types
+interface NHTSAMake {
+  Make_ID: number;
+  Make_Name: string;
+}
+const makes = (nhtsaResp.data.Results as NHTSAMake[] || []).map((m) => m.Make_Name).filter(Boolean);
     if (makes.length > 0) {
       allMakes = allMakes.concat(makes);
       sources.push('NHTSA');

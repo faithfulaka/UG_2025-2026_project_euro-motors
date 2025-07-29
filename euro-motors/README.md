@@ -11,7 +11,34 @@ Please choose the structure of the contents of this repository that suits the ne
 =======
 # Euro Motors
 
+## API-Only Car Data Architecture (2025 Update)
 
+All core car data endpoints (makes, models, years, specs) now aggregate live data **exclusively from free public APIs**:
+- [CarQuery API](https://www.carqueryapi.com/) for makes, models, trims, years, and specs
+- [NHTSA Vehicle API](https://vpic.nhtsa.dot.gov/api/) for makes, models, years, and vehicle types
+- (Planned) Wikipedia/Wikidata for enrichment
+
+**No scrapers or Puppeteer code remain in any production endpoint.** All legacy scraping logic has been removed except for optional/experimental market data modules (pricing, inventory, auctions).
+
+### Type Safety & Error Handling
+- All API responses are strongly typed with TypeScript interfaces
+- Robust error handling: endpoints return clear errors if APIs fail or data is missing
+- No static fallback or DB fallback in webbase endpoints
+
+### Endpoint Structure
+- `/api/live/makes` — Get all car makes (CarQuery + NHTSA, deduplicated)
+- `/api/live/models?make=...` — Get all models for a make (CarQuery + NHTSA, deduplicated)
+- `/api/live/years?make=...&model=...` — Get all years for a make/model (CarQuery + NHTSA, deduplicated)
+- `/api/live/specs?make=...&model=...&year=...` — Get specs for a car (CarQuery + NHTSA, deduplicated)
+
+All endpoints are designed for robust, live dropdowns and search in the frontend.
+
+### Developer Notes
+- No environment variables or secrets are required for car data endpoints
+- Admin/database endpoints are unchanged and remain protected
+- See `/src/app/api/live/` for endpoint code
+
+---
 
 ## Getting started
 
