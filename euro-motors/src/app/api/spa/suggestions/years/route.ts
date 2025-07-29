@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
         .map(y => typeof y === 'number' ? y : Number(y))
         .filter((y): y is number => typeof y === 'number' && !isNaN(y))
     )).sort((a, b) => b - a);
-    // Convert all years to string for type safety
-    const yearsAsStrings = years.map(String);
+    // Ensure all years are strings for type safety
+    const yearsAsStrings: string[] = Array.isArray(years) ? years.map(y => String(y)) : [];
     return NextResponse.json({ years: yearsAsStrings });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
