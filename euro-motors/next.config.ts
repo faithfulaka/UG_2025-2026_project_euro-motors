@@ -1,5 +1,6 @@
 // next.config.ts
 import type { NextConfig } from 'next';
+import webpack from 'webpack';
 
 const nextConfig: NextConfig = {
   // Tell Next to leave these modules unbundled on the server
@@ -11,7 +12,7 @@ const nextConfig: NextConfig = {
   webpack(config, { isServer }) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-const webpack = require('webpack');
+
     if (!isServer) {
       // Ignore problematic deep-clone modules only in client builds
       config.plugins = [

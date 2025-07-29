@@ -3,14 +3,8 @@
 'use client';
 
 
-import React from 'react';
-import { useState, useEffect, useRef } from 'react';
-// import { useCar } from '@/context/CarContext'; // commented out since it's not clear if the context exists
-// import { any // TODO: Restore ComprehensiveSPAData type, any // TODO: Restore SPASearchParams type } from '@/types/spa'; // commented out since it's not clear if the types exist
-
-import { useState, useEffect, useRef } from 'react';
-import { useCar } from '@/context/CarContext';
-import { ComprehensiveSPAData, SPASearchParams } from '@/types/spa';
+import React, { useState, useEffect, useRef } from 'react';
+// TODO: Restore CarContext and types if available
 
 
 interface AutoCompleteState {
@@ -25,19 +19,8 @@ interface AutoCompleteState {
 
 // TODO: Restore SearchHistory type if available
 
-export default function SupercarPricingAggregatorPage() {
-  const { addSPAResult } = /* useCar() // TODO: Restore if CarContext exists */;
-
-interface SearchHistory {
-  id: string;
-  params: SPASearchParams;
-  timestamp: Date;
-  resultSummary: string;
-  dataSource: string;
-}
-
-export default function SupercarPricingAggregatorPage() {
-  const { addSPAResult } = useCar();
+function SupercarPricingAggregatorPage() {
+  // const { addSPAResult } = useCar(); // Uncomment if CarContext exists
 
 
   // ── Search State ─────────────────────────────────────────────────────
@@ -51,12 +34,6 @@ export default function SupercarPricingAggregatorPage() {
   >('webbase');
 
   const [supercarData, setSupercarData] = useState<any | null>(null);
-
-    'comprehensive' | 'database' | 'carquery' | 'manufacturer' | 'market'
-  >('comprehensive');
-
-  const [supercarData, setSupercarData] =
-    useState<ComprehensiveSPAData | null>(null);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,10 +56,6 @@ export default function SupercarPricingAggregatorPage() {
 
 
   const [searchHistory, setSearchHistory] = useState<any[]>([]);
-
-  const [searchHistory, setSearchHistory] =
-    useState<SearchHistory[]>([]);
-
 
   const makeDropdownRef = useRef<HTMLDivElement>(null);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
@@ -144,8 +117,6 @@ export default function SupercarPricingAggregatorPage() {
     try {
       setAutoComplete(prev => ({ ...prev, makesLoading: true }));
 
-      const res = await fetch(`/api/spa/suggestions/makes`);
-
       const url = dataSource === 'database'
         ? `/api/db/makes${selectedMake ? `?search=${encodeURIComponent(selectedMake)}` : ''}`
         : `/api/spa/suggestions/makes`;
@@ -168,10 +139,6 @@ export default function SupercarPricingAggregatorPage() {
     try {
       setAutoComplete(prev => ({ ...prev, modelsLoading: true }));
 
-      const res = await fetch(
-        `/api/spa/suggestions/models?make=${encodeURIComponent(make)}`
-      );
-
       const url = dataSource === 'database'
         ? `/api/db/models?make=${encodeURIComponent(make)}${selectedModel ? `&search=${encodeURIComponent(selectedModel)}` : ''}`
         : `/api/spa/suggestions/models?make=${encodeURIComponent(make)}`;
@@ -193,10 +160,6 @@ export default function SupercarPricingAggregatorPage() {
   async function loadYears() {
     try {
       setAutoComplete(prev => ({ ...prev, yearsLoading: true }));
-
-      const res = await fetch(
-        `/api/spa/suggestions/years?make=${encodeURIComponent(selectedMake)}&model=${encodeURIComponent(selectedModel)}`
-      );
 
       const url = dataSource === 'database'
         ? `/api/db/years?make=${encodeURIComponent(selectedMake)}&model=${encodeURIComponent(selectedModel)}`
@@ -260,13 +223,6 @@ export default function SupercarPricingAggregatorPage() {
         model: selectedModel.trim(),
         year: selectedYear ? Number(selectedYear) : undefined,
         dataSource: dataSource === 'webbase' ? 'webbase' : 'database',
-
-      const params: SPASearchParams = {
-        make: selectedMake.trim(),
-        model: selectedModel.trim(),
-        year: selectedYear ? Number(selectedYear) : undefined,
-        dataSource,
-
       };
       const res = await fetch('/api/spa/search', {
         method: 'POST',
@@ -280,41 +236,15 @@ export default function SupercarPricingAggregatorPage() {
       if (json.data) {
         setSupercarData(json.data);
 
-        // add to context history
-        addSPAResult({
-          id: `${selectedMake}-${selectedModel}-${
-            selectedYear || 'any'
-          }-${Date.now()}`,
-          make: selectedMake,
-          model: selectedModel,
-          year: selectedYear
-            ? Number(selectedYear)
-            : new Date().getFullYear(),
-          data: json.data,
-          searchedAt: new Date(),
-
-          source: dataSource === 'webbase' ? 'webbase' : 'database',
-        });
-
+        // Add to local search history
         const entry: any = {
-
-          source: dataSource,
-        });
-
-        const entry: SearchHistory = {
-
           id: Date.now().toString(),
           params,
           timestamp: new Date(),
           resultSummary: `${json.data.make} ${json.data.model} - £${
-            json.data.pricingData?.averageDealerPrice
-              ?.toLocaleString() ?? 'N/A'
+            json.data.pricingData?.averageDealerPrice?.toLocaleString() ?? 'N/A'
           }`,
-
-          dataSource: dataSource === 'webbase' ? 'webbase' : 'database',
-
           dataSource: json.data.dataSource,
-
         };
         setSearchHistory(prev => [entry, ...prev.slice(0, 9)]);
       } else {
@@ -346,13 +276,22 @@ export default function SupercarPricingAggregatorPage() {
     setSelectedModel(c.model);
     setSelectedYear(c.year.toString());
     setDataSource('database');
-  };
 
   // ── JSX ─────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 text-black">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-md p-6">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6">
+          Supercar Pricing Aggregator
+        </h1>
+        <div>
+          <p className="text-lg text-gray-700">
+            Get comprehensive vehicle data from multiple REAL sources with
+            live scraping
+          </p>
+        </div>
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">
@@ -405,40 +344,18 @@ export default function SupercarPricingAggregatorPage() {
               </span>
               <span className="text-gray-700 text-sm">Local data only. Use for owned/imported cars or when APIs are unavailable.</span>
             </button>
-
-          <div className="flex flex-wrap gap-2">
-            {(
-              [
-                'comprehensive',
-                'carquery',
-                'manufacturer',
-                'market',
-                'database',
-              ] as const
-            ).map(src => (
-              <button
-                key={src}
-                onClick={() => setDataSource(src)}
-                className={`px-4 py-2 rounded-lg border ${
-                  dataSource === src
-                    ? 'bg-blue-100 border-blue-500'
-                    : 'border-gray-300'
-                }`}
-              >
-                {src.charAt(0).toUpperCase() + src.slice(1)}
-              </button>
-            ))}
-
           </div>
         </div>
 
-        {/* Quick-Fill */}
+        {/*
+          Quick-Fill
+        */}
         <div className="mb-8 bg-white p-6 rounded-xl shadow">
           <h2 className="text-2xl font-semibold mb-4">
             Quick Fill from Database
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {availableCars.map((c, i) => (
+            {availableCars.map((c: { make: string; model: string; year: number }, i: number) => (
               <button
                 key={i}
                 onClick={() => handleQuickFill(c)}
@@ -453,30 +370,13 @@ export default function SupercarPricingAggregatorPage() {
           </div>
         </div>
 
-        {/* Search Form */}
-        <div className="mb-8 bg-white p-6 rounded-xl shadow">
-          <h2 className="text-2xl font-semibold mb-6">Search Vehicle</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {/* Make */}
-            <div className="relative" ref={makeDropdownRef}>
-              <label className="block mb-1">Make *</label>
-              <input
-                type="text"
-                value={selectedMake}
-                onChange={e => {
-                  setSelectedMake(e.target.value);
-                  setShowMakeDropdown(true);
-                }}
-                onFocus={() => setShowMakeDropdown(true)}
-                className="w-full p-3 border rounded"
-                placeholder="Type to search makes…"
-              />
+              {/* ... */}
               {showMakeDropdown && (
                 <ul className="absolute z-50 w-full bg-white border rounded max-h-52 overflow-y-auto">
                   {autoComplete.makesLoading ? (
                     <li className="p-2 text-center">Loading…</li>
                   ) : getFilteredMakes().length ? (
-                    getFilteredMakes().map((m, idx) => (
+                    getFilteredMakes().map((m: string, idx: number) => (
                       <li
                         key={idx}
                         onClick={() => {
@@ -493,346 +393,80 @@ export default function SupercarPricingAggregatorPage() {
                   )}
                 </ul>
               )}
-            </div>
-            {/* Model */}
-            <div className="relative" ref={modelDropdownRef}>
-              <label className="block mb-1">Model *</label>
-              <input
-                type="text"
-                value={selectedModel}
-                onChange={e => {
-                  setSelectedModel(e.target.value);
-                  setShowModelDropdown(true);
-                }}
-                onFocus={() => setShowModelDropdown(true)}
-                disabled={!selectedMake}
-                className="w-full p-3 border rounded disabled:bg-gray-100"
-                placeholder="Type to search models…"
-              />
-              {showModelDropdown && selectedMake && (
-                <ul className="absolute z-50 w-full bg-white border rounded max-h-52 overflow-y-auto">
-                  {autoComplete.modelsLoading ? (
-                    <li className="p-2 text-center">Loading…</li>
-                  ) : getFilteredModels().length ? (
-                    getFilteredModels().map((m, idx) => (
-                      <li
-                        key={idx}
-                        onClick={() => {
-                          setSelectedModel(m);
-                          setShowModelDropdown(false);
-                        }}
-                        className="p-2 hover:bg-blue-50 cursor-pointer"
-                      >
-                        {m}
-                      </li>
-                    ))
-                  ) : (
-                    <li className="p-2 text-center">No models found</li>
-                  )}
-                </ul>
-              )}
-            </div>
-            {/* Year */}
-            <div>
-              <label className="block mb-1">Year</label>
-              <select
-                value={selectedYear}
-                onChange={e => setSelectedYear(e.target.value)}
-                disabled={!selectedModel}
-                className="w-full p-3 border rounded disabled:bg-gray-100"
-              >
-                <option value="">Select Year</option>
-                {autoComplete.years.map(y => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {/* Button */}
-            <div className="flex items-end">
-              <button
-                onClick={handleSearch}
-                disabled={isLoading || !selectedModel}
-                className="w-full bg-blue-600 text-white p-3 rounded disabled:opacity-50"
-              >
-                {isLoading ? 'Searching…' : '🔍 Get Data'}
-              </button>
-            </div>
-          </div>
-          {error && (
-            <p className="mt-4 text-red-600">
-              ❌ {error}
-            </p>
-          )}
-        </div>
 
-        {/* Recent Searches */}
-        {searchHistory.length > 0 && (
-          <div className="mb-8 bg-white p-6 rounded-xl shadow">
-            <h3 className="text-xl mb-4">Recent Searches</h3>
-            <ul className="space-y-2">
-              {searchHistory.slice(0, 5).map(h => (
-                <li
-                  key={h.id}
-                  className="flex justify-between p-3 bg-gray-50 rounded hover:bg-gray-100"
-                >
-                  <span>{h.resultSummary}</span>
-                  <button
-                    onClick={() => {
-                      setSelectedMake(h.params.make);
-                      setSelectedModel(h.params.model);
-                      setSelectedYear(
-                        h.params.year?.toString() ?? ''
-                      );
-                      setDataSource(h.dataSource as any);
-                    }}
-                    className="text-blue-600"
-                  >
-                    Repeat
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Results */}
-        {supercarData && (
-          <div className="bg-white p-6 rounded-xl shadow space-y-6">
-            {/* Header */}
-            <div>
-              <h2 className="text-2xl font-bold">
-                🔍 COMPREHENSIVE DATA: {supercarData.make}{' '}
-                {supercarData.model}
-              </h2>
-              <p className="mt-1 text-gray-600">
-                Source: {supercarData.dataSource} • Year:{' '}
-                {supercarData.year}
-              </p>
-            </div>
-
-            {/* Basic Specifications */}
-            {supercarData.basicSpecifications && (
-              <div>
-                <h3 className="font-semibold text-blue-600 mb-2">
-                  📋 BASIC SPECIFICATIONS
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* ... */}
+              <>
+                {supercarData.popularOptions && (
                   <div>
-                    <strong>Make:</strong>{' '}
-                    {supercarData.basicSpecifications.make}
-                  </div>
-                  <div>
-                    <strong>Model:</strong>{' '}
-                    {supercarData.basicSpecifications.model}
-                  </div>
-                  <div>
-                    <strong>Year:</strong>{' '}
-                    {supercarData.basicSpecifications.year}
-                  </div>
-                  <div>
-                    <strong>Body Type:</strong>{' '}
-                    {supercarData.basicSpecifications.bodyType}
-                  </div>
-                  <div>
-                    <strong>Engine:</strong>{' '}
-                    {supercarData.basicSpecifications.engine}
-                  </div>
-                  <div>
-                    <strong>Doors:</strong>{' '}
-                    {supercarData.basicSpecifications.doors}
-                  </div>
-                  <div>
-                    <strong>Seats:</strong>{' '}
-                    {supercarData.basicSpecifications.seats}
-                  </div>
-                  {supercarData.basicSpecifications.transmission && (
-                    <div>
-                      <strong>Transmission:</strong>{' '}
-                      {supercarData.basicSpecifications.transmission}
+                    <h3 className="font-semibold text-orange-600 mb-2">
+                      🔧 POPULAR OPTIONS
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {supercarData.popularOptions?.map((opt: { name: string; source: string }, idx: number) => (
+                        <div
+                          key={idx}
+                          className="flex items-center bg-gray-100 p-3 rounded"
+                        >
+                          <span className="w-2 h-2 bg-blue-500 rounded-full mr-2" />
+                          <span className="flex-1">{opt.name}</span>
+                          <span className="text-xs bg-gray-200 px-2 py-1 rounded">
+                            {opt.source}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  )}
-                  {supercarData.basicSpecifications.drivetrain && (
-                    <div>
-                      <strong>Drivetrain:</strong>{' '}
-                      {supercarData.basicSpecifications.drivetrain}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+                  </div>
+                )}
 
-            {/* Performance */}
-            {supercarData.performanceData && (
-              <div>
-                <h3 className="font-semibold text-green-600 mb-2">
-                  ⚡ PERFORMANCE
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Market Data */}
+                {supercarData.marketData && (
                   <div>
-                    <strong>Engine:</strong>{' '}
-                    {supercarData.performanceData.engine}
-                  </div>
-                  <div>
-                    <strong>Horsepower:</strong>{' '}
-                    {supercarData.performanceData.horsePower}
-                  </div>
-                  <div>
-                    <strong>Torque:</strong>{' '}
-                    {supercarData.performanceData.torque}
-                  </div>
-                  <div>
-                    <strong>0-60 mph:</strong>{' '}
-                    {supercarData.performanceData.acceleration060}
-                  </div>
-                  <div>
-                    <strong>Top Speed:</strong>{' '}
-                    {supercarData.performanceData.topSpeed}
-                  </div>
-                  <div>
-                    <strong>Transmission:</strong>{' '}
-                    {supercarData.performanceData.transmission}
-                  </div>
-                  <div>
-                    <strong>Drive Type:</strong>{' '}
-                    {supercarData.performanceData.driveType}
-                  </div>
-                  <div>
-                    <strong>Weight:</strong>{' '}
-                    {supercarData.performanceData.weight}
-                  </div>
-                  {supercarData.performanceData.fuelEconomy && (
-                    <div>
-                      <strong>Fuel Economy:</strong>{' '}
-                      {supercarData.performanceData.fuelEconomy}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Pricing */}
-            {supercarData.pricingData && (
-              <div>
-                <h3 className="font-semibold text-red-600 mb-2">
-                  💰 PRICING DATA
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {typeof supercarData.pricingData.baseMSRP ===
-                    'number' && (
-                    <div>
-                      <strong>Base MSRP:</strong> £
-                      {supercarData.pricingData.baseMSRP.toLocaleString()}
-                    </div>
-                  )}
-                  <div>
-                    <strong>Current Range:</strong>{' '}
-                    {supercarData.pricingData.currentMarketRange}
-                  </div>
-                  <div>
-                    <strong>Avg Dealer Price:</strong> £
-                    {supercarData.pricingData.averageDealerPrice.toLocaleString()}
-                  </div>
-                  <div>
-                    <strong>Inventory:</strong>{' '}
-                    {supercarData.pricingData.dealerInventoryCount}
-                  </div>
-                  <div>
-                    <strong>Trend:</strong>{' '}
-                    {supercarData.pricingData.priceTrend}
-                  </div>
-                  {supercarData.pricingData.priceDistribution && (
-                    <>
+                    <h3 className="font-semibold text-indigo-600 mb-2">
+                      📊 MARKET DATA
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                       <div>
-                        <strong>Min:</strong> £
-                        {supercarData.pricingData.priceDistribution.min.toLocaleString()}
+                        <strong>Avg Price:</strong> £
+                        {supercarData.marketData.averagePrice.toLocaleString()}
                       </div>
                       <div>
-                        <strong>Max:</strong> £
-                        {supercarData.pricingData.priceDistribution.max.toLocaleString()}
+                        <strong>Range:</strong>{' '}
+                        {supercarData.marketData.priceRange}
                       </div>
                       <div>
-                        <strong>Median:</strong> £
-                        {supercarData.pricingData.priceDistribution.median.toLocaleString()}
+                        <strong>Listings:</strong>{' '}
+                        {supercarData.marketData.inventoryCount}
                       </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Popular Options */}
-            {supercarData.popularOptions?.length && (
-              <div>
-                <h3 className="font-semibold text-orange-600 mb-2">
-                  🔧 POPULAR OPTIONS
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {supercarData.popularOptions.map((opt, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center bg-gray-100 p-3 rounded"
-                    >
-                      <span className="w-2 h-2 bg-blue-500 rounded-full mr-2" />
-                      <span className="flex-1">{opt.name}</span>
-                      <span className="text-xs bg-gray-200 px-2 py-1 rounded">
-                        {opt.source}
-                      </span>
+                      <div>
+                        <strong>Source:</strong>{' '}
+                        {supercarData.marketData.dataSource}
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Market Data */}
-            {supercarData.marketData && (
-              <div>
-                <h3 className="font-semibold text-indigo-600 mb-2">
-                  📊 MARKET DATA
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                  <div>
-                    <strong>Avg Price:</strong> £
-                    {supercarData.marketData.averagePrice.toLocaleString()}
+                    <ul className="space-y-2">
+                      {supercarData.marketData.listings
+                        .slice(0, 5)
+                        .map((l: { title: string; price: string; specs: string }, i: number) => (
+                          <li
+                            key={i}
+                            className="p-3 bg-gray-100 rounded"
+                          >
+                            <p className="font-medium">{l.title}</p>
+                            <p className="text-sm">
+                              {l.price} • {l.specs}
+                            </p>
+                          </li>
+                        ))}
+                    </ul>
                   </div>
-                  <div>
-                    <strong>Range:</strong>{' '}
-                    {supercarData.marketData.priceRange}
-                  </div>
-                  <div>
-                    <strong>Listings:</strong>{' '}
-                    {supercarData.marketData.inventoryCount}
-                  </div>
-                  <div>
-                    <strong>Source:</strong>{' '}
-                    {supercarData.marketData.dataSource}
-                  </div>
-                </div>
-                <ul className="space-y-2">
-                  {supercarData.marketData.listings
-                    .slice(0, 5)
-                    .map((l, i) => (
-                      <li
-                        key={i}
-                        className="p-3 bg-gray-100 rounded"
-                      >
-                        <p className="font-medium">{l.title}</p>
-                        <p className="text-sm">
-                          {l.price} • {l.specs}
-                        </p>
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            )}
+                )}
+              </>
 
             {/* Integration Actions */}
             <div className="flex flex-wrap gap-4 pt-4">
               <button
                 onClick={() => {
                   const opts =
-                    supercarData.popularOptions?.map(o => o.name) ?? [];
+                    supercarData.popularOptions?.map((o: { name: string }) => o.name) ?? [];
                   console.log('Options:', opts);
                   console.log('Full data:', supercarData);
                   alert(`Extracted ${opts.length} options—check console.`);
@@ -851,7 +485,7 @@ export default function SupercarPricingAggregatorPage() {
                       supercarData.pricingData?.averageDealerPrice,
                     baseMSRP: supercarData.pricingData?.baseMSRP,
                     addedOptions:
-                      supercarData.popularOptions?.map(o => o.name),
+                      supercarData.popularOptions?.map((o: { name: string }) => o.name),
                   };
                   navigator.clipboard.writeText(
                     JSON.stringify(integration, null, 2)
@@ -873,8 +507,8 @@ export default function SupercarPricingAggregatorPage() {
               </button>
             </div>
           </div>
-        )}
-      </div>
-    </div>
-  );
-}
+        </div>
+      );
+    }
+  }
+  export default SupercarPricingAggregatorPage;

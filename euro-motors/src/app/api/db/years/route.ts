@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const make = searchParams.get('make')?.trim();
     const model = searchParams.get('model')?.trim();
+    
     if (!make || !model) {
       return NextResponse.json({ years: [] });
     }
@@ -16,25 +17,15 @@ export async function GET(request: NextRequest) {
       prisma.buyCar.findMany({
         select: { year: true },
         where: {
-
           make: { equals: make },
-          model: { equals: model },
-
-          make: { equals: make, mode: 'insensitive' },
-          model: { equals: model, mode: 'insensitive' },
-
+          model: { equals: model }
         },
       }),
       prisma.rentalCar.findMany({
         select: { year: true },
         where: {
-
           make: { equals: make },
-          model: { equals: model },
-
-          make: { equals: make, mode: 'insensitive' },
-          model: { equals: model, mode: 'insensitive' },
-
+          model: { equals: model }
         },
       }),
     ]);
@@ -48,6 +39,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ years: allYears });
   } catch (error) {
     console.error('DB Years Error:', error);
-    return NextResponse.json({ error: 'Failed to fetch years from database' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch years from database' },
+      { status: 500 }
+    );
   }
 }

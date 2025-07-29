@@ -1,7 +1,14 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { manufacturerScraperService } from '@/lib/services/manufacturer-scrapers';
+// TODO: Implement manufacturerScraperService here or import from another file
+export const manufacturerScraperService = {
+  scrapeManufacturerData: async (_make: string, _model: string, _year?: number) => {
+    // TODO: Implement real scraping logic or API aggregation here
+    return undefined;
+  },
+};
 import type { ManufacturerData, SPAServiceResponse } from '@/types/spa';
+
 
 export async function GET(request: NextRequest) {
   const url = request.nextUrl;

@@ -2,7 +2,7 @@
 // Run with: npx ts-node scripts/test-suggestions.ts
 
 /* eslint-disable @typescript-eslint/no-var-requires */
-const nodeFetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 const BASE_URL = 'http://localhost:3000/api/spa/suggestions';
 
@@ -12,17 +12,17 @@ async function testSuggestions() {
   const yearsQuery = `${BASE_URL}?type=years&make=Ferrari&model=488`;
 
   console.log('--- Testing Makes ---');
-  const makesRes = await nodeFetch(makesQuery);
+  const makesRes = await fetch(makesQuery);
   const makes = await makesRes.json();
   console.dir(makes, { depth: 5 });
 
   console.log('\n--- Testing Models ---');
-  const modelsRes = await nodeFetch(modelsQuery);
+  const modelsRes = await fetch(modelsQuery);
   const models = await modelsRes.json();
   console.dir(models, { depth: 5 });
 
   console.log('\n--- Testing Years ---');
-  const yearsRes = await nodeFetch(yearsQuery);
+  const yearsRes = await fetch(yearsQuery);
   const years = await yearsRes.json();
   console.dir(years, { depth: 5 });
 }

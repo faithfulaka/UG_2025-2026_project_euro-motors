@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const make = searchParams.get('make')?.trim();
     const search = searchParams.get('search')?.trim() || '';
+    
     if (!make) {
       return NextResponse.json({ models: [] });
     }
@@ -16,25 +17,15 @@ export async function GET(request: NextRequest) {
       prisma.buyCar.findMany({
         select: { model: true },
         where: {
-
           make: { equals: make },
-          ...(search ? { model: { contains: search } } : {}),
-
-          make: { equals: make, mode: 'insensitive' },
-          ...(search ? { model: { contains: search, mode: 'insensitive' } } : {}),
-
+          ...(search ? { model: { contains: search } } : {})
         },
       }),
       prisma.rentalCar.findMany({
         select: { model: true },
         where: {
-
           make: { equals: make },
-          ...(search ? { model: { contains: search } } : {}),
-
-          make: { equals: make, mode: 'insensitive' },
-          ...(search ? { model: { contains: search, mode: 'insensitive' } } : {}),
-
+          ...(search ? { model: { contains: search } } : {})
         },
       }),
     ]);
@@ -48,6 +39,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ models: allModels });
   } catch (error) {
     console.error('DB Models Error:', error);
-    return NextResponse.json({ error: 'Failed to fetch models from database' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch models from database' }, 
+      { status: 500 }
+    );
   }
 }

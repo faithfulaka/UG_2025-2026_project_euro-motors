@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
+
+interface CarMake {
+  make: string;
+}
 
 // GET /api/db/makes?search=fer
 export async function GET(request: NextRequest) {
@@ -7,31 +12,27 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search')?.trim() || '';
 
-    // Find distinct makes in BuyCar and RentalCar
+    // Find distinct makes in BuyCar and RentalCar with case-insensitive search
     const [buyMakes, rentMakes] = await Promise.all([
-      prisma.buyCar.findMany({
-        select: { make: true },
-
-        where: search ? { make: { contains: search } } : undefined,
-      }),
-      prisma.rentalCar.findMany({
-        select: { make: true },
-        where: search ? { make: { contains: search } } : undefined,
-
-        where: search ? { make: { contains: search, mode: 'insensitive' } } : undefined,
-      }),
-      prisma.rentalCar.findMany({
-        select: { make: true },
-        where: search ? { make: { contains: search, mode: 'insensitive' } } : undefined,
-
-      }),
+      prisma.$queryRaw<CarMake[]>`
+        SELECT DISTINCT make 
+        FROM BuyCar 
+        ${search ? Prisma.sql`WHERE LOWER(make) LIKE LOWER(${'%' + search + '%'})` : Prisma.empty}
+        ORDER BY make
+      `,
+      prisma.$queryRaw<CarMake[]>`
+        SELECT DISTINCT make 
+        FROM RentalCar 
+        ${search ? Prisma.sql`WHERE LOWER(make) LIKE LOWER(${'%' + search + '%'})` : Prisma.empty}
+        ORDER BY make
+      `,
     ]);
 
     // Deduplicate and sort
     const allMakes = Array.from(new Set([
-      ...buyMakes.map((c) => c.make),
-      ...rentMakes.map((c) => c.make),
-    ].filter(Boolean))).sort((a, b) => a.localeCompare(b));
+      ...buyMakes.map((c: CarMake) => c.make),
+      ...rentMakes.map((c: CarMake) => c.make),
+    ].filter(Boolean))).sort((a: string, b: string) => a.localeCompare(b));
 
     return NextResponse.json({ makes: allMakes });
   } catch (error) {

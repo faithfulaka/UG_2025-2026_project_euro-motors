@@ -72,19 +72,6 @@ export async function GET(request: NextRequest) {
   [key: string]: unknown;
 }
 
-interface NHTSAModelYear {
-  Make_ID: number;
-  Make_Name: string;
-  Model_ID: number;
-  Model_Name: string;
-}
-
-interface NHTSAVehicleType {
-  VehicleTypeId: number;
-  VehicleTypeName: string;
-}
-
-
 let trims: CarQueryTrim[] = [];
     if (typeof data === 'string') {
       const json = JSON.parse(data.replace(/^\?\((.*)\);?$/, '$1'));
