@@ -95,7 +95,16 @@ interface SPAFormatData {
 class CarQueryAPI {
   private baseUrl = 'https://www.carqueryapi.com/api/0.3/';
 
-  async getMakes(): Promise<CarQueryResponse> {
+  async getMakes(search?: string): Promise<string[]> {
+    const data = await this._getMakes();
+    let makes = (data.Makes || []).map(m => m.make_display);
+    if (search) {
+      const lc = search.toLowerCase();
+      makes = makes.filter(m => m.toLowerCase().includes(lc));
+    }
+    return makes;
+  }
+  private async _getMakes(): Promise<CarQueryResponse> {
     try {
       const response = await fetch(`${this.baseUrl}?callback=?&cmd=getMakes`);
       const text = await response.text();
@@ -108,9 +117,18 @@ class CarQueryAPI {
     }
   }
 
-  async getModels(makeId: string): Promise<CarQueryResponse> {
+  async getModels(make: string, search?: string): Promise<string[]> {
+    const data = await this._getModels(make);
+    let models = (data.Models || []).map(m => m.model_name);
+    if (search) {
+      const lc = search.toLowerCase();
+      models = models.filter(m => m.toLowerCase().includes(lc));
+    }
+    return models;
+  }
+  private async _getModels(make: string): Promise<CarQueryResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}?callback=?&cmd=getModels&make=${makeId}`);
+      const response = await fetch(`${this.baseUrl}?callback=?&cmd=getModels&make=${make}`);
       const text = await response.text();
       const jsonp = text.replace(/^[^(]*\((.*)\);?$/, '$1');
       const data = JSON.parse(jsonp);
@@ -121,9 +139,18 @@ class CarQueryAPI {
     }
   }
 
-  async getTrims(make: string, model: string, year?: string): Promise<CarQueryResponse> {
+  async getYears(make: string, model: string): Promise<string[]> {
+    const data = await this.getTrims(make, model);
+    const years = new Set<string>();
+    (data.Trims || []).forEach(t => {
+      if (t.model_year) years.add(t.model_year);
+    });
+    return Array.from(years).sort((a, b) => Number(b) - Number(a));
+  }
+
+  async getTrims(_make: string, model: string, year?: string): Promise<CarQueryResponse> {
     try {
-      let url = `${this.baseUrl}?callback=?&cmd=getTrims&make=${make}&model=${model}`;
+      let url = `${this.baseUrl}?callback=?&cmd=getTrims&make=${_make}&model=${model}`;
       if (year) url += `&year=${year}`;
       
       const response = await fetch(url);
@@ -135,6 +162,11 @@ class CarQueryAPI {
       console.error('CarQuery API getTrims error:', error);
       throw error;
     }
+  }
+
+  async getCarData(make: string, model: string, year: number): Promise<SPAFormatData | null> {
+    const data = await this.getTrims(make, model, String(year));
+    return this.convertToSPAFormat(data);
   }
 
   // FIXED: Convert CarQuery data to our SPA format with proper typing

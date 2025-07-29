@@ -8,7 +8,7 @@ import { BuyCar, CarSpecifications } from '@/types/cars';
 interface CarFormProps {
   car?: BuyCar;
   mode: 'add' | 'edit';
-  onSubmit: (data: FormData) => Promise<void>;
+  onSubmit: (data: BuyCar) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -24,14 +24,45 @@ export default function CarBuyForm({ car, mode, onSubmit, onCancel }: CarFormPro
   const [newSafetyFeature, setNewSafetyFeature] = useState('');
   const [newStandardEquipment, setNewStandardEquipment] = useState('');
   const [newAddedOption, setNewAddedOption] = useState('');
-  const [useScraperData, setUseScraperData] = useState(false);
+  
   const [scrapedMakes, setScrapedMakes] = useState<string[]>([]);
   const [scrapedModels, setScrapedModels] = useState<string[]>([]);
   const [loadingScraperData, setLoadingScraperData] = useState(false);
   const [scraperMake, setScraperMake] = useState('');
   const [scraperModel, setScraperModel] = useState('');
   
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
+  interface CarBuyFormFields {
+  id: string;
+  make: string;
+  model: string;
+  trim: string;
+  year: number;
+  price: number;
+  description: string;
+  isAvailable: boolean;
+  color: string;
+  interiorColor: string;
+  mileage: number;
+  engine: string;
+  horsePower: number;
+  torque: string;
+  fuelType: string;
+  transmission: string;
+  driveType: string;
+  bodyType: string;
+  doors: number;
+  seats: number;
+  topSpeed?: string;
+  acceleration100?: string;
+  powerKW?: string;
+  powerPS?: string;
+  weight?: string;
+  wheelbase?: string;
+  wheelSize?: string;
+  brakeColor?: string;
+}
+
+const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<CarBuyFormFields>({
     defaultValues: {
       id: car?.id || '',
       make: car?.make || '',
@@ -256,7 +287,8 @@ export default function CarBuyForm({ car, mode, onSubmit, onCancel }: CarFormPro
     }
   };
 
-  const submitForm = async (formData: any) => {
+  // Use BuyCar as the main form data type for strict typing
+const submitForm = async (formData: CarBuyFormFields) => {
     setIsSubmitting(true);
     
     try {
@@ -291,15 +323,21 @@ export default function CarBuyForm({ car, mode, onSubmit, onCancel }: CarFormPro
         brakeColor: formData.brakeColor,
       };
       
-      // Create final data object
-      const finalData = {
-        ...formData,
-        price: Number(formData.price),
+      // Map flat form fields to BuyCar object
+      const finalData: BuyCar = {
+        id: formData.id,
+        make: formData.make,
+        model: formData.model,
+        trim: formData.trim,
         year: Number(formData.year),
+        price: Number(formData.price),
         specifications,
         features,
         standardEquipment,
         addedOptions,
+        description: formData.description,
+        isAvailable: formData.isAvailable,
+        images: [], // Images handled separately
       };
       
       await onSubmit(finalData);

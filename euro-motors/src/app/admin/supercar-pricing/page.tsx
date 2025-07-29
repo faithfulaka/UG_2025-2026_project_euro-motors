@@ -118,7 +118,7 @@ export default function SupercarPricingAggregatorPage() {
   async function loadMakes() {
     try {
       setAutoComplete(prev => ({ ...prev, makesLoading: true }));
-      const res = await fetch(`/api/spa/makes?source=${dataSource}`);
+      const res = await fetch(`/api/spa/suggestions/makes`);
       if (!res.ok) throw new Error('Failed to load makes');
       const json = await res.json();
       setAutoComplete(prev => ({
@@ -136,9 +136,7 @@ export default function SupercarPricingAggregatorPage() {
     try {
       setAutoComplete(prev => ({ ...prev, modelsLoading: true }));
       const res = await fetch(
-        `/api/spa/models?make=${encodeURIComponent(
-          make
-        )}&source=${dataSource}`
+        `/api/spa/suggestions/models?make=${encodeURIComponent(make)}`
       );
       if (!res.ok) throw new Error('Failed to load models');
       const json = await res.json();
@@ -156,36 +154,22 @@ export default function SupercarPricingAggregatorPage() {
   async function loadYears() {
     try {
       setAutoComplete(prev => ({ ...prev, yearsLoading: true }));
-      if (dataSource === 'database') {
-        const res = await fetch(
-          `/api/spa/suggestions?type=years&make=${encodeURIComponent(
-            selectedMake
-          )}&model=${encodeURIComponent(selectedModel)}`
-        );
-        if (res.ok) {
-          const json = await res.json();
-          const yrs =
-            json.data
-              ?.map((i: { value: string }) =>
-                Number.parseInt(i.value, 10)
-              )
-              .filter(Boolean) || [];
-          setAutoComplete(prev => ({
-            ...prev,
-            years: yrs,
-            yearsLoading: false,
-          }));
-          return;
-        }
+      const res = await fetch(
+        `/api/spa/suggestions/years?make=${encodeURIComponent(selectedMake)}&model=${encodeURIComponent(selectedModel)}`
+      );
+      if (res.ok) {
+        const json = await res.json();
+        const yrs = Array.isArray(json.years)
+          ? json.years.filter((y: any) => typeof y === 'number' && !isNaN(y))
+          : [];
+        setAutoComplete(prev => ({
+          ...prev,
+          years: yrs,
+          yearsLoading: false,
+        }));
+        return;
       }
-      // fallback: last 6 years
-      const current = new Date().getFullYear();
-      const yrs = Array.from({ length: 6 }, (_, i) => current - i);
-      setAutoComplete(prev => ({
-        ...prev,
-        years: yrs,
-        yearsLoading: false,
-      }));
+      setAutoComplete(prev => ({ ...prev, years: [], yearsLoading: false }));
     } catch (err: unknown) {
       console.error(err);
       setAutoComplete(prev => ({ ...prev, yearsLoading: false }));

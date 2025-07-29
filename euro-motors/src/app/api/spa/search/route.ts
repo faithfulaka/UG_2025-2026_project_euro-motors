@@ -3,21 +3,25 @@ import     { NextResponse }         from 'next/server';
 import     { autotraderScraper }    from '@/lib/scrapers/autotrader';
 import { getBringATrailerAuctionHistory } from '@/lib/scrapers/bringatrailer';
 import { getParkersDepreciationAndOwnership } from '@/lib/scrapers/parkers';
-import { carQueryAPI } from '@/lib/services';
-import type { SPASearchParams, SPASearchResponse, ComprehensiveSPAData } from '@/types/spa';
+import { carQueryService } from '@/lib/services';
+import { porscheConfiguratorScraper } from '@/lib/scrapers/porsche';
+import { McLarenScraper } from '@/lib/scrapers/mclaren';
+import type { SPASearchParams, SPASearchResponse, ComprehensiveSPAData, ManufacturerData, ManufacturerPricing } from '@/types/spa';
 
 export async function POST(req: NextRequest) {
   const params = (await req.json()) as SPASearchParams;
 
   // --- Scrape all sources in parallel ---
-  const [marketR, auctionHistory, parkersData] = await Promise.all([
+  const [marketR, auctionHistory, parkersData, porscheData, mclarenData] = await Promise.all([
     autotraderScraper.searchCars(params.make, params.model, params.year),
     getBringATrailerAuctionHistory(params.make, params.model, params.year?.toString()),
     getParkersDepreciationAndOwnership(params.make, params.model, params.year?.toString()),
+    params.make?.toLowerCase() === 'porsche' ? porscheConfiguratorScraper.getCarPricing(params.model) : Promise.resolve(undefined),
+    params.make?.toLowerCase() === 'mclaren' ? (new McLarenScraper()).getConfig(params.make, params.model, params.year) : Promise.resolve(undefined),
   ]);
 
   // --- CarQuery API for specs (optional, can be replaced with real scraper later) ---
-  const trimsResponse = await carQueryAPI.getTrims(params.make, params.model, params.year?.toString());
+  const trimsResponse = await carQueryService.getTrims(params.make, params.model, params.year?.toString());
   const trim = trimsResponse.Trims?.[0];
   const basicSpecs = trim && {
     make:  trim.model_make_display,
@@ -42,14 +46,66 @@ export async function POST(req: NextRequest) {
 
   // --- Merge and map all results to unified schema ---
   // Market data (Autotrader)
-  const marketData = marketR.success ? marketR.data : undefined;
   // Auction history (Bring a Trailer)
   // Depreciation/ownership (Parkers)
   const { depreciation: depreciationData, ownership: ownershipCosts } = parkersData;
 
-  // TODO: If you add more scrapers, merge their results here
+  // Merge configurator/manufacturer data
+  let manufacturerData: ManufacturerData | undefined = undefined;
+  let pricingData: ManufacturerPricing | undefined = undefined;
 
-  const manufacturerData = undefined;
+  // Porsche integration: only assign if shape matches ManufacturerData
+  if (
+    porscheData &&
+    typeof porscheData === 'object' &&
+    !('error' in porscheData) &&
+    typeof porscheData.basePrice === 'string' &&
+    typeof porscheData.totalPrice === 'string' &&
+    Array.isArray(porscheData.options)
+  ) {
+    // Map only the fields that exist and match the type
+    manufacturerData = {
+      make: params.make,
+      model: params.model,
+      year: params.year ?? new Date().getFullYear(),
+      pricing: {
+        basePrice: parseFloat(porscheData.basePrice.replace(/[^\d.]/g, '')),
+        currency: 'GBP',
+        totalPrice: parseFloat(porscheData.totalPrice.replace(/[^\d.]/g, '')),
+        options: porscheData.options.map(opt => ({
+          name: opt.name,
+          price: typeof opt.price === 'string' ? parseFloat(opt.price.replace(/[^\d.]/g, '')) : 0,
+          currency: 'GBP',
+        })),
+      },
+      dataSource: 'porsche-configurator',
+      lastUpdated: new Date().toISOString(),
+    };
+    pricingData = manufacturerData.pricing;
+  }
+  // McLaren integration: only assign if shape matches ManufacturerData
+  else if (
+    mclarenData &&
+    typeof mclarenData === 'object' &&
+    !('error' in mclarenData) &&
+    typeof mclarenData.make === 'string' &&
+    typeof mclarenData.model === 'string' &&
+    typeof mclarenData.year === 'number' &&
+    typeof mclarenData.pricing === 'object'
+  ) {
+    manufacturerData = {
+      make: mclarenData.make,
+      model: mclarenData.model,
+      year: mclarenData.year,
+      pricing: mclarenData.pricing,
+      dataSource: 'mclaren-configurator',
+      lastUpdated: mclarenData.lastUpdated || new Date().toISOString(),
+      configuratorUrl: mclarenData.configuratorUrl,
+      specifications: mclarenData.specifications,
+    };
+    pricingData = mclarenData.pricing;
+  }
+
 
   const result: ComprehensiveSPAData = {
     make:                params.make,
@@ -57,7 +113,16 @@ export async function POST(req: NextRequest) {
     year:                params.year ?? 0,
     basicSpecifications: basicSpecs,
     performanceData,
-    pricingData:         undefined,
+    // Map ManufacturerPricing to PricingData if possible
+    pricingData: pricingData
+      ? {
+          baseMSRP: pricingData.basePrice ?? 0,
+          currentMarketRange: '', // Not available from configurators
+          averageDealerPrice: 0,  // Not available from configurators
+          dealerInventoryCount: 0, // Not available from configurators
+          priceTrend: '', // Not available from configurators
+        }
+      : undefined,
     manufacturerData,
     marketData:          marketR.data!,
     popularOptions:      [],

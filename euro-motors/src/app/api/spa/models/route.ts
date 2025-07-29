@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       try {
         const parsed = JSON.parse(jsonStr) as { Models: Array<{ model_name: string }> };
         apiModels = Array.isArray(parsed.Models) ? parsed.Models.map(m => m.model_name) : [];
-      } catch (e) {
+      } catch {
         apiModels = [];
       }
 

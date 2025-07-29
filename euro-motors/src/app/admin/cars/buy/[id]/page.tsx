@@ -53,14 +53,14 @@ export default function AdminEditCarPage() {
   }, [carId, user, isAdmin]);
 
   // Update the type to match what CarBuyForm expects
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = async (formData: import('@/types/cars').BuyCar) => {
     try {
       const response = await fetch('/api/admin/cars?type=buy', {
         method: 'POST', // or 'PUT' for edit
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(Object.fromEntries(formData)),
+        body: JSON.stringify(formData),
       });
       
       if (!response.ok) {

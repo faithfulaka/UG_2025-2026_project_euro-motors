@@ -8,12 +8,17 @@ export async function GET(request: NextRequest) {
   const make = url.searchParams.get('make') || '';
   if (!make) return NextResponse.json({ models: [] });
   try {
-    const [autoModels, batModels, parkersModels] = await Promise.all([
+    // Query all sources for live model data
+    const results = await Promise.allSettled([
       autotraderScraper.getAvailableModels(make),
       bringatrailer.getAvailableModels(make),
       parkers.getAvailableModels(make),
     ]);
-    const models = Array.from(new Set([...autoModels, ...batModels, ...parkersModels])).sort();
+    // Only keep fulfilled, non-empty arrays
+    const allModels = results
+      .filter(r => r.status === 'fulfilled' && Array.isArray(r.value) && r.value.length > 0)
+      .flatMap(r => (r.status === 'fulfilled' ? r.value : []));
+    const models = Array.from(new Set(allModels)).sort();
     return NextResponse.json({ models });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });

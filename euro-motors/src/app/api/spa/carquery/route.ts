@@ -1,7 +1,7 @@
 // src/app/api/spa/carquery/route.ts - COMPLETE FIXED FILE
 
 import { NextRequest, NextResponse } from 'next/server';
-import { carQueryService } from '@/lib/carquery';
+import { carQueryService } from '@/lib/services';
 
 export async function GET(request: NextRequest) {
   try {

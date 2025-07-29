@@ -9,12 +9,22 @@ export async function GET(request: NextRequest) {
   const model = url.searchParams.get('model') || '';
   if (!make || !model) return NextResponse.json({ years: [] });
   try {
-    const [autoYears, batYears, parkersYears] = await Promise.all([
+    // Query all sources for live year data
+    const results = await Promise.allSettled([
       autotraderScraper.getAvailableYears(make, model),
       bringatrailer.getAvailableYears(make, model),
       parkers.getAvailableYears(make, model),
     ]);
-    const years = Array.from(new Set([...autoYears, ...batYears, ...parkersYears])).sort((a, b) => b - a);
+    // Only keep fulfilled, non-empty arrays
+    const allYears = results
+      .filter(r => r.status === 'fulfilled' && Array.isArray(r.value) && r.value.length > 0)
+      .flatMap(r => (r.status === 'fulfilled' ? r.value : []));
+    // Ensure all values are numbers and filter out NaN
+    const years = Array.from(new Set(
+      allYears
+        .map(y => typeof y === 'number' ? y : Number(y))
+        .filter((y): y is number => typeof y === 'number' && !isNaN(y))
+    )).sort((a, b) => b - a);
     return NextResponse.json({ years });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });

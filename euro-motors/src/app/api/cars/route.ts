@@ -9,34 +9,31 @@ export async function GET() {
       where: { isAvailable: true },
       include: { images: true },
       orderBy: { createdAt: 'desc' }
-    }) as any[];
-
-    console.log('Raw cars from DB:', JSON.stringify(cars[0], null, 2)); // Debug line
-
-    const parsedCars = cars.map((car: any) => {
-      const parsed = {
-        ...car,
-        specifications: typeof car.specifications === 'string' 
-          ? JSON.parse(car.specifications) 
-          : car.specifications,
-        features: typeof car.features === 'string' 
-          ? JSON.parse(car.features) 
-          : car.features,
-        standardEquipment: car.standardEquipment 
-          ? (typeof car.standardEquipment === 'string' 
-              ? JSON.parse(car.standardEquipment) 
-              : car.standardEquipment)
-          : [],
-        addedOptions: car.addedOptions 
-          ? (typeof car.addedOptions === 'string' 
-              ? JSON.parse(car.addedOptions) 
-              : car.addedOptions) 
-        : []
-      };
-      
-      console.log('Parsed car:', JSON.stringify(parsed, null, 2)); // Debug line
-      return parsed;
     });
+
+    // WARNING: TypeScript/Prisma limitation: Prisma returns JsonValue for specifications/features, not CarSpecifications/CarFeatures.
+    // We parse these fields at runtime, so after mapping, the result is guaranteed to match BuyCar at runtime.
+    // The 'as unknown as BuyCar[]' cast is safe here due to the runtime parsing above.
+    const parsedCars: BuyCar[] = (cars.map((car) => ({
+      ...car,
+      baseMSRP: car.baseMSRP ?? undefined,
+      specifications: typeof car.specifications === 'string'
+        ? JSON.parse(car.specifications)
+        : car.specifications,
+      features: typeof car.features === 'string'
+        ? JSON.parse(car.features)
+        : car.features,
+      standardEquipment: car.standardEquipment
+        ? (typeof car.standardEquipment === 'string'
+            ? JSON.parse(car.standardEquipment)
+            : car.standardEquipment)
+        : [],
+      addedOptions: car.addedOptions
+        ? (typeof car.addedOptions === 'string'
+            ? JSON.parse(car.addedOptions)
+            : car.addedOptions)
+        : []
+    })) as unknown as BuyCar[]);
 
     return NextResponse.json(parsedCars);
   } catch (error) {

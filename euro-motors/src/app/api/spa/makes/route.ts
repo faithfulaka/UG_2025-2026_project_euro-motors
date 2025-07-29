@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     try {
       const parsed = JSON.parse(jsonStr) as { Makes: Array<{ make_display: string }> };
       apiMakes = Array.isArray(parsed.Makes) ? parsed.Makes.map(m => m.make_display) : [];
-    } catch (e) {
+    } catch {
       apiMakes = [];
     }
 

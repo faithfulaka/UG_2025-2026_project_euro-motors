@@ -1,6 +1,87 @@
 // Bring a Trailer auction history scraper (stub)
 // This will be extended to fetch and parse auction history for a given make/model/year
 
+// --- Suggestion stubs for live dropdowns ---
+import puppeteer from 'puppeteer';
+
+export async function getAvailableMakes(): Promise<string[]> {
+  try {
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.goto('https://bringatrailer.com/makes/', { waitUntil: 'networkidle2', timeout: 30000 });
+    // Scrape all make names from the makes index
+    const makes: string[] = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('.make-listing .make-title'))
+        .map(el => el.textContent?.trim() || '')
+        .filter(Boolean);
+    });
+    await browser.close();
+    return makes;
+  } catch (err) {
+    console.error('[Bring a Trailer] Failed to scrape makes:', err);
+    return [];
+  }
+}
+
+
+export async function getAvailableModels(make?: string): Promise<string[]> {
+  if (!make) return [];
+  try {
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    // Go to the make's page, e.g. https://bringatrailer.com/make/porsche/
+    await page.goto(`https://bringatrailer.com/make/${encodeURIComponent(make.toLowerCase())}/`, { waitUntil: 'networkidle2', timeout: 30000 });
+    // Scrape all model names from the model filter dropdown or listing
+    const models: string[] = await page.evaluate(() => {
+      // Try to find all models in the filter dropdown or as headings
+      const dropdown = document.querySelector('select[name="model"]');
+      if (dropdown) {
+        return Array.from(dropdown.querySelectorAll('option'))
+          .map(opt => opt.textContent?.trim() || '')
+          .filter(v => v && v.toLowerCase() !== 'any model');
+      }
+      // Fallback: scrape headings (may be less reliable)
+      return Array.from(document.querySelectorAll('.model-listing .model-title'))
+        .map(el => el.textContent?.trim() || '')
+        .filter(Boolean);
+    });
+    await browser.close();
+    return models;
+  } catch (err) {
+    console.error(`[Bring a Trailer] Failed to scrape models for make ${make}:`, err);
+    return [];
+  }
+}
+
+
+export async function getAvailableYears(make?: string, model?: string): Promise<string[]> {
+  if (!make || !model) return [];
+  try {
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    // Search for all listings for this make/model and extract available years from listing titles
+    await page.goto(`https://bringatrailer.com/make/${encodeURIComponent(make.toLowerCase())}/?q=${encodeURIComponent(model)}`, { waitUntil: 'networkidle2', timeout: 30000 });
+    const years: string[] = await page.evaluate(() => {
+      // Extract years from listing titles (e.g. '2022 Bentley Continental GT V8')
+      const yearRegex = /\b(19|20)\d{2}\b/g;
+      const titles = Array.from(document.querySelectorAll('.result-title'))
+        .map(el => el.textContent || '');
+      const foundYears = new Set<string>();
+      titles.forEach(title => {
+        const matches = title.match(yearRegex);
+        if (matches) matches.forEach(y => foundYears.add(y));
+      });
+      return Array.from(foundYears).sort((a, b) => parseInt(b) - parseInt(a));
+    });
+    await browser.close();
+    return years;
+  } catch (err) {
+    console.error(`[Bring a Trailer] Failed to scrape years for ${make} ${model}:`, err);
+    return [];
+  }
+}
+
+
 
 export interface AuctionSale {
   date: string;
@@ -20,7 +101,6 @@ export interface AuctionHistory {
 
 /**
  * Scrape Bring a Trailer auction history for a given car
- * @param make e.g. 'Bentley'
  * @param model e.g. 'Continental GT V8'
  * @param year e.g. '2022'
  */

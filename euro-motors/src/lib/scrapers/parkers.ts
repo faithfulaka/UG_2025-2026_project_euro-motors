@@ -57,24 +57,75 @@ export async function getParkersDepreciationAndOwnership(make: string, model: st
 
 // --- Suggestion methods for multi-site merging (mocked, extendable) ---
 
+import puppeteer from 'puppeteer';
+
 export async function getAvailableMakes(): Promise<string[]> {
-  // TODO: Implement real scraping; for now, mock a few makes
-  return ['Bentley', 'Ferrari', 'Porsche', 'Lamborghini', 'Pagani'];
+  try {
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.goto('https://www.parkers.co.uk/cars/reviews/', { waitUntil: 'networkidle2', timeout: 30000 });
+    // Scrape all make names from the reviews index
+    const makes: string[] = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('.review-list__item__title'))
+        .map(el => el.textContent?.trim() || '')
+        .filter(Boolean);
+    });
+    await browser.close();
+    return makes;
+  } catch (err) {
+    console.error('[Parkers] Failed to scrape makes:', err);
+    return [];
+  }
 }
 
-export async function getAvailableModels(make: string): Promise<string[]> {
-  // TODO: Implement real scraping; for now, mock a few models per make
-  const models: Record<string, string[]> = {
-    Bentley: ['Continental GT', 'Flying Spur', 'Bentayga'],
-    Ferrari: ['488 GTB', 'F8 Tributo', 'SF90 Stradale'],
-    Porsche: ['911 Carrera', 'Cayenne', 'Panamera'],
-    Lamborghini: ['Aventador', 'Huracan', 'Urus'],
-    Pagani: ['Huayra', 'Zonda'],
-  };
-  return models[make] || [];
+
+export async function getAvailableModels(make?: string): Promise<string[]> {
+  if (!make) return [];
+  try {
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    // Go to the make reviews page, e.g. https://www.parkers.co.uk/bentley/reviews/
+    await page.goto(`https://www.parkers.co.uk/${encodeURIComponent(make.toLowerCase())}/reviews/`, { waitUntil: 'networkidle2', timeout: 30000 });
+    // Scrape all model names from the model review list
+    const models: string[] = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('.review-list__item__title'))
+        .map(el => el.textContent?.trim() || '')
+        .filter(Boolean);
+    });
+    await browser.close();
+    return models;
+  } catch (err) {
+    console.error(`[Parkers] Failed to scrape models for make ${make}:`, err);
+    return [];
+  }
 }
 
-export async function getAvailableYears(make: string, model: string): Promise<number[]> {
-  // TODO: Implement real scraping; for now, mock a range
-  return [2024, 2023, 2022, 2021, 2020, 2019];
+
+export async function getAvailableYears(make?: string, model?: string): Promise<string[]> {
+  if (!make || !model) return [];
+  try {
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    // Go to the model's review page, e.g. https://www.parkers.co.uk/bentley/continental-gt/review/
+    await page.goto(`https://www.parkers.co.uk/${encodeURIComponent(make.toLowerCase())}/${encodeURIComponent(model.toLowerCase().replace(/\s+/g, '-'))}/review/`, { waitUntil: 'networkidle2', timeout: 30000 });
+    // Scrape all years from the generation/year selector or headings
+    const years: string[] = await page.evaluate(() => {
+      // Try to extract years from generation/year selector
+      const yearRegex = /\b(19|20)\d{2}\b/g;
+      const headings = Array.from(document.querySelectorAll('.review-header__title, .review-list__item__title'))
+        .map(el => el.textContent || '');
+      const foundYears = new Set<string>();
+      headings.forEach(title => {
+        const matches = title.match(yearRegex);
+        if (matches) matches.forEach(y => foundYears.add(y));
+      });
+      return Array.from(foundYears).sort((a, b) => parseInt(b) - parseInt(a));
+    });
+    await browser.close();
+    return years;
+  } catch (err) {
+    console.error(`[Parkers] Failed to scrape years for ${make} ${model}:`, err);
+    return [];
+  }
 }
+

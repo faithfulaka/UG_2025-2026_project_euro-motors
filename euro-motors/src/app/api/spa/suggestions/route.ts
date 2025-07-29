@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     // 1) from DB
     const db = await prisma.buyCar.groupBy({
       by: ['make'],
-      where: { make: { contains: search, mode:'insensitive' } },
+      where: { make: { contains: search } },
       _count: { make:true },
       orderBy: { _count:{ make:'desc' } },
       take: 15
@@ -44,9 +44,10 @@ export async function GET(request: NextRequest) {
       type: 'make',
       value: d.make,
       label: d.make,
-      count: Number(d._count.make),
+      count: Number(d._count?.make ?? 0),
       popular: true,
-      source: 'database'
+      source: 'database',
+      displayName: d.make
     }));
 
     // 2) supplement with CarQuery
@@ -60,7 +61,8 @@ export async function GET(request: NextRequest) {
           label: m,
           count: 0,
           popular: false,
-          source: 'carquery'
+          source: 'carquery',
+          displayName: m
         });
       }
     }
@@ -74,18 +76,19 @@ export async function GET(request: NextRequest) {
     }
     const db = await prisma.buyCar.groupBy({
       by: ['model','year'],
-      where: { make, model:{ contains: search, mode:'insensitive' } },
+      where: { make, model: { contains: search } },
       _count:{ model:true },
       orderBy:{ _count:{ model:'desc' }, year:'desc'},
       take:15
     });
     suggestions = db.map(d=>({
       type: 'model',
-      value: d.model,
-      label: d.model + ` (${d.year})`,
-      count: Number(d._count.model),
+      value: d.model || '',
+      label: (d.model || '') + ` (${d.year})`,
+      count: Number(d._count?.model ?? 0),
       popular: true,
-      source: 'database'
+      source: 'database',
+      displayName: d.model || ''
     }));
     if (suggestions.length < 10) {
       const more = await carQueryService.getModels(make, search);
@@ -97,7 +100,8 @@ export async function GET(request: NextRequest) {
           label: m,
           count: 0,
           popular: false,
-          source: 'carquery'
+          source: 'carquery',
+          displayName: m
         });
       }
     }
@@ -120,9 +124,10 @@ export async function GET(request: NextRequest) {
       type: 'year',
       value: String(d.year),
       label: String(d.year),
-      count: Number(d._count.year),
-      popular: d.year >= new Date().getFullYear() - 3,
-      source: 'database'
+      count: Number(d._count?.year ?? 0),
+      popular: Number(d.year) >= new Date().getFullYear() - 3,
+      source: 'database',
+      displayName: String(d.year)
     }));
     if (suggestions.length < 5) {
       const more = await carQueryService.getYears(make, model);
@@ -134,8 +139,9 @@ export async function GET(request: NextRequest) {
           value:vs,
           label:vs,
           count:0,
-          popular: y >= new Date().getFullYear()-3,
-          source:'carquery'
+          popular: Number(y) >= new Date().getFullYear()-3,
+          source:'carquery',
+          displayName: vs
         });
       }
     }

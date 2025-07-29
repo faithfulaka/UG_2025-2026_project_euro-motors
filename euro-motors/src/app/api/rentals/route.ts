@@ -15,7 +15,9 @@ export async function GET() {
       id:            car.id,
       make:          car.make,
       model:         car.model,
+      trim:          car.trim,
       year:          car.year,
+
       baseMSRP:      car.baseMSRP ?? undefined,
       specifications:
         typeof car.specifications === 'string'
@@ -27,6 +29,10 @@ export async function GET() {
           : car.features,
       images:        car.images,
       isAvailable:   car.isAvailable,
+      hourlyRate:    car.hourlyRate,
+      dailyRate:     car.dailyRate,
+      weeklyRate:    car.weeklyRate,
+      description:   car.description,
       createdAt:     car.createdAt,
       updatedAt:     car.updatedAt,
     }))
