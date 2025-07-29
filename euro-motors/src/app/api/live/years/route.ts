@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { carQueryService } from '@/lib/services';
+import axios from 'axios';
+
+// Type for the response
+interface YearsResponse {
+  years: string[];
+  sources: string[];
+  errors?: string[];
+  timestamp: string;
+}
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
@@ -11,53 +19,71 @@ export async function GET(request: NextRequest) {
 
   if (!make || !model) return NextResponse.json({ years: [] });
 
-  // 1. CarQuery API (headless fetch/parse)
+  // 1. CarQuery API
   try {
-    const years = await carQueryService.getYears(make, model);
-    if (years && years.length > 0) {
-      allYears = allYears.concat(years.map(String));
+    // CarQuery getTrims returns trims with year info
+    const carQueryResp = await axios.get(`https://www.carqueryapi.com/api/0.3/?cmd=getTrims&make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`);
+    const data = carQueryResp.data;
+    let years: string[] = [];
+    if (typeof data === 'string') {
+      const json = JSON.parse(data.replace(/^\?\((.*)\);?$/, '$1'));
+      years = (json.Trims || []).map((t: any) => String(t.year)).filter(Boolean);
+    } else if (data.Trims) {
+      years = data.Trims.map((t: any) => String(t.year)).filter(Boolean);
+    }
+    if (years.length > 0) {
+      allYears = allYears.concat(years);
       sources.push('CarQueryAPI');
     }
   } catch (err) {
     errors.push('CarQueryAPI: ' + (err instanceof Error ? err.message : String(err)));
   }
 
-  // 2. Parkers.co.uk (HTML scraping with fetch/regex)
+  // 2. NHTSA API
   try {
-    const resp = await fetch(`https://www.parkers.co.uk/${encodeURIComponent(make.toLowerCase())}/${encodeURIComponent(model.toLowerCase().replace(/\s+/g, '-'))}/review/`);
-    if (resp.ok) {
-      const html = await resp.text();
-      // Extract years from headings
-      const yearRegex = /(19|20)\d{2}/g;
-      const headings = Array.from(html.matchAll(/<h[1-6][^>]*>([^<]+)<\/h[1-6]>/g)).map(m => m[1]);
-      const foundYears = new Set<string>();
-      headings.forEach(title => {
-        const matches = title.match(yearRegex);
-        if (matches) matches.forEach(y => foundYears.add(y));
-      });
-      if (foundYears.size > 0) {
-        allYears = allYears.concat(Array.from(foundYears));
-        sources.push('Parkers');
-      }
+    // NHTSA does not provide years directly, but does provide models for a make/year
+    // We'll try to get years for which the model exists (iterate recent years)
+    const currentYear = new Date().getFullYear();
+    const yearsToCheck = Array.from({ length: 30 }, (_, i) => currentYear - i); // last 30 years
+    const foundYears: string[] = [];
+    for (const year of yearsToCheck) {
+      try {
+        const nhtsaResp = await axios.get(`https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMakeYear/make/${encodeURIComponent(make)}/modelyear/${year}?format=json`);
+        const models = (nhtsaResp.data.Results || []).map((m: any) => m.Model_Name?.toLowerCase());
+        if (models.includes(model.toLowerCase())) {
+          foundYears.push(String(year));
+        }
+      } catch {}
+    }
+    if (foundYears.length > 0) {
+      allYears = allYears.concat(foundYears);
+      sources.push('NHTSA');
     }
   } catch (err) {
-    errors.push('Parkers: ' + (err instanceof Error ? err.message : String(err)));
+    errors.push('NHTSA: ' + (err instanceof Error ? err.message : String(err)));
   }
 
-  // 3. Bring a Trailer (HTML scraping with fetch/regex)
-  try {
-    const resp = await fetch(`https://bringatrailer.com/make/${encodeURIComponent(make.toLowerCase())}/?q=${encodeURIComponent(model)}`);
-    if (resp.ok) {
-      const html = await resp.text();
-      const yearRegex = /(19|20)\d{2}/g;
-      const titles = Array.from(html.matchAll(/<div class="result-title">([^<]+)<\/div>/g)).map(m => m[1]);
-      const foundYears = new Set<string>();
-      titles.forEach(title => {
-        const matches = title.match(yearRegex);
-        if (matches) matches.forEach(y => foundYears.add(y));
-      });
-      if (foundYears.size > 0) {
-        allYears = allYears.concat(Array.from(foundYears));
+  // Deduplicate and sort descending
+  allYears = Array.from(new Set(allYears.map(y => (y || '').trim()).filter(Boolean)));
+  allYears.sort((a, b) => parseInt(b) - parseInt(a));
+
+  // If no years found, return error
+  if (allYears.length === 0) {
+    return NextResponse.json({
+      years: [],
+      sources,
+      errors: errors.length ? errors : ['No years found from any API'],
+      timestamp: new Date().toISOString()
+    } as YearsResponse, { status: 502 });
+  }
+
+  return NextResponse.json({
+    years: allYears,
+    sources,
+    errors: errors.length ? errors : undefined,
+    timestamp: new Date().toISOString()
+  } as YearsResponse);
+
         sources.push('BringATrailer');
       }
     }

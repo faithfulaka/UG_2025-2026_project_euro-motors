@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { carQueryService } from '@/lib/services';
+import axios from 'axios';
+
+// Type for the response
+interface ModelsResponse {
+  models: string[];
+  sources: string[];
+  errors?: string[];
+  timestamp: string;
+}
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
@@ -10,10 +18,18 @@ export async function GET(request: NextRequest) {
 
   if (!make) return NextResponse.json({ models: [] });
 
-  // 1. CarQuery API (headless fetch/parse)
+  // 1. CarQuery API
   try {
-    const models = await carQueryService.getModels(make);
-    if (models && models.length > 0) {
+    const carQueryResp = await axios.get(`https://www.carqueryapi.com/api/0.3/?cmd=getModels&make=${encodeURIComponent(make)}`);
+    const data = carQueryResp.data;
+    let models: string[] = [];
+    if (typeof data === 'string') {
+      const json = JSON.parse(data.replace(/^\?\((.*)\);?$/, '$1'));
+      models = (json.Models || []).map((m: any) => m.model_name).filter(Boolean);
+    } else if (data.Models) {
+      models = data.Models.map((m: any) => m.model_name).filter(Boolean);
+    }
+    if (models.length > 0) {
       allModels = allModels.concat(models);
       sources.push('CarQueryAPI');
     }
@@ -21,43 +37,39 @@ export async function GET(request: NextRequest) {
     errors.push('CarQueryAPI: ' + (err instanceof Error ? err.message : String(err)));
   }
 
-  // 2. Parkers.co.uk (HTML scraping with fetch/regex)
+  // 2. NHTSA API
   try {
-    const resp = await fetch(`https://www.parkers.co.uk/${encodeURIComponent(make.toLowerCase())}/reviews/`);
-    if (resp.ok) {
-      const html = await resp.text();
-      const models = Array.from(html.matchAll(/<a[^>]+class="review-list__item__title"[^>]*>([^<]+)<\/a>/g)).map(m => m[1].trim());
-      if (models.length > 0) {
-        allModels = allModels.concat(models);
-        sources.push('Parkers');
-      }
+    const nhtsaResp = await axios.get(`https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMake/${encodeURIComponent(make)}?format=json`);
+    const models = (nhtsaResp.data.Results || []).map((m: any) => m.Model_Name).filter(Boolean);
+    if (models.length > 0) {
+      allModels = allModels.concat(models);
+      sources.push('NHTSA');
     }
   } catch (err) {
-    errors.push('Parkers: ' + (err instanceof Error ? err.message : String(err)));
+    errors.push('NHTSA: ' + (err instanceof Error ? err.message : String(err)));
   }
 
-  // 3. Bring a Trailer (HTML scraping with fetch/regex)
-  try {
-    const resp = await fetch(`https://bringatrailer.com/make/${encodeURIComponent(make.toLowerCase())}/`);
-    if (resp.ok) {
-      const html = await resp.text();
-      const models = Array.from(html.matchAll(/<a[^>]+class="model-title"[^>]*>([^<]+)<\/a>/g)).map(m => m[1].trim());
-      if (models.length > 0) {
-        allModels = allModels.concat(models);
-        sources.push('BringATrailer');
-      }
-    }
-  } catch (err) {
-    errors.push('BringATrailer: ' + (err instanceof Error ? err.message : String(err)));
-  }
+  // Deduplicate and sort
+  allModels = Array.from(new Set(allModels.map(m => (m || '').trim()).filter(Boolean)));
+  allModels.sort((a, b) => a.localeCompare(b));
 
-  // 4. Autotrader UK (plain Puppeteer fallback, only if nothing found)
+  // If no models found, return error
   if (allModels.length === 0) {
-    try {
-      const puppeteer = (await import('puppeteer')).default;
-      const browser = await puppeteer.launch({ headless: true });
-      const page = await browser.newPage();
-      await page.goto('https://www.autotrader.co.uk/car-search', { waitUntil: 'networkidle2', timeout: 30000 });
+    return NextResponse.json({
+      models: [],
+      sources,
+      errors: errors.length ? errors : ['No models found from any API'],
+      timestamp: new Date().toISOString()
+    } as ModelsResponse, { status: 502 });
+  }
+
+  return NextResponse.json({
+    models: allModels,
+    sources,
+    errors: errors.length ? errors : undefined,
+    timestamp: new Date().toISOString()
+  } as ModelsResponse);
+
       await new Promise(r => setTimeout(r, 1500));
       const btn = await page.$('#onetrust-accept-btn-handler');
       if (btn) { await btn.click(); await new Promise(r => setTimeout(r, 500)); }
