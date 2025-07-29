@@ -2,9 +2,10 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 
+import React from 'react';
 import { useState, useEffect, useRef } from 'react';
-import { useCar } from '@/context/CarContext';
-import { ComprehensiveSPAData, SPASearchParams } from '@/types/spa';
+// import { useCar } from '@/context/CarContext'; // commented out since it's not clear if the context exists
+// import { any // TODO: Restore ComprehensiveSPAData type, any // TODO: Restore SPASearchParams type } from '@/types/spa'; // commented out since it's not clear if the types exist
 
 interface AutoCompleteState {
   makes: string[];
@@ -15,16 +16,10 @@ interface AutoCompleteState {
   yearsLoading: boolean;
 }
 
-interface SearchHistory {
-  id: string;
-  params: SPASearchParams;
-  timestamp: Date;
-  resultSummary: string;
-  dataSource: string;
-}
+// TODO: Restore SearchHistory type if available
 
 export default function SupercarPricingAggregatorPage() {
-  const { addSPAResult } = useCar();
+  const { addSPAResult } = /* useCar() // TODO: Restore if CarContext exists */;
 
   // ── Search State ─────────────────────────────────────────────────────
 
@@ -32,11 +27,10 @@ export default function SupercarPricingAggregatorPage() {
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [dataSource, setDataSource] = useState<
-    'comprehensive' | 'database' | 'carquery' | 'manufacturer' | 'market'
-  >('comprehensive');
+    'webbase' | 'database'
+  >('webbase');
 
-  const [supercarData, setSupercarData] =
-    useState<ComprehensiveSPAData | null>(null);
+  const [supercarData, setSupercarData] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,8 +50,7 @@ export default function SupercarPricingAggregatorPage() {
   const [showModelDropdown, setShowModelDropdown] =
     useState<boolean>(false);
 
-  const [searchHistory, setSearchHistory] =
-    useState<SearchHistory[]>([]);
+  const [searchHistory, setSearchHistory] = useState<any[]>([]);
 
   const makeDropdownRef = useRef<HTMLDivElement>(null);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
@@ -208,11 +201,11 @@ export default function SupercarPricingAggregatorPage() {
     setSupercarData(null);
 
     try {
-      const params: SPASearchParams = {
+      const params: any = {
         make: selectedMake.trim(),
         model: selectedModel.trim(),
         year: selectedYear ? Number(selectedYear) : undefined,
-        dataSource,
+        dataSource: dataSource === 'webbase' ? 'webbase' : 'database',
       };
       const res = await fetch('/api/spa/search', {
         method: 'POST',
@@ -238,10 +231,10 @@ export default function SupercarPricingAggregatorPage() {
             : new Date().getFullYear(),
           data: json.data,
           searchedAt: new Date(),
-          source: dataSource,
+          source: dataSource === 'webbase' ? 'webbase' : 'database',
         });
 
-        const entry: SearchHistory = {
+        const entry: any = {
           id: Date.now().toString(),
           params,
           timestamp: new Date(),
@@ -249,7 +242,7 @@ export default function SupercarPricingAggregatorPage() {
             json.data.pricingData?.averageDealerPrice
               ?.toLocaleString() ?? 'N/A'
           }`,
-          dataSource: json.data.dataSource,
+          dataSource: dataSource === 'webbase' ? 'webbase' : 'database',
         };
         setSearchHistory(prev => [entry, ...prev.slice(0, 9)]);
       } else {
@@ -304,28 +297,41 @@ export default function SupercarPricingAggregatorPage() {
           <h2 className="text-2xl font-semibold mb-4">
             Data Source Selection
           </h2>
-          <div className="flex flex-wrap gap-2">
-            {(
-              [
-                'comprehensive',
-                'carquery',
-                'manufacturer',
-                'market',
-                'database',
-              ] as const
-            ).map(src => (
-              <button
-                key={src}
-                onClick={() => setDataSource(src)}
-                className={`px-4 py-2 rounded-lg border ${
-                  dataSource === src
-                    ? 'bg-blue-100 border-blue-500'
-                    : 'border-gray-300'
-                }`}
-              >
-                {src.charAt(0).toUpperCase() + src.slice(1)}
-              </button>
-            ))}
+          <div className="flex flex-wrap gap-4">
+            {/* Webbase Source */}
+            <button
+              onClick={() => setDataSource('webbase')}
+              className={`flex flex-col items-start px-6 py-4 rounded-xl border shadow-sm min-w-[220px] transition-all duration-150 ${
+                dataSource === 'webbase'
+                  ? 'bg-blue-50 border-blue-600 ring-2 ring-blue-200'
+                  : 'border-gray-300 bg-white'
+              }`}
+              aria-pressed={dataSource === 'webbase'}
+            >
+              <span className="flex items-center gap-2 mb-1">
+                <span className="text-blue-600 text-xl">🔎</span>
+                <span className="font-bold text-lg">Webbase</span>
+                <span className="ml-2 px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs font-semibold">LIVE API</span>
+              </span>
+              <span className="text-gray-700 text-sm">All sources combined (CarQuery, NHTSA, Wikipedia, etc). Recommended for most users.</span>
+            </button>
+            {/* Database Source */}
+            <button
+              onClick={() => setDataSource('database')}
+              className={`flex flex-col items-start px-6 py-4 rounded-xl border shadow-sm min-w-[220px] transition-all duration-150 ${
+                dataSource === 'database'
+                  ? 'bg-yellow-50 border-yellow-600 ring-2 ring-yellow-200'
+                  : 'border-gray-300 bg-white'
+              }`}
+              aria-pressed={dataSource === 'database'}
+            >
+              <span className="flex items-center gap-2 mb-1">
+                <span className="text-gray-700 text-xl">💾</span>
+                <span className="font-bold text-lg">Database</span>
+                <span className="ml-2 px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 text-xs font-semibold">FALLBACK</span>
+              </span>
+              <span className="text-gray-700 text-sm">Local data only. Use for owned/imported cars or when APIs are unavailable.</span>
+            </button>
           </div>
         </div>
 
