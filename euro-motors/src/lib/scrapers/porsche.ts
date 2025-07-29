@@ -69,3 +69,6 @@ export class PorscheConfiguratorScraper {
 }
 
 export const porscheConfiguratorScraper = new PorscheConfiguratorScraper();
+
+export const getAvailableModels = porscheConfiguratorScraper.getAvailableModels.bind(porscheConfiguratorScraper);
+export const getAvailableYears = porscheConfiguratorScraper.getAvailableYears.bind(porscheConfiguratorScraper);
