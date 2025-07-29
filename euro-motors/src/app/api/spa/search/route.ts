@@ -12,15 +12,19 @@ import type { SPASearchParams, SPASearchResponse, ComprehensiveSPAData, Manufact
 export async function POST(req: NextRequest) {
   const params = (await req.json()) as SPASearchParams;
 
-  // --- Fetch live market data from scraper-backend ---
+// --- Import all unified scrapers at the top ---
+import { AutotraderScraper } from '@/lib/scrapers/autotrader';
+import { getBringATrailerAuctionHistory } from '@/lib/scrapers/bringatrailer';
+import { getParkersDepreciationAndOwnership } from '@/lib/scrapers/parkers';
+import { carQueryService } from '@/lib/scrapers/market-scrapers';
+import { porscheConfiguratorScraper } from '@/lib/scrapers/porsche';
+import { McLarenScraper } from '@/lib/scrapers/mclaren';
+
   let marketR: any = { success: false, data: null };
   try {
-    const resp = await fetch('http://localhost:4001/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ make: params.make, model: params.model, year: params.year })
-    });
-    marketR = await resp.json();
+    const autotrader = new AutotraderScraper();
+    const marketData = await autotrader.getCarData(params.make, params.model, params.year);
+    marketR = { success: !!marketData, data: marketData };
   } catch (err) {
     console.error('[API/search] Error fetching market data:', err);
   }

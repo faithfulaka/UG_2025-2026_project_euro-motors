@@ -1,8 +1,19 @@
 // src/app/api/spa/years/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { AutotraderScraper } from '@/lib/scrapers/autotrader';
 
-export async function GET() {
-  const current = new Date().getFullYear();
-  const years   = Array.from({ length: 6 }, (_, i) => current - i);
-  return NextResponse.json({ success: true, years });
+const scraper = new AutotraderScraper();
+
+export async function GET(request: NextRequest) {
+  const url = new URL(request.url);
+  const make = url.searchParams.get('make') || '';
+  const model = url.searchParams.get('model') || '';
+  if (!make || !model) return NextResponse.json({ years: [] });
+  try {
+    const years = await scraper.getAvailableYears(make, model);
+    return NextResponse.json({ years });
+  } catch (error) {
+    console.error('[API/years] Critical error:', error);
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+  }
 }
