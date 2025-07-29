@@ -104,6 +104,21 @@ class CarQueryAPI {
     }
     return makes;
   }
+
+  async getVehicleInfo(make: string, model: string, year: string): Promise<CarQueryTrim | null> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}?callback=?&cmd=getTrims&make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&year=${encodeURIComponent(year)}`
+      );
+      const text = await response.text();
+      const jsonp = text.replace(/^[^(]*\((.*)\);?$/, '$1');
+      const data = JSON.parse(jsonp);
+      return data.Trims?.[0] || null;
+    } catch (error) {
+      console.error('CarQuery API getVehicleInfo error:', error);
+      throw error;
+    }
+  }
   private async _getMakes(): Promise<CarQueryResponse> {
     try {
       const response = await fetch(`${this.baseUrl}?callback=?&cmd=getMakes`);

@@ -22,58 +22,8 @@ export async function GET(request: NextRequest) {
   try {
     if (type === 'buy') {
       // Fetch car details
-      const car = await prisma.buyCar.findUnique({
-        where: { id },
-        include: {
-          images: true
-        }
-      });
-      
-      if (!car) {
-        return NextResponse.json(
-          { error: 'Car not found' },
-          { status: 404 }
-        );
-      }
-      
-      // Parse JSON fields
-      const parsedCar = {
-        ...car,
-        specifications: typeof car.specifications === 'string' 
-          ? JSON.parse(car.specifications as string) 
-          : car.specifications,
-        features: typeof car.features === 'string' 
-          ? JSON.parse(car.features as string) 
-          : car.features,
-        standardEquipment: car.standardEquipment 
-          ? (typeof car.standardEquipment === 'string' 
-              ? JSON.parse(car.standardEquipment as string) 
-              : car.standardEquipment) 
-          : [],
-        addedOptions: car.addedOptions 
-          ? (typeof car.addedOptions === 'string' 
-              ? JSON.parse(car.addedOptions as string) 
-              : car.addedOptions) 
-          : []
-      };
-      
-      return NextResponse.json(parsedCar);
-    } else if (type === 'rent') {
-      // Fetch car details
-      const car = await prisma.rentalCar.findUnique({
-        where: { id },
-        include: {
-          images: true
-        }
-      });
-      
-      if (!car) {
-        return NextResponse.json(
-          { error: 'Car not found' },
-          { status: 404 }
-        );
-      }
-      
+      const car = await prisma.buyCar.findUnique({ where: { id } });
+      if (!car) return NextResponse.json({ error: 'Car not found' }, { status: 404 });
       // Parse JSON fields
       const parsedCar = {
         ...car,

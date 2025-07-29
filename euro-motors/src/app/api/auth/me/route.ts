@@ -78,10 +78,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 401 });
     }
 
+    // Fetch what this user is interested in buying
+    const buyInterests = await prisma.quote.findMany({
+      where: { userId: user.id },
+      include: { car: true },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Fetch what this user is interested in renting
+    const rentInterests = await prisma.rental.findMany({
+      where: { userId: user.id },
+      include: { car: true },
+      orderBy: { createdAt: 'desc' }
+    });
+
     console.log('✅ [AUTH ME] User authenticated:', user.email, 'Role:', user.role);
     console.log('🎯 [AUTH ME] Is Admin:', user.role === 'ADMIN');
 
-    return NextResponse.json({ user });
+    return NextResponse.json({
+      user,
+      buyInterests,
+      rentInterests
+    });
     
   } catch (error: unknown) {
     console.error('❌ [AUTH ME] Error:', error);

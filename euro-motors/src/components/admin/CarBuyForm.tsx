@@ -8,7 +8,7 @@ import { BuyCar, CarSpecifications } from '@/types/cars';
 interface CarFormProps {
   car?: BuyCar;
   mode: 'add' | 'edit';
-  onSubmit: (data: BuyCar) => Promise<void>;
+  onSubmit: (data: FormData) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -24,45 +24,14 @@ export default function CarBuyForm({ car, mode, onSubmit, onCancel }: CarFormPro
   const [newSafetyFeature, setNewSafetyFeature] = useState('');
   const [newStandardEquipment, setNewStandardEquipment] = useState('');
   const [newAddedOption, setNewAddedOption] = useState('');
-  
+  const [useScraperData, setUseScraperData] = useState(false);
   const [scrapedMakes, setScrapedMakes] = useState<string[]>([]);
   const [scrapedModels, setScrapedModels] = useState<string[]>([]);
   const [loadingScraperData, setLoadingScraperData] = useState(false);
   const [scraperMake, setScraperMake] = useState('');
   const [scraperModel, setScraperModel] = useState('');
   
-  interface CarBuyFormFields {
-  id: string;
-  make: string;
-  model: string;
-  trim: string;
-  year: number;
-  price: number;
-  description: string;
-  isAvailable: boolean;
-  color: string;
-  interiorColor: string;
-  mileage: number;
-  engine: string;
-  horsePower: number;
-  torque: string;
-  fuelType: string;
-  transmission: string;
-  driveType: string;
-  bodyType: string;
-  doors: number;
-  seats: number;
-  topSpeed?: string;
-  acceleration100?: string;
-  powerKW?: string;
-  powerPS?: string;
-  weight?: string;
-  wheelbase?: string;
-  wheelSize?: string;
-  brakeColor?: string;
-}
-
-const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<CarBuyFormFields>({
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
       id: car?.id || '',
       make: car?.make || '',
@@ -287,8 +256,7 @@ const { register, handleSubmit, setValue, watch, formState: { errors } } = useFo
     }
   };
 
-  // Use BuyCar as the main form data type for strict typing
-const submitForm = async (formData: CarBuyFormFields) => {
+  const submitForm = async (formData: any) => {
     setIsSubmitting(true);
     
     try {
@@ -323,21 +291,15 @@ const submitForm = async (formData: CarBuyFormFields) => {
         brakeColor: formData.brakeColor,
       };
       
-      // Map flat form fields to BuyCar object
-      const finalData: BuyCar = {
-        id: formData.id,
-        make: formData.make,
-        model: formData.model,
-        trim: formData.trim,
-        year: Number(formData.year),
+      // Create final data object
+      const finalData = {
+        ...formData,
         price: Number(formData.price),
+        year: Number(formData.year),
         specifications,
         features,
         standardEquipment,
         addedOptions,
-        description: formData.description,
-        isAvailable: formData.isAvailable,
-        images: [], // Images handled separately
       };
       
       await onSubmit(finalData);
