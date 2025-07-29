@@ -2,10 +2,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 
-
 import React, { useState, useEffect, useRef } from 'react';
-// TODO: Restore CarContext and types if available
-
 
 interface AutoCompleteState {
   makes: string[];
@@ -16,27 +13,14 @@ interface AutoCompleteState {
   yearsLoading: boolean;
 }
 
-
-// TODO: Restore SearchHistory type if available
-
 function SupercarPricingAggregatorPage() {
-  // const { addSPAResult } = useCar(); // Uncomment if CarContext exists
-
-
   // ── Search State ─────────────────────────────────────────────────────
-
   const [selectedMake, setSelectedMake] = useState<string>('');
   const [selectedModel, setSelectedModel] = useState<string>('');
-  const [selectedYear, setSelectedYear] = useState<string>('');
-  const [dataSource, setDataSource] = useState<
+  const [_selectedYear, setSelectedYear] = useState<string>('');
+  const [dataSource, setDataSource] = useState<'webbase' | 'database'>('webbase');
 
-    'webbase' | 'database'
-  >('webbase');
-
-  const [supercarData, setSupercarData] = useState<any | null>(null);
-
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const [supercarData, _setSupercarData] = useState<any | null>(null);
 
   // ── Auto-complete State ─────────────────────────────────────────────
 
@@ -49,16 +33,8 @@ function SupercarPricingAggregatorPage() {
     yearsLoading: false,
   });
 
-  const [showMakeDropdown, setShowMakeDropdown] =
-    useState<boolean>(false);
-  const [showModelDropdown, setShowModelDropdown] =
-    useState<boolean>(false);
-
-
-  const [searchHistory, setSearchHistory] = useState<any[]>([]);
-
+  const [showMakeDropdown, setShowMakeDropdown] = useState<boolean>(false);
   const makeDropdownRef = useRef<HTMLDivElement>(null);
-  const modelDropdownRef = useRef<HTMLDivElement>(null);
 
   // ── Effects ─────────────────────────────────────────────────────────
 
@@ -100,12 +76,7 @@ function SupercarPricingAggregatorPage() {
       ) {
         setShowMakeDropdown(false);
       }
-      if (
-        modelDropdownRef.current &&
-        !modelDropdownRef.current.contains(e.target as Node)
-      ) {
-        setShowModelDropdown(false);
-      }
+      // Removed modelDropdownRef and setShowModelDropdown handling
     };
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
@@ -117,9 +88,10 @@ function SupercarPricingAggregatorPage() {
     try {
       setAutoComplete(prev => ({ ...prev, makesLoading: true }));
 
-      const url = dataSource === 'database'
-        ? `/api/db/makes${selectedMake ? `?search=${encodeURIComponent(selectedMake)}` : ''}`
-        : `/api/spa/suggestions/makes`;
+      const url =
+        dataSource === 'database'
+          ? `/api/db/makes${selectedMake ? `?search=${encodeURIComponent(selectedMake)}` : ''}`
+          : `/api/spa/suggestions/makes`;
       const res = await fetch(url);
 
       if (!res.ok) throw new Error('Failed to load makes');
@@ -139,9 +111,10 @@ function SupercarPricingAggregatorPage() {
     try {
       setAutoComplete(prev => ({ ...prev, modelsLoading: true }));
 
-      const url = dataSource === 'database'
-        ? `/api/db/models?make=${encodeURIComponent(make)}${selectedModel ? `&search=${encodeURIComponent(selectedModel)}` : ''}`
-        : `/api/spa/suggestions/models?make=${encodeURIComponent(make)}`;
+      const url =
+        dataSource === 'database'
+          ? `/api/db/models?make=${encodeURIComponent(make)}${selectedModel ? `&search=${encodeURIComponent(selectedModel)}` : ''}`
+          : `/api/spa/suggestions/models?make=${encodeURIComponent(make)}`;
       const res = await fetch(url);
 
       if (!res.ok) throw new Error('Failed to load models');
@@ -161,9 +134,10 @@ function SupercarPricingAggregatorPage() {
     try {
       setAutoComplete(prev => ({ ...prev, yearsLoading: true }));
 
-      const url = dataSource === 'database'
-        ? `/api/db/years?make=${encodeURIComponent(selectedMake)}&model=${encodeURIComponent(selectedModel)}`
-        : `/api/spa/suggestions/years?make=${encodeURIComponent(selectedMake)}&model=${encodeURIComponent(selectedModel)}`;
+      const url =
+        dataSource === 'database'
+          ? `/api/db/years?make=${encodeURIComponent(selectedMake)}&model=${encodeURIComponent(selectedModel)}`
+          : `/api/spa/suggestions/years?make=${encodeURIComponent(selectedMake)}&model=${encodeURIComponent(selectedModel)}`;
       const res = await fetch(url);
 
       if (res.ok) {
@@ -196,86 +170,41 @@ function SupercarPricingAggregatorPage() {
           )
           .slice(0, 10);
 
-  const getFilteredModels = () =>
-    !selectedModel
-      ? autoComplete.models.slice(0, 10)
-      : autoComplete.models
-          .filter(m =>
-            m.toLowerCase().includes(selectedModel.toLowerCase())
-          )
-          .slice(0, 10);
+  // ── Get Data Handler ───────────────────────────────────────────
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
-  // ── Search fn ─────────────────────────────────────────────────────
-
-  async function handleSearch() {
-    if (!selectedMake.trim() || !selectedModel.trim()) {
-      setError('Please select make and model');
-      return;
-    }
-    setIsLoading(true);
-    setError(null);
-    setSupercarData(null);
-
+  async function handleGetData(e: React.FormEvent) {
+    e.preventDefault();
+    setSearchLoading(true);
+    setSearchError(null);
+    _setSupercarData(null);
     try {
-
-      const params: any = {
-        make: selectedMake.trim(),
-        model: selectedModel.trim(),
-        year: selectedYear ? Number(selectedYear) : undefined,
-        dataSource: dataSource === 'webbase' ? 'webbase' : 'database',
-      };
-      const res = await fetch('/api/spa/search', {
+      const url = dataSource === 'database'
+        ? '/api/db/search'
+        : '/api/spa/search';
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
+        body: JSON.stringify({
+          make: selectedMake,
+          model: selectedModel,
+          year: _selectedYear,
+          dataSource,
+        }),
       });
       const json = await res.json();
-      if (!json.success)
-        throw new Error(json.error?.message || 'Search failed');
-
-      if (json.data) {
-        setSupercarData(json.data);
-
-        // Add to local search history
-        const entry: any = {
-          id: Date.now().toString(),
-          params,
-          timestamp: new Date(),
-          resultSummary: `${json.data.make} ${json.data.model} - £${
-            json.data.pricingData?.averageDealerPrice?.toLocaleString() ?? 'N/A'
-          }`,
-          dataSource: json.data.dataSource,
-        };
-        setSearchHistory(prev => [entry, ...prev.slice(0, 9)]);
+      if (!res.ok || !json.data) {
+        setSearchError(json.error?.message || 'No data found for this vehicle.');
       } else {
-        setError('No data found for this vehicle');
+        _setSupercarData(json.data);
       }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Search failed';
-      console.error(err);
-      setError(msg);
+    } catch (err: any) {
+      setSearchError(err.message || 'Failed to fetch data.');
     } finally {
-      setIsLoading(false);
+      setSearchLoading(false);
     }
   }
-
-  // ── Quick-fill examples ──────────────────────────────────────────
-
-  const availableCars = [
-    { make: 'Bentley', model: 'Bentayga V8', year: 2022 },
-    { make: 'Rolls Royce', model: 'Cullinan V12', year: 2022 },
-    { make: 'Bentley', model: 'Continental GT V8', year: 2022 },
-  ];
-
-  const handleQuickFill = (c: {
-    make: string;
-    model: string;
-    year: number;
-  }) => {
-    setSelectedMake(c.make);
-    setSelectedModel(c.model);
-    setSelectedYear(c.year.toString());
-    setDataSource('database');
 
   // ── JSX ─────────────────────────────────────────────────────────
 
@@ -303,6 +232,85 @@ function SupercarPricingAggregatorPage() {
           </p>
         </div>
 
+        {/* Dynamic Search Bar */}
+        <div className="mb-8 bg-white p-6 rounded-xl shadow">
+          <h2 className="text-2xl font-semibold mb-4">Search Vehicle</h2>
+          <form className="flex flex-col md:flex-row gap-4 items-end" onSubmit={handleGetData}>
+            {/* Make Dropdown */}
+            <div className="flex-1">
+              <label className="block mb-1 font-medium">Make *</label>
+              <input
+                type="text"
+                className="w-full border rounded px-3 py-2"
+                placeholder="Type to search makes..."
+                value={selectedMake}
+                onChange={e => setSelectedMake(e.target.value)}
+                list="makes-list"
+                autoComplete="off"
+                disabled={autoComplete.makesLoading}
+              />
+              <datalist id="makes-list">
+                {autoComplete.makes.map((make, idx) => (
+                  <option key={idx} value={make} />
+                ))}
+              </datalist>
+            </div>
+            {/* Model Dropdown */}
+            <div className="flex-1">
+              <label className="block mb-1 font-medium">Model *</label>
+              <input
+                type="text"
+                className="w-full border rounded px-3 py-2"
+                placeholder="Type to search models..."
+                value={selectedModel}
+                onChange={e => setSelectedModel(e.target.value)}
+                list="models-list"
+                autoComplete="off"
+                disabled={!selectedMake || autoComplete.modelsLoading}
+              />
+              <datalist id="models-list">
+                {autoComplete.models.map((model, idx) => (
+                  <option key={idx} value={model} />
+                ))}
+              </datalist>
+            </div>
+            {/* Year Dropdown */}
+            <div className="flex-1">
+              <label className="block mb-1 font-medium">Year</label>
+              <select
+                className="w-full border rounded px-3 py-2"
+                value={_selectedYear}
+                onChange={e => setSelectedYear(e.target.value)}
+                disabled={!selectedMake || !selectedModel || autoComplete.yearsLoading}
+              >
+                <option value="">Select Year</option>
+                {autoComplete.years.map((year, idx) => (
+                  <option key={idx} value={year}>{year}</option>
+                ))}
+              </select>
+            </div>
+            {/* Get Data Button */}
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-6 py-2 rounded font-semibold hover:bg-blue-700 disabled:opacity-60"
+              disabled={!(selectedMake && selectedModel && _selectedYear)}
+            >
+              🔍 Get Data
+            </button>
+          </form>
+        </div>
+        {/* Search Loading/Error States */}
+        {searchLoading && (
+          <div className="my-4 text-blue-600 font-semibold flex items-center gap-2">
+            <svg className="animate-spin h-5 w-5 mr-2 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+            Fetching vehicle data...
+          </div>
+        )}
+        {searchError && (
+          <div className="my-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <strong className="font-bold">Error:</strong> {searchError}
+          </div>
+        )}
         {/* Source Selection */}
         <div className="mb-8 bg-white p-6 rounded-xl shadow">
           <h2 className="text-2xl font-semibold mb-4">
@@ -347,168 +355,126 @@ function SupercarPricingAggregatorPage() {
           </div>
         </div>
 
-        {/*
-          Quick-Fill
-        */}
-        <div className="mb-8 bg-white p-6 rounded-xl shadow">
-          <h2 className="text-2xl font-semibold mb-4">
-            Quick Fill from Database
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {availableCars.map((c: { make: string; model: string; year: number }, i: number) => (
-              <button
-                key={i}
-                onClick={() => handleQuickFill(c)}
-                className="p-4 border rounded hover:bg-blue-50 text-left"
-              >
-                <h3 className="font-semibold">
-                  {c.make} {c.model}
-                </h3>
-                <p className="text-sm text-gray-600">Year: {c.year}</p>
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Make Dropdown */}
+        {showMakeDropdown && (
+          <ul className="absolute z-50 w-full bg-white border rounded max-h-52 overflow-y-auto">
+            {autoComplete.makesLoading ? (
+              <li className="p-2 text-center">Loading…</li>
+            ) : getFilteredMakes().length ? (
+              getFilteredMakes().map((m: string, idx: number) => (
+                <li
+                  key={idx}
+                  onClick={() => {
+                    setSelectedMake(m);
+                    setShowMakeDropdown(false);
+                  }}
+                  className="p-2 hover:bg-blue-50 cursor-pointer"
+                >
+                  {m}
+                </li>
+              ))
+            ) : (
+              <li className="p-2 text-center">No makes found</li>
+            )}
+          </ul>
+        )}
 
-              {/* ... */}
-              {showMakeDropdown && (
-                <ul className="absolute z-50 w-full bg-white border rounded max-h-52 overflow-y-auto">
-                  {autoComplete.makesLoading ? (
-                    <li className="p-2 text-center">Loading…</li>
-                  ) : getFilteredMakes().length ? (
-                    getFilteredMakes().map((m: string, idx: number) => (
-                      <li
-                        key={idx}
-                        onClick={() => {
-                          setSelectedMake(m);
-                          setShowMakeDropdown(false);
-                        }}
-                        className="p-2 hover:bg-blue-50 cursor-pointer"
-                      >
-                        {m}
-                      </li>
-                    ))
-                  ) : (
-                    <li className="p-2 text-center">No makes found</li>
-                  )}
-                </ul>
-              )}
-
-              {/* ... */}
-              <>
-                {supercarData.popularOptions && (
-                  <div>
-                    <h3 className="font-semibold text-orange-600 mb-2">
-                      🔧 POPULAR OPTIONS
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {supercarData.popularOptions?.map((opt: { name: string; source: string }, idx: number) => (
-                        <div
-                          key={idx}
-                          className="flex items-center bg-gray-100 p-3 rounded"
-                        >
-                          <span className="w-2 h-2 bg-blue-500 rounded-full mr-2" />
-                          <span className="flex-1">{opt.name}</span>
-                          <span className="text-xs bg-gray-200 px-2 py-1 rounded">
-                            {opt.source}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Market Data */}
-                {supercarData.marketData && (
-                  <div>
-                    <h3 className="font-semibold text-indigo-600 mb-2">
-                      📊 MARKET DATA
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                      <div>
-                        <strong>Avg Price:</strong> £
-                        {supercarData.marketData.averagePrice.toLocaleString()}
-                      </div>
-                      <div>
-                        <strong>Range:</strong>{' '}
-                        {supercarData.marketData.priceRange}
-                      </div>
-                      <div>
-                        <strong>Listings:</strong>{' '}
-                        {supercarData.marketData.inventoryCount}
-                      </div>
-                      <div>
-                        <strong>Source:</strong>{' '}
-                        {supercarData.marketData.dataSource}
-                      </div>
-                    </div>
-                    <ul className="space-y-2">
-                      {supercarData.marketData.listings
-                        .slice(0, 5)
-                        .map((l: { title: string; price: string; specs: string }, i: number) => (
-                          <li
-                            key={i}
-                            className="p-3 bg-gray-100 rounded"
-                          >
-                            <p className="font-medium">{l.title}</p>
-                            <p className="text-sm">
-                              {l.price} • {l.specs}
-                            </p>
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                )}
-              </>
-
-            {/* Integration Actions */}
-            <div className="flex flex-wrap gap-4 pt-4">
-              <button
-                onClick={() => {
-                  const opts =
-                    supercarData.popularOptions?.map((o: { name: string }) => o.name) ?? [];
-                  console.log('Options:', opts);
-                  console.log('Full data:', supercarData);
-                  alert(`Extracted ${opts.length} options—check console.`);
-                }}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-              >
-                📊 Extract addedOptions
-              </button>
-              <button
-                onClick={() => {
-                  const integration = {
-                    make: supercarData.make,
-                    model: supercarData.model,
-                    year: supercarData.year,
-                    dealerPrice:
-                      supercarData.pricingData?.averageDealerPrice,
-                    baseMSRP: supercarData.pricingData?.baseMSRP,
-                    addedOptions:
-                      supercarData.popularOptions?.map((o: { name: string }) => o.name),
-                  };
-                  navigator.clipboard.writeText(
-                    JSON.stringify(integration, null, 2)
-                  );
-                  alert('Copied integration JSON');
-                }}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
-                📋 Copy Integration Data
-              </button>
-              <button
-                onClick={() => {
-                  console.log('Analysis data:', supercarData);
-                  alert('Logged analysis to console');
-                }}
-                className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-              >
-                📈 Analyze Results
-              </button>
+        {/* Popular Options */}
+        {supercarData?.popularOptions && (
+          <div>
+            <h3 className="font-semibold text-orange-600 mb-2">
+              🔧 POPULAR OPTIONS
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {supercarData.popularOptions.map((opt: { name: string; source: string }, idx: number) => (
+                <div key={idx} className="flex items-center bg-gray-100 p-3 rounded">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full mr-2" />
+                  <span className="flex-1">{opt.name}</span>
+                  <span className="text-xs bg-gray-200 px-2 py-1 rounded">
+                    {opt.source}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
+        )}
+
+        {/* Market Data */}
+        {supercarData?.marketData && (
+          <div>
+            <h3 className="font-semibold text-indigo-600 mb-2">
+              📊 MARKET DATA
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              <div>
+                <strong>Avg Price:</strong> £{supercarData.marketData.averagePrice.toLocaleString()}
+              </div>
+              <div>
+                <strong>Range:</strong> {supercarData.marketData.priceRange}
+              </div>
+              <div>
+                <strong>Listings:</strong> {supercarData.marketData.inventoryCount}
+              </div>
+              <div>
+                <strong>Source:</strong> {supercarData.marketData.dataSource}
+              </div>
+            </div>
+            <ul className="space-y-2">
+              {supercarData.marketData.listings.slice(0, 5).map((l: { title: string; price: string; specs: string }, i: number) => (
+                <li key={i} className="p-3 bg-gray-100 rounded">
+                  <p className="font-medium">{l.title}</p>
+                  <p className="text-sm">
+                    {l.price} • {l.specs}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Integration Actions */}
+        <div className="flex flex-wrap gap-4 pt-4">
+          <button
+            onClick={() => {
+              const opts = supercarData?.popularOptions?.map((o: { name: string }) => o.name) ?? [];
+              console.log('Options:', opts);
+              console.log('Full data:', supercarData);
+              alert(`Extracted ${opts.length} options—check console.`);
+            }}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            📊 Extract addedOptions
+          </button>
+          <button
+            onClick={() => {
+              const integration = {
+                make: supercarData?.make,
+                model: supercarData?.model,
+                year: supercarData?.year,
+                dealerPrice: supercarData?.pricingData?.averageDealerPrice,
+                baseMSRP: supercarData?.pricingData?.baseMSRP,
+                addedOptions: supercarData?.popularOptions?.map((o: { name: string }) => o.name),
+              };
+              navigator.clipboard.writeText(JSON.stringify(integration, null, 2));
+              alert('Copied integration JSON');
+            }}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            📋 Copy Integration Data
+          </button>
+          <button
+            onClick={() => {
+              console.log('Analysis data:', supercarData);
+              alert('Logged analysis to console');
+            }}
+            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+          >
+            📈 Analyze Results
+          </button>
         </div>
-      );
-    }
-  }
-  export default SupercarPricingAggregatorPage;
+      </div>
+    </div>
+  );
+}
+
+export default SupercarPricingAggregatorPage;
