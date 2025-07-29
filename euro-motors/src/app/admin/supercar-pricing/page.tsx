@@ -2,10 +2,16 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 
+
 import React from 'react';
 import { useState, useEffect, useRef } from 'react';
 // import { useCar } from '@/context/CarContext'; // commented out since it's not clear if the context exists
 // import { any // TODO: Restore ComprehensiveSPAData type, any // TODO: Restore SPASearchParams type } from '@/types/spa'; // commented out since it's not clear if the types exist
+
+import { useState, useEffect, useRef } from 'react';
+import { useCar } from '@/context/CarContext';
+import { ComprehensiveSPAData, SPASearchParams } from '@/types/spa';
+
 
 interface AutoCompleteState {
   makes: string[];
@@ -16,10 +22,23 @@ interface AutoCompleteState {
   yearsLoading: boolean;
 }
 
+
 // TODO: Restore SearchHistory type if available
 
 export default function SupercarPricingAggregatorPage() {
   const { addSPAResult } = /* useCar() // TODO: Restore if CarContext exists */;
+
+interface SearchHistory {
+  id: string;
+  params: SPASearchParams;
+  timestamp: Date;
+  resultSummary: string;
+  dataSource: string;
+}
+
+export default function SupercarPricingAggregatorPage() {
+  const { addSPAResult } = useCar();
+
 
   // ── Search State ─────────────────────────────────────────────────────
 
@@ -27,10 +46,18 @@ export default function SupercarPricingAggregatorPage() {
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [dataSource, setDataSource] = useState<
+
     'webbase' | 'database'
   >('webbase');
 
   const [supercarData, setSupercarData] = useState<any | null>(null);
+
+    'comprehensive' | 'database' | 'carquery' | 'manufacturer' | 'market'
+  >('comprehensive');
+
+  const [supercarData, setSupercarData] =
+    useState<ComprehensiveSPAData | null>(null);
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +77,12 @@ export default function SupercarPricingAggregatorPage() {
   const [showModelDropdown, setShowModelDropdown] =
     useState<boolean>(false);
 
+
   const [searchHistory, setSearchHistory] = useState<any[]>([]);
+
+  const [searchHistory, setSearchHistory] =
+    useState<SearchHistory[]>([]);
+
 
   const makeDropdownRef = useRef<HTMLDivElement>(null);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
@@ -111,7 +143,14 @@ export default function SupercarPricingAggregatorPage() {
   async function loadMakes() {
     try {
       setAutoComplete(prev => ({ ...prev, makesLoading: true }));
+
       const res = await fetch(`/api/spa/suggestions/makes`);
+
+      const url = dataSource === 'database'
+        ? `/api/db/makes${selectedMake ? `?search=${encodeURIComponent(selectedMake)}` : ''}`
+        : `/api/spa/suggestions/makes`;
+      const res = await fetch(url);
+
       if (!res.ok) throw new Error('Failed to load makes');
       const json = await res.json();
       setAutoComplete(prev => ({
@@ -128,9 +167,16 @@ export default function SupercarPricingAggregatorPage() {
   async function loadModels(make: string) {
     try {
       setAutoComplete(prev => ({ ...prev, modelsLoading: true }));
+
       const res = await fetch(
         `/api/spa/suggestions/models?make=${encodeURIComponent(make)}`
       );
+
+      const url = dataSource === 'database'
+        ? `/api/db/models?make=${encodeURIComponent(make)}${selectedModel ? `&search=${encodeURIComponent(selectedModel)}` : ''}`
+        : `/api/spa/suggestions/models?make=${encodeURIComponent(make)}`;
+      const res = await fetch(url);
+
       if (!res.ok) throw new Error('Failed to load models');
       const json = await res.json();
       setAutoComplete(prev => ({
@@ -147,9 +193,16 @@ export default function SupercarPricingAggregatorPage() {
   async function loadYears() {
     try {
       setAutoComplete(prev => ({ ...prev, yearsLoading: true }));
+
       const res = await fetch(
         `/api/spa/suggestions/years?make=${encodeURIComponent(selectedMake)}&model=${encodeURIComponent(selectedModel)}`
       );
+
+      const url = dataSource === 'database'
+        ? `/api/db/years?make=${encodeURIComponent(selectedMake)}&model=${encodeURIComponent(selectedModel)}`
+        : `/api/spa/suggestions/years?make=${encodeURIComponent(selectedMake)}&model=${encodeURIComponent(selectedModel)}`;
+      const res = await fetch(url);
+
       if (res.ok) {
         const json = await res.json();
         const yrs = Array.isArray(json.years)
@@ -201,11 +254,19 @@ export default function SupercarPricingAggregatorPage() {
     setSupercarData(null);
 
     try {
+
       const params: any = {
         make: selectedMake.trim(),
         model: selectedModel.trim(),
         year: selectedYear ? Number(selectedYear) : undefined,
         dataSource: dataSource === 'webbase' ? 'webbase' : 'database',
+
+      const params: SPASearchParams = {
+        make: selectedMake.trim(),
+        model: selectedModel.trim(),
+        year: selectedYear ? Number(selectedYear) : undefined,
+        dataSource,
+
       };
       const res = await fetch('/api/spa/search', {
         method: 'POST',
@@ -231,10 +292,17 @@ export default function SupercarPricingAggregatorPage() {
             : new Date().getFullYear(),
           data: json.data,
           searchedAt: new Date(),
+
           source: dataSource === 'webbase' ? 'webbase' : 'database',
         });
 
         const entry: any = {
+
+          source: dataSource,
+        });
+
+        const entry: SearchHistory = {
+
           id: Date.now().toString(),
           params,
           timestamp: new Date(),
@@ -242,7 +310,11 @@ export default function SupercarPricingAggregatorPage() {
             json.data.pricingData?.averageDealerPrice
               ?.toLocaleString() ?? 'N/A'
           }`,
+
           dataSource: dataSource === 'webbase' ? 'webbase' : 'database',
+
+          dataSource: json.data.dataSource,
+
         };
         setSearchHistory(prev => [entry, ...prev.slice(0, 9)]);
       } else {
@@ -297,6 +369,7 @@ export default function SupercarPricingAggregatorPage() {
           <h2 className="text-2xl font-semibold mb-4">
             Data Source Selection
           </h2>
+
           <div className="flex flex-wrap gap-4">
             {/* Webbase Source */}
             <button
@@ -332,6 +405,30 @@ export default function SupercarPricingAggregatorPage() {
               </span>
               <span className="text-gray-700 text-sm">Local data only. Use for owned/imported cars or when APIs are unavailable.</span>
             </button>
+
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                'comprehensive',
+                'carquery',
+                'manufacturer',
+                'market',
+                'database',
+              ] as const
+            ).map(src => (
+              <button
+                key={src}
+                onClick={() => setDataSource(src)}
+                className={`px-4 py-2 rounded-lg border ${
+                  dataSource === src
+                    ? 'bg-blue-100 border-blue-500'
+                    : 'border-gray-300'
+                }`}
+              >
+                {src.charAt(0).toUpperCase() + src.slice(1)}
+              </button>
+            ))}
+
           </div>
         </div>
 

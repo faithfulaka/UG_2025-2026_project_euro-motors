@@ -16,15 +16,25 @@ export async function GET(request: NextRequest) {
       prisma.buyCar.findMany({
         select: { year: true },
         where: {
+
           make: { equals: make },
           model: { equals: model },
+
+          make: { equals: make, mode: 'insensitive' },
+          model: { equals: model, mode: 'insensitive' },
+
         },
       }),
       prisma.rentalCar.findMany({
         select: { year: true },
         where: {
+
           make: { equals: make },
           model: { equals: model },
+
+          make: { equals: make, mode: 'insensitive' },
+          model: { equals: model, mode: 'insensitive' },
+
         },
       }),
     ]);

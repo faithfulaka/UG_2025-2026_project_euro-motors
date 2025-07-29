@@ -11,11 +11,19 @@ export async function GET(request: NextRequest) {
     const [buyMakes, rentMakes] = await Promise.all([
       prisma.buyCar.findMany({
         select: { make: true },
+
         where: search ? { make: { contains: search } } : undefined,
       }),
       prisma.rentalCar.findMany({
         select: { make: true },
         where: search ? { make: { contains: search } } : undefined,
+
+        where: search ? { make: { contains: search, mode: 'insensitive' } } : undefined,
+      }),
+      prisma.rentalCar.findMany({
+        select: { make: true },
+        where: search ? { make: { contains: search, mode: 'insensitive' } } : undefined,
+
       }),
     ]);
 
