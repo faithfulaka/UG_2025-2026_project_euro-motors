@@ -15,10 +15,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   
-  const { id } = params;
-  
   // Get car type from query params
-  const { searchParams } = new URL(request.url);
+  const { searchParams } = url;
   const type = searchParams.get('type') || 'buy';
   
   try {
@@ -103,10 +101,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest) {
+  // Extract id from the URL path
+  const url = new URL(request.url);
+  const pathParts = url.pathname.split('/').filter(Boolean);
+  const id = pathParts[pathParts.length - 1] || '';
   // Verify admin user
   const isAdmin = await verifyAdmin(request);
   
@@ -114,12 +113,10 @@ export async function PUT(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   
-  const { id } = params;
-  
   // Get car type from query params
-  const { searchParams } = new URL(request.url);
+  const { searchParams } = url;
   const type = searchParams.get('type') || 'buy';
-  
+
   try {
     const data = await request.json();
     
@@ -202,10 +199,11 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest) {
+  // Extract id from the URL path
+  const url = new URL(request.url);
+  const pathParts = url.pathname.split('/').filter(Boolean);
+  const id = pathParts[pathParts.length - 1] || '';
   // Verify admin user
   const isAdmin = await verifyAdmin(request);
   
@@ -213,12 +211,10 @@ export async function DELETE(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   
-  const { id } = params;
-  
   // Get car type from query params
-  const { searchParams } = new URL(request.url);
+  const { searchParams } = url;
   const type = searchParams.get('type') || 'buy';
-  
+
   try {
     if (type === 'buy') {
       // Check if car exists
