@@ -6,13 +6,25 @@ export interface NHTSABaseMSRP {
   msrp: number;
 }
 
-export async function getBaseMSRP(make: string, model: string, year: number): Promise<NHTSABaseMSRP | null> {
-  const url = `https://vpic.nhtsa.dot.gov/api/vehicles/GetVehicleVariableValuesList/vehicle?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&modelYear=${year}&format=json`;
+export async function getBaseMSRP(
+  make: string,
+  model: string,
+  year: number
+): Promise<NHTSABaseMSRP | null> {
+  const url = `https://vpic.nhtsa.dot.gov/api/vehicles/GetVehicleVariableValuesList/vehicle` +
+    `?make=${encodeURIComponent(make)}` +
+    `&model=${encodeURIComponent(model)}` +
+    `&modelYear=${year}&format=json`;
+
   const res = await fetch(url);
   if (!res.ok) return null;
   const json = await res.json();
-  // parse JSON for MSRP field (if available)
-  interface NHTSAResult { VariableName: string; VehicleTypeName: string; Value: string; }
+
+  interface NHTSAResult {
+    VariableName: string;
+    VehicleTypeName: string;
+    Value: string;
+  }
   const results: NHTSAResult[] = json.Results;
   const msrpEntry = results.find(r => r.VariableName === 'BaseMSRP');
   return msrpEntry

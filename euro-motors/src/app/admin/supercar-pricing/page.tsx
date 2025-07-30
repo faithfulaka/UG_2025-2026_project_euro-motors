@@ -1,5 +1,6 @@
+//src/app/admin/supercar-pricing/page.tsx
 'use client';
-
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -42,10 +43,12 @@ export default function SupercarPricingPage() {
   // Load models when make changes
   useEffect(() => {
     if (selectedMake) {
-      loadModels();
+      loadModels('');
     } else {
       setModelOptions([]);
       setSelectedModel('');
+      setYearOptions([]);
+      setSelectedYear('');
     }
   }, [selectedMake]);
 
@@ -57,13 +60,14 @@ export default function SupercarPricingPage() {
       setYearOptions([]);
       setSelectedYear('');
     }
-  }, [selectedModel]);
+  }, [selectedModel, selectedMake]);
 
-  const loadMakes = async () => {
+  // Fetch makes matching `query`
+  const loadMakes = async (query: string = '') => {
     try {
       setShowMakeDropdown(true);
       const res = await axios.get('/api/spa/suggestions/makes', {
-        params: { source: 'combined', search: selectedMake }
+        params: { source: 'combined', search: query },
       });
       setMakeOptions(res.data.makes || []);
     } catch (err) {
@@ -71,15 +75,17 @@ export default function SupercarPricingPage() {
     }
   };
 
-  const loadModels = async () => {
+  // Fetch models for selectedMake matching `query`
+  const loadModels = async (query: string = '') => {
+    if (!selectedMake) return;
     try {
       setShowModelDropdown(true);
       const res = await axios.get('/api/spa/suggestions/models', {
         params: {
           source: 'combined',
           make: selectedMake,
-          search: selectedModel
-        }
+          search: query,
+        },
       });
       setModelOptions(res.data.models || []);
     } catch (err) {
@@ -87,15 +93,17 @@ export default function SupercarPricingPage() {
     }
   };
 
+  // Fetch years for selectedMake + selectedModel
   const loadYears = async () => {
+    if (!selectedMake || !selectedModel) return;
     try {
       setShowYearDropdown(true);
       const res = await axios.get('/api/spa/suggestions/years', {
         params: {
           source: 'combined',
           make: selectedMake,
-          model: selectedModel
-        }
+          model: selectedModel,
+        },
       });
       setYearOptions(res.data.years || []);
     } catch (err) {
@@ -103,6 +111,7 @@ export default function SupercarPricingPage() {
     }
   };
 
+  // Trigger the combined search
   const handleGetData = async () => {
     if (!selectedMake || !selectedModel || !selectedYear) {
       setSearchError('Please select Make, Model, and Year.');
@@ -113,7 +122,7 @@ export default function SupercarPricingPage() {
       const res = await axios.post('/api/spa/search', {
         make: selectedMake,
         model: selectedModel,
-        year: selectedYear
+        year: selectedYear,
       });
       setSupercarData(res.data);
     } catch (err: any) {
@@ -142,10 +151,17 @@ export default function SupercarPricingPage() {
               type="text"
               value={selectedMake}
               onChange={(e) => {
-                setSelectedMake(e.target.value);
-                loadMakes();
+                const v = e.target.value;
+                setSelectedMake(v);
+                setSelectedModel('');
+                setModelOptions([]);
+                setSelectedYear('');
+                setYearOptions([]);
+                loadMakes(v);
               }}
-              onFocus={() => loadMakes()}
+              onFocus={() => {
+                loadMakes(selectedMake);
+              }}
               placeholder="Type to search makes..."
               className="w-full border rounded px-3 py-2 text-black focus:outline-none focus:ring"
             />
@@ -158,6 +174,10 @@ export default function SupercarPricingPage() {
                     onClick={() => {
                       setSelectedMake(m);
                       setShowMakeDropdown(false);
+                      setSelectedModel('');
+                      setModelOptions([]);
+                      setSelectedYear('');
+                      setYearOptions([]);
                     }}
                   >
                     {m}
@@ -176,10 +196,15 @@ export default function SupercarPricingPage() {
               type="text"
               value={selectedModel}
               onChange={(e) => {
-                setSelectedModel(e.target.value);
-                loadModels();
+                const v = e.target.value;
+                setSelectedModel(v);
+                setSelectedYear('');
+                setYearOptions([]);
+                loadModels(v);
               }}
-              onFocus={() => loadModels()}
+              onFocus={() => {
+                loadModels(selectedModel);
+              }}
               placeholder="Type to search models..."
               className="w-full border rounded px-3 py-2 text-black focus:outline-none focus:ring"
             />
@@ -192,6 +217,8 @@ export default function SupercarPricingPage() {
                     onClick={() => {
                       setSelectedModel(m);
                       setShowModelDropdown(false);
+                      setSelectedYear('');
+                      setYearOptions([]);
                     }}
                   >
                     {m}
@@ -209,7 +236,9 @@ export default function SupercarPricingPage() {
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              onFocus={() => loadYears()}
+              onFocus={() => {
+                if (selectedMake && selectedModel) loadYears();
+              }}
               className="w-full border rounded px-3 py-2 text-black focus:outline-none focus:ring"
             >
               <option value="">Select Year</option>
@@ -238,7 +267,7 @@ export default function SupercarPricingPage() {
         </div>
       </div>
 
-      {/* Display Specifications */}
+      {/* Specifications */}
       {supercarData?.basicSpecs && (
         <div className="my-6 bg-white p-6 rounded-lg shadow">
           <h3 className="text-xl font-semibold text-black mb-2">
@@ -250,7 +279,7 @@ export default function SupercarPricingPage() {
         </div>
       )}
 
-      {/* Display Full Raw Response */}
+      {/* Raw Response */}
       {supercarData && (
         <div className="my-6 bg-white p-6 rounded-lg shadow">
           <h3 className="text-xl font-semibold text-black mb-2">

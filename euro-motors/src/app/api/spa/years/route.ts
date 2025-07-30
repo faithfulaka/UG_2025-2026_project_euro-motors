@@ -1,47 +1,23 @@
-// src/app/api/spa/years/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { carQueryService } from '@/lib/services';
 
-
-export async function GET(request: NextRequest) {
-  // DEV ONLY: Bypass auth in development for backend test script
-  if (process.env.NODE_ENV === 'development') {
-    process.env.SKIP_AUTH = 'true';
-  }
-  const url = new URL(request.url);
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
   const make = url.searchParams.get('make') || '';
   const model = url.searchParams.get('model') || '';
+
   if (!make || !model) {
-    console.warn('[API/years] No make or model provided in query. Returning empty array.');
-    return NextResponse.json({ years: [], make, model, source: 'autotrader-live', timestamp: new Date().toISOString() });
+    return NextResponse.json({ years: [] });
   }
+
   try {
-    const resp = await fetch(`http://localhost:4001/years?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`);
-    if (!resp.ok) throw new Error('Failed to fetch years from scraper backend');
-    let { years } = await resp.json();
-    // Normalize, deduplicate, sort descending
-    years = Array.from(new Set((years as (string|number)[]).map((y: string|number) => typeof y === 'string' ? y.trim() : y)))
-      .filter(Boolean)
-      .sort((b: string|number, a: string|number) => Number(a) - Number(b));
-    console.log(`[API/years] Returning ${years.length} years for make: ${make}, model: ${model}`);
-    if (years.length === 0) {
-      console.warn(`[API/years] No years found for make: ${make}, model: ${model} from live scraper!`);
-    }
-    return NextResponse.json({
-      years,
-      make,
-      model,
-      source: 'autotrader-live',
-      timestamp: new Date().toISOString()
-    });
+    // Pull available years from CarQuery service
+    const years = await carQueryService.getYears(make, model);
+    // CarQuery returns numbers; ensure deduped & sorted desc
+    const uniq = Array.from(new Set(years)).sort((a, b) => Number(b) - Number(a));
+    return NextResponse.json({ years: uniq });
   } catch (error) {
-    console.error('[API/years] Critical error:', error);
-    return NextResponse.json({
-      years: [],
-      make,
-      model,
-      error: (error as Error).message,
-      source: 'autotrader-live',
-      timestamp: new Date().toISOString()
-    }, { status: 500 });
+    console.error('[SPA suggestions/years] Error fetching years:', error);
+    return NextResponse.json({ years: [] }, { status: 500 });
   }
 }

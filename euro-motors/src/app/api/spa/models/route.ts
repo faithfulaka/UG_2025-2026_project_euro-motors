@@ -1,3 +1,4 @@
+//src/app/api/spa/models/route.ts
 import type { NextRequest }    from 'next/server';
 import     { NextResponse }   from 'next/server';
 import     { prisma }         from '@/lib/prisma';
