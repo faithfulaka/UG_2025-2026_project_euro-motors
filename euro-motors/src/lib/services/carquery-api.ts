@@ -105,13 +105,13 @@ class CarQueryAPI {
     return makes;
   }
 
-  async getVehicleInfo(make: string, model: string, year: string): Promise<CarQueryTrim | null> {
+  async getVehicleInfo(make: string, model: string, year: string | number): Promise<CarQueryTrim | null> {
     try {
       const response = await fetch(
-        `${this.baseUrl}?callback=?&cmd=getTrims&make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&year=${encodeURIComponent(year)}`
+        `${this.baseUrl}?callback=?&cmd=getTrims&make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&year=${encodeURIComponent(String(year))}`
       );
       const text = await response.text();
-      const jsonp = text.replace(/^[^(]*\((.*)\);?$/, '$1');
+      const jsonp = text.replace(/^[^(]*\(([\s\S]*)\);?$/, '$1');
       const data = JSON.parse(jsonp);
       return data.Trims?.[0] || null;
     } catch (error) {
@@ -123,7 +123,7 @@ class CarQueryAPI {
     try {
       const response = await fetch(`${this.baseUrl}?callback=?&cmd=getMakes`);
       const text = await response.text();
-      const jsonp = text.replace(/^[^(]*\((.*)\);?$/, '$1');
+      const jsonp = text.replace(/^[^(]*\(([\s\S]*)\);?$/, '$1');
       const data = JSON.parse(jsonp);
       return data;
     } catch (error) {
@@ -145,7 +145,7 @@ class CarQueryAPI {
     try {
       const response = await fetch(`${this.baseUrl}?callback=?&cmd=getModels&make=${make}`);
       const text = await response.text();
-      const jsonp = text.replace(/^[^(]*\((.*)\);?$/, '$1');
+      const jsonp = text.replace(/^[^(]*\(([\s\S]*)\);?$/, '$1');
       const data = JSON.parse(jsonp);
       return data;
     } catch (error) {
@@ -170,7 +170,7 @@ class CarQueryAPI {
       
       const response = await fetch(url);
       const text = await response.text();
-      const jsonp = text.replace(/^[^(]*\((.*)\);?$/, '$1');
+      const jsonp = text.replace(/^[^(]*\(([\s\S]*)\);?$/, '$1');
       const data = JSON.parse(jsonp);
       return data;
     } catch (error) {
