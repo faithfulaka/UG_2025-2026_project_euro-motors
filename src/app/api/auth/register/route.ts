@@ -1,0 +1,64 @@
+// src/app/api/auth/register/route.ts
+import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import { prisma } from '@/lib/prisma';
+
+export async function POST(request: Request) {
+  try {
+    const { name, email, password } = await request.json();
+
+    if (!name || !email || !password) {
+      return NextResponse.json(
+        { message: 'Name, email, and password are required' },
+        { status: 400 }
+      );
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { message: 'Please enter a valid email address' },
+        { status: 400 }
+      );
+    }
+
+    if (password.length < 8 || !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+      return NextResponse.json(
+        {
+          message:
+            'Password must be at least 8 characters, include uppercase, lowercase, and a number'
+        },
+        { status: 400 }
+      );
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return NextResponse.json({ message: 'Email already registered' }, { status: 409 });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await prisma.user.create({
+      data: { name, email, password: hashedPassword, role: 'USER' }
+    });
+
+    return NextResponse.json(
+      {
+        message: 'User registered successfully',
+        user: {
+          id: newUser.id,
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+        }
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('❌ Registration error:', error);
+    return NextResponse.json(
+      { message: 'An error occurred during registration' },
+      { status: 500 }
+    );
+  }
+}
