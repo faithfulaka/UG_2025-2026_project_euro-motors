@@ -1,59 +1,59 @@
-// src/app/api/spa/makes/route.ts 
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { carQueryService } from '@/lib/services/carquery-api';
+import type { SPAMakesResponse, SPAError } from '@/types/spa';
 
-import type { NextRequest }    from 'next/server';
-import     { NextResponse }   from 'next/server';
-import     { prisma }         from '@/lib/prisma';
-import type { SPAMakesResponse } from '@/types/spa';
+const VALID_SOURCES = ['database', 'carquery', 'combined'] as const;
+type Source = typeof VALID_SOURCES[number];
 
 export async function GET(request: NextRequest) {
-  const url    = new URL(request.url);
-  const source = (url.searchParams.get('source') as 'database' | 'combined') ?? 'combined';
+  const url = request.nextUrl;
+  const sourceParam = url.searchParams.get('source') ?? 'combined';
+  const source: Source = (VALID_SOURCES.includes(sourceParam as any)
+    ? sourceParam
+    : 'combined') as Source;
 
-  let makes: string[];
-  if (source === 'database') {
-    const rows = await prisma.buyCar.findMany({
-      distinct: ['make'],
-      select:   { make: true }
-    });
-    makes = rows.map(r => r.make);
-  } else {
-    // database + CarQuery
-    const dbRows   = await prisma.buyCar.findMany({ distinct: ['make'], select: { make: true } });
-    const dbMakes  = dbRows.map(r => r.make);
+  try {
+    let makes: string[] = [];
 
-    const resp     = await fetch(
-      'https://www.carqueryapi.com/api/0.3/?callback=?&cmd=getMakes'
-    );
-    const text = await resp.text();
-    // Robust JSONP stripping for CarQuery
-    let jsonStr = text.trim();
-    if (jsonStr.startsWith('?(')) jsonStr = jsonStr.slice(2);
-    if (jsonStr.endsWith(');')) jsonStr = jsonStr.slice(0, -2);
-    else if (jsonStr.endsWith(';')) jsonStr = jsonStr.slice(0, -1);
-    // Fallback: find first { and last }
-    const firstBrace = jsonStr.indexOf('{');
-    const lastBrace = jsonStr.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1) {
-      jsonStr = jsonStr.slice(firstBrace, lastBrace + 1);
-    }
-    let apiMakes: string[] = [];
-    try {
-      const parsed = JSON.parse(jsonStr) as { Makes: Array<{ make_display: string }> };
-      apiMakes = Array.isArray(parsed.Makes) ? parsed.Makes.map(m => m.make_display) : [];
-    } catch {
-      apiMakes = [];
+    if (source === 'database' || source === 'combined') {
+      const rows = await prisma.buyCar.findMany({
+        distinct: ['make'],
+        select: { make: true },
+      });
+      makes = rows.map((r) => r.make);
     }
 
-    makes = Array.from(new Set([...dbMakes, ...apiMakes])).sort();
+    if (source === 'carquery' || source === 'combined') {
+      const cq = await carQueryService.getMakes();
+      makes =
+        source === 'combined'
+          ? Array.from(new Set([...makes, ...cq])).sort()
+          : cq;
+    }
+
+    const response: SPAMakesResponse = {
+      success: true,
+      makes,
+      source,
+      cached: false,
+      timestamp: new Date().toISOString(),
+    };
+    return NextResponse.json(response);
+  } catch (err: unknown) {
+    const error: SPAError = {
+      code: 'MAKES_ERROR',
+      message: err instanceof Error ? err.message : String(err),
+    };
+    const response: SPAMakesResponse = {
+      success: false,
+      makes: [],
+      source,
+      cached: false,
+      timestamp: new Date().toISOString(),
+      error,
+    };
+    return NextResponse.json(response, { status: 500 });
   }
-
-  const body: SPAMakesResponse = {
-    success:   true,
-    makes,
-    source,
-    cached:    false,
-    timestamp: new Date().toISOString()
-  };
-
-  return NextResponse.json(body);
 }

@@ -61,19 +61,8 @@ export default function RentalCarDetailPage() {
 
     addToCart({
       type: 'rent',
-      car: {
-        make: car.make,
-        model: car.model,
-        year: car.year,
-        price: car.dailyRate // Use dailyRate as price for CartItem
-      },
-      carId: car.id,
-      carMake: car.make,
-      carModel: car.model,
-      carYear: car.year,
-      price: car.dailyRate, // Use dailyRate as price for CartItem
+      car,
       quantity: 1,
-      addedAt: new Date(),
       rentalDates: {
         startDate: new Date(startDate),
         endDate: new Date(endDate),

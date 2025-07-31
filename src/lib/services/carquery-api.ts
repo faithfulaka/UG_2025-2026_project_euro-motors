@@ -1,69 +1,41 @@
 // src/lib/services/carquery-api.ts
-import type { CarQueryMake, CarQueryModel, CarQueryTrim } from '@/types/spa';
 
-const CARQUERY_BASE = process.env.CARQUERY_BASE_URL || 'https://www.carqueryapi.com/api/0.3/';
+const CARQUERY_BASE = 'https://www.carqueryapi.com/api/0.3/';
 
-async function stripJSONP(text: string): Promise<string> {
-  let jsonStr = text.trim();
-  if (jsonStr.startsWith('?(')) jsonStr = jsonStr.slice(2);
-  if (jsonStr.endsWith(');')) jsonStr = jsonStr.slice(0, -2);
-  else if (jsonStr.endsWith(';')) jsonStr = jsonStr.slice(0, -1);
-  const firstBrace = jsonStr.indexOf('{');
-  const lastBrace = jsonStr.lastIndexOf('}');
-  if (firstBrace !== -1 && lastBrace !== -1) {
-    jsonStr = jsonStr.slice(firstBrace, lastBrace + 1);
+export async function fetchCarDataFromCarQuery(make: string, model: string, year: string) {
+  const res = await fetch(
+    `${CARQUERY_BASE}?cmd=getTrims&make=${make}&model=${model}&year=${year}&sold_in_us=1`
+  );
+  const data = await res.json();
+
+  const trims = data?.Trims || [];
+
+  interface CarTrim {
+    make_display: string;
+    model_name: string;
+    model_year: string;
+    price?: string;
+    model_body?: string;
+    model_engine_position?: string;
+    model_engine_cc?: string;
+    model_engine_type?: string;
   }
-  return jsonStr;
-}
 
-/** Fetch all makes */
-export async function getMakes(): Promise<string[]> {
-  const resp = await fetch(`${CARQUERY_BASE}?callback=?&cmd=getMakes`);
-  const text = await resp.text();
-  const jsonStr = await stripJSONP(text);
-  const parsed = JSON.parse(jsonStr) as { Makes: CarQueryMake[] };
-  return Array.isArray(parsed.Makes)
-    ? parsed.Makes.map(m => m.make_display)
-    : [];
-}
+  const bestTrim = trims.find((t: CarTrim) => t.make_display && t.model_name && t.model_year);
 
-/** Fetch all models for a given make */
-export async function getModels(make: string): Promise<string[]> {
-  const resp = await fetch(
-    `${CARQUERY_BASE}?callback=?&cmd=getModels&make=${encodeURIComponent(make)}`
-  );
-  const text = await resp.text();
-  const jsonStr = await stripJSONP(text);
-  const parsed = JSON.parse(jsonStr) as { Models: CarQueryModel[] };
-  return Array.isArray(parsed.Models)
-    ? parsed.Models.map(m => m.model_name)
-    : [];
-}
-
-/** Fetch all years for a given make/model */
-export async function getYears(make: string, model: string): Promise<number[]> {
-  const resp = await fetch(
-    `${CARQUERY_BASE}?callback=?&cmd=getYears&make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`
-  );
-  const text = await resp.text();
-  const jsonStr = await stripJSONP(text);
-  const parsed = JSON.parse(jsonStr) as { Years: string[] };
-  return Array.isArray(parsed.Years)
-    ? parsed.Years.map(y => Number(y))
-    : [];
-}
-
-/** Fetch detailed car trim data for a given make/model/year */
-export async function getCarData(
-  make: string,
-  model: string,
-  year: string | number
-): Promise<CarQueryTrim[]> {
-  const resp = await fetch(
-    `${CARQUERY_BASE}?callback=?&cmd=getTrims&make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&year=${encodeURIComponent(String(year))}`
-  );
-  const text = await resp.text();
-  const jsonStr = await stripJSONP(text);
-  const parsed = JSON.parse(jsonStr) as { Trims: CarQueryTrim[] };
-  return Array.isArray(parsed.Trims) ? parsed.Trims : [];
+  return {
+    specs: {
+      model_make_id: make,
+      model_name: model,
+      model_year: year,
+      model_body: bestTrim?.model_body ?? null,
+      model_engine_cc: bestTrim?.model_engine_cc ?? null,
+      model_engine_type: bestTrim?.model_engine_type ?? null,
+    },
+    pricing: {
+      baseMSRP: bestTrim?.price ? parseFloat(bestTrim.price) : null,
+    },
+    ownership: {},
+    performance: {},
+  };
 }

@@ -17,41 +17,24 @@ export default async function BuyPage() {
   });
 
   // Parse JSON fields safely
-  type RawBuyCar = Omit<BuyCar, 'baseMSRP' | 'specifications' | 'features' | 'standardEquipment' | 'addedOptions' | 'performanceData' | 'supercarData' | 'pricingData'> & {
-    baseMSRP?: number | null;
-    specifications?: unknown;
-    features?: unknown;
-    standardEquipment?: unknown;
-    addedOptions?: unknown;
-    performanceData?: unknown;
-    supercarData?: unknown;
-    pricingData?: unknown;
-  };
-const parsedCars = cars.map((car: RawBuyCar) => ({
+  const parsedCars = cars.map((car: any) => ({
     ...car,
-
-    standardEquipment: typeof car.standardEquipment === 'string'
-      ? (car.standardEquipment ? JSON.parse(car.standardEquipment) : [])
-      : (car.standardEquipment ?? []),
-    addedOptions: typeof car.addedOptions === 'string'
-      ? (car.addedOptions ? JSON.parse(car.addedOptions) : [])
-      : (car.addedOptions ?? []),
-    baseMSRP: car.baseMSRP === null ? undefined : car.baseMSRP,
     specifications: typeof car.specifications === 'string'
-      ? (car.specifications ? JSON.parse(car.specifications) : {})
-      : (car.specifications ?? {}),
+      ? JSON.parse(car.specifications)
+      : car.specifications,
     features: typeof car.features === 'string'
-      ? (car.features ? JSON.parse(car.features) : {})
-      : (car.features ?? {}),
-    performanceData: typeof car.performanceData === 'string'
-      ? (car.performanceData ? JSON.parse(car.performanceData) : undefined)
-      : (car.performanceData ?? undefined),
-    supercarData: typeof car.supercarData === 'string'
-      ? (car.supercarData ? JSON.parse(car.supercarData) : undefined)
-      : (car.supercarData ?? undefined),
-    pricingData: typeof car.pricingData === 'string'
-      ? (car.pricingData ? JSON.parse(car.pricingData) : undefined)
-      : (car.pricingData ?? undefined)
+      ? JSON.parse(car.features)
+      : car.features,
+    standardEquipment: car.standardEquipment
+      ? (typeof car.standardEquipment === 'string'
+          ? JSON.parse(car.standardEquipment)
+          : car.standardEquipment)
+      : [],
+    addedOptions: car.addedOptions
+      ? (typeof car.addedOptions === 'string'
+          ? JSON.parse(car.addedOptions)
+          : car.addedOptions)
+      : []
   })) as BuyCar[];
 
   return (

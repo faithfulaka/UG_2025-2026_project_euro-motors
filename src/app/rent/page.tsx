@@ -2,7 +2,6 @@
 import Link from 'next/link';
 import CarSlideshow from '@/components/ui/CarSlideshow';
 import { prisma } from '@/lib/prisma';
-import { RentalCar } from '@/types/cars';
 
 export default async function RentPage() {
   // Fetch rental cars from database
@@ -12,31 +11,11 @@ export default async function RentPage() {
   });
 
   // Parse JSON fields stored in database
-  type RawRentalCar = Omit<RentalCar, 'baseMSRP' | 'specifications' | 'features' | 'supercarData' | 'performanceData' | 'stripeProductId'> & {
-    baseMSRP?: number | null;
-    specifications?: unknown;
-    features?: unknown;
-    supercarData?: unknown;
-    performanceData?: unknown;
-    stripeProductId?: string | null;
-  };
-  const parsedCars = cars.map((car: RawRentalCar) => ({
+  const parsedCars = cars.map(car => ({
     ...car,
-    specifications: typeof car.specifications === 'string'
-      ? (car.specifications ? JSON.parse(car.specifications) : {})
-      : (car.specifications ?? {}),
-    features: typeof car.features === 'string'
-      ? (car.features ? JSON.parse(car.features) : {})
-      : (car.features ?? {}),
-    supercarData: typeof car.supercarData === 'string'
-      ? (car.supercarData ? JSON.parse(car.supercarData) : undefined)
-      : (car.supercarData ?? undefined),
-    performanceData: typeof car.performanceData === 'string'
-      ? (car.performanceData ? JSON.parse(car.performanceData) : undefined)
-      : (car.performanceData ?? undefined),
-    baseMSRP: car.baseMSRP === null ? undefined : car.baseMSRP,
-    stripeProductId: car.stripeProductId === null ? undefined : car.stripeProductId
-  })) as RentalCar[];
+    specifications: JSON.parse(car.specifications as string),
+    features: JSON.parse(car.features as string)
+  }));
 
 
   return (

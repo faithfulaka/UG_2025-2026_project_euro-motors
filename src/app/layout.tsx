@@ -1,4 +1,4 @@
-// src/app/layout.tsx 
+// src/app/layout.tsx - CONDITIONAL USER NAVBAR (Fixed)
 import './globals.css';
 import { Inter } from 'next/font/google';
 import ConditionalNavbar from '@/components/layout/ConditionalNavbar';

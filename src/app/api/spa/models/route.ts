@@ -1,66 +1,77 @@
-//src/app/api/spa/models/route.ts
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { carQueryService } from '@/lib/services/carquery-api';
+import type { SPAModelsResponse, SPAError } from '@/types/spa';
 
-import type { NextRequest }    from 'next/server';
-import     { NextResponse }   from 'next/server';
-import     { prisma }         from '@/lib/prisma';
-import type { SPAModelsResponse } from '@/types/spa';
+const VALID_SOURCES = ['database', 'carquery', 'combined'] as const;
+type Source = typeof VALID_SOURCES[number];
 
 export async function GET(request: NextRequest) {
-  const url    = new URL(request.url);
-  const make   = url.searchParams.get('make')   ?? '';
-  const source = (url.searchParams.get('source') as 'database' | 'combined') ?? 'combined';
+  const url = request.nextUrl;
+  const make = url.searchParams.get('make')?.trim();
+  const sourceParam = url.searchParams.get('source') ?? 'combined';
+  const source: Source = (VALID_SOURCES.includes(sourceParam as any)
+    ? sourceParam
+    : 'combined') as Source;
 
-  let models: string[] = [];
-  if (make) {
-    if (source === 'database') {
-      const rows = await prisma.buyCar.findMany({
-        where:    { make },
-        distinct: ['model'],
-        select:   { model: true }
-      });
-      models = rows.map(r => r.model);
-    } else {
-      const dbRows    = await prisma.buyCar.findMany({
-        where:    { make },
-        distinct: ['model'],
-        select:   { model: true }
-      });
-      const dbModels  = dbRows.map(r => r.model);
-
-      const resp       = await fetch(
-        `https://www.carqueryapi.com/api/0.3/?callback=?&cmd=getModels&make=${encodeURIComponent(make)}`
-      );
-      const text = await resp.text();
-      // Robust JSONP stripping for CarQuery
-      let jsonStr = text.trim();
-      if (jsonStr.startsWith('?(')) jsonStr = jsonStr.slice(2);
-      if (jsonStr.endsWith(');')) jsonStr = jsonStr.slice(0, -2);
-      else if (jsonStr.endsWith(';')) jsonStr = jsonStr.slice(0, -1);
-      // Fallback: find first { and last }
-      const firstBrace = jsonStr.indexOf('{');
-      const lastBrace = jsonStr.lastIndexOf('}');
-      if (firstBrace !== -1 && lastBrace !== -1) {
-        jsonStr = jsonStr.slice(firstBrace, lastBrace + 1);
-      }
-      let apiModels: string[] = [];
-      try {
-        const parsed = JSON.parse(jsonStr) as { Models: Array<{ model_name: string }> };
-        apiModels = Array.isArray(parsed.Models) ? parsed.Models.map(m => m.model_name) : [];
-      } catch {
-        apiModels = [];
-      }
-
-      models = Array.from(new Set([...dbModels, ...apiModels])).sort();
-    }
+  if (!make) {
+    const error: SPAError = { code: 'MISSING_MAKE', message: 'make is required' };
+    const resp: SPAModelsResponse = {
+      success: false,
+      models: [],
+      make: '',
+      source,
+      cached: false,
+      timestamp: new Date().toISOString(),
+      error,
+    };
+    return NextResponse.json(resp, { status: 400 });
   }
 
-  const body: SPAModelsResponse = {
-    success:   true,
-    models,
-    make,
-    source,
-    cached:    false,
-    timestamp: new Date().toISOString()
-  };
-  return NextResponse.json(body);
+  try {
+    let models: string[] = [];
+
+    if (source === 'database' || source === 'combined') {
+      const rows = await prisma.buyCar.findMany({
+        where: { make },
+        distinct: ['model'],
+        select: { model: true },
+      });
+      models = rows.map((r) => r.model);
+    }
+
+    if (source === 'carquery' || source === 'combined') {
+      const cq = await carQueryService.getModels(make);
+      models =
+        source === 'combined'
+          ? Array.from(new Set([...models, ...cq])).sort()
+          : cq;
+    }
+
+    const response: SPAModelsResponse = {
+      success: true,
+      models,
+      make,
+      source,
+      cached: false,
+      timestamp: new Date().toISOString(),
+    };
+    return NextResponse.json(response);
+  } catch (err: unknown) {
+    const error: SPAError = {
+      code: 'MODELS_ERROR',
+      message: err instanceof Error ? err.message : String(err),
+    };
+    const resp: SPAModelsResponse = {
+      success: false,
+      models: [],
+      make,
+      source,
+      cached: false,
+      timestamp: new Date().toISOString(),
+      error,
+    };
+    return NextResponse.json(resp, { status: 500 });
+  }
 }
