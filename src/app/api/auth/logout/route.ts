@@ -1,9 +1,8 @@
-// src/app/api/auth/logout/route.ts 
+// src/app/api/auth/logout/route.ts
 import { NextResponse } from 'next/server';
 
 export async function POST() {
   try {
-    // Create response
     const response = NextResponse.json({ 
       success: true, 
       message: 'Logged out successfully' 
@@ -13,7 +12,7 @@ export async function POST() {
     response.cookies.set({
       name: 'token',
       value: '',
-      expires: new Date(0), // Expire immediately
+      expires: new Date(0),
       path: '/',
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -21,10 +20,7 @@ export async function POST() {
 
     return response;
   } catch (error) {
-    console.error('Logout error:', error);
-    return NextResponse.json(
-      { error: 'Logout failed' },
-      { status: 500 }
-    );
+    console.error('❌ Logout error:', error);
+    return NextResponse.json({ error: 'Logout failed' }, { status: 500 });
   }
 }

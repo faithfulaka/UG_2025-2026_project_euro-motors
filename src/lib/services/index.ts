@@ -1,2 +1,12 @@
 // src/lib/services/index.ts
-export { fetchCarDataFromCarQuery as carQueryService } from './carquery-api';
+import { getMakes, getModels, getYears, getCarData } from './carquery-api';
+
+/**
+ * CarQuery wrapper exposing all core methods
+ */
+export const carQueryService = {
+  getMakes,
+  getModels,
+  getYears,
+  getCarData,
+};

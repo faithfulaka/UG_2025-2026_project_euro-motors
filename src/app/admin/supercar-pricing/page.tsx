@@ -1,356 +1,176 @@
 // src/app/admin/supercar-pricing/page.tsx
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useCar } from '@/context/CarContext';
-import type { ComprehensiveSPAData, SPASearchParams, SPAServiceResponse, SPAMakesResponse, SPAModelsResponse, } from '@/types/spa';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import Image from 'next/image';
 
-// --- Types ---
-type DataSource = SPASearchParams['dataSource'];
-
-// --- Local types ---
-interface AutoCompleteState {
-  makes: string[];
-  models: string[];
-  years: number[];
-  makesLoading: boolean;
-  modelsLoading: boolean;
-  yearsLoading: boolean;
+interface CarSearchResult {
+  basicSpecs: {
+    model_make_id: string;
+    model_name: string;
+    model_year: string;
+    model_body?: string | null;
+    model_engine_cc?: string | null;
+    model_engine_type?: string | null;
+  };
+  pricingData: {
+    baseMSRP?: number | null;
+    marketRange?: string | null;
+    averageDealerPrice?: number | null;
+    dealerInventoryCount?: number | null;
+  };
+  ownershipCosts?: {
+    annualTax?: number | null;
+    insuranceGroup?: string | null;
+    fuelCostPerYear?: number | null;
+  };
+  performance?: {
+    depreciation?: unknown[];
+    engine?: string | null;
+  };
+  auctionHistory?: unknown[];
+  wikiSummary?: string;
+  image?: string | null;
 }
 
-// --- Component ---
-export default function SupercarPricingAggregatorPage() {
-  const { addSPAResult } = useCar();
-
-  // Search form state
-  const [selectedMake, setSelectedMake]   = useState('');
+const SupercarPricingPage = () => {
+  const [makes, setMakes] = useState<{ label: string; value: string }[]>([]);
+  const [models, setModels] = useState<{ label: string; value: string }[]>([]);
+  const [years, setYears] = useState<{ label: string; value: string }[]>([]);
+  const [searchResults, setSearchResults] = useState<CarSearchResult[]>([]);
+  const [selectedMake, setSelectedMake] = useState('');
   const [selectedModel, setSelectedModel] = useState('');
-  const [selectedYear, setSelectedYear]   = useState<string>('');
-  const [dataSource, setDataSource]       = useState<DataSource>('comprehensive');
+  const [selectedYear, setSelectedYear] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Results state
-  const [supercarData, setSupercarData] = useState<ComprehensiveSPAData | null>(null);
-  const [isLoading, setIsLoading]       = useState(false);
-  const [error, setError]               = useState<string | null>(null);
+  const fetchMakes = async (query: string) => {
+    const { data } = await axios.get(`/api/spa/suggestions/makes?source=combined&search=${query}`);
+    setMakes(data.makes.map((make: string) => ({ label: make, value: make })));
+  };
 
-  // Auto-complete state
-  const [autoComplete, setAutoComplete] = useState<AutoCompleteState>({
-    makes: [], models: [], years: [],
-    makesLoading: false, modelsLoading: false, yearsLoading: false,
-  });
+  const fetchModels = async (make: string, query: string) => {
+    const { data } = await axios.get(`/api/spa/suggestions/models?source=combined&make=${make}&search=${query}`);
+    setModels(data.models.map((model: string) => ({ label: model, value: model })));
+  };
 
-  // Dropdown visibility
-  const [showMakeDropdown, setShowMakeDropdown]   = useState(false);
-  const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const fetchYears = async (make: string, model: string) => {
+    const { data } = await axios.get(`/api/spa/suggestions/years?source=combined&make=${make}&model=${model}`);
+    setYears(data.years.map((year: string) => ({ label: year, value: year })));
+  };
 
-  // Refs for click-outside
-  const makeRef  = useRef<HTMLDivElement>(null);
-  const modelRef = useRef<HTMLDivElement>(null);
+  const fetchResults = async () => {
+    if (!selectedMake || !selectedModel || !selectedYear) return;
 
-  // --- Fetchers wrapped in useCallback ---
-  const loadMakes = useCallback(async () => {
-    setAutoComplete(a => ({ ...a, makesLoading: true }));
-    try {
-      const res = await fetch(`/api/spa/makes?source=${dataSource}`);
-      const js  = (await res.json()) as SPAMakesResponse;
-      setAutoComplete(a => ({
-        ...a,
-        makes: js.makes ?? [],
-        makesLoading: false,
-      }));
-    } catch {
-      setAutoComplete(a => ({ ...a, makesLoading: false }));
-    }
-  }, [dataSource]);
+    setIsLoading(true);
+    const { data } = await axios.post('/api/spa/search', {
+      make: selectedMake,
+      model: selectedModel,
+      year: selectedYear,
+    });
+    setSearchResults([data]);
+    setIsLoading(false);
+  };
 
-  const loadModels = useCallback(async (make: string) => {
-    setAutoComplete(a => ({ ...a, modelsLoading: true }));
-    try {
-      const res = await fetch(
-        `/api/spa/models?make=${encodeURIComponent(make)}&source=${dataSource}`
-      );
-      const js = (await res.json()) as SPAModelsResponse;
-      setAutoComplete(a => ({
-        ...a,
-        models: js.models ?? [],
-        modelsLoading: false,
-      }));
-    } catch {
-      setAutoComplete(a => ({ ...a, modelsLoading: false }));
-    }
-  }, [dataSource]);
-
-  const loadYears = useCallback(async () => {
-    setAutoComplete(a => ({ ...a, yearsLoading: true }));
-    try {
-      if (dataSource === 'database') {
-        const res = await fetch(
-          `/api/spa/suggestions?type=years&make=${encodeURIComponent(
-            selectedMake
-          )}&model=${encodeURIComponent(selectedModel)}`
-        );
-        if (res.ok) {
-          const { data } = await res.json() as { data?: Array<{ value: string }> };
-          const yrs = data?.map(d => parseInt(d.value, 10)).filter(Boolean) ?? [];
-          setAutoComplete(a => ({ ...a, years: yrs, yearsLoading: false }));
-          return;
-        }
-      }
-      // fallback last 6 years
-      const cy = new Date().getFullYear();
-      setAutoComplete(a => ({
-        ...a,
-        years: Array.from({ length: 6 }, (_, i) => cy - i),
-        yearsLoading: false,
-      }));
-    } catch {
-      setAutoComplete(a => ({ ...a, yearsLoading: false }));
-    }
-  }, [dataSource, selectedMake, selectedModel]);
-
-  // --- Effects ---
-  useEffect(() => { loadMakes(); }, [loadMakes]);
   useEffect(() => {
-    if (selectedMake.trim()) {
-      loadModels(selectedMake);
-      setSelectedModel(''); setSelectedYear('');
-    } else {
-      setAutoComplete(a => ({ ...a, models: [], years: [] }));
-    }
-  }, [selectedMake, loadModels]);
-  useEffect(() => {
-    if (selectedMake && selectedModel) {
-      loadYears();
-      setSelectedYear('');
-    } else {
-      setAutoComplete(a => ({ ...a, years: [] }));
-    }
-  }, [selectedMake, selectedModel, loadYears]);
-
-  // close dropdowns on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (makeRef.current && !makeRef.current.contains(e.target as Node)) {
-        setShowMakeDropdown(false);
-      }
-      if (modelRef.current && !modelRef.current.contains(e.target as Node)) {
-        setShowModelDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    fetchMakes('');
   }, []);
 
-  // --- Helpers ---
-  const filterList = (list: string[], q: string) =>
-    list.filter(x => x.toLowerCase().includes(q.toLowerCase())).slice(0, 10);
-
-  // --- Search handler ---
-  const handleSearch = useCallback(async () => {
-    if (!selectedMake || !selectedModel) {
-      setError('Please select make and model');
-      return;
+  useEffect(() => {
+    if (selectedMake) {
+      fetchModels(selectedMake, '');
     }
-    setIsLoading(true); setError(null);
-    try {
-      const params: SPASearchParams = {
-        make: selectedMake, model: selectedModel,
-        year: selectedYear ? +selectedYear : undefined,
-        dataSource,
-      };
-      const res  = await fetch('/api/spa/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
-      });
-      const js   = await res.json() as SPAServiceResponse<ComprehensiveSPAData>;
-      if (!js.success || !js.data) {
-        throw new Error(js.error?.message ?? 'No data');
-      }
-      setSupercarData(js.data);
-      addSPAResult({
-        id: `${params.make}-${params.model}-${params.year ?? 'any'}-${Date.now()}`,
-        make: params.make,
-        model: params.model,
-        year: params.year ?? new Date().getFullYear(),
-        data: js.data,
-        searchedAt: new Date(),
-        source: dataSource,
-      });
-    } catch (err: any) {
-      setError(err.message);
-      setSupercarData(null);
-    } finally {
-      setIsLoading(false);
+  }, [selectedMake]);
+
+  useEffect(() => {
+    if (selectedMake && selectedModel) {
+      fetchYears(selectedMake, selectedModel);
     }
-  }, [
-    selectedMake,
-    selectedModel,
-    selectedYear,
-    dataSource,
-    addSPAResult,
-  ]);
+  }, [selectedMake, selectedModel]);
 
-  // --- Options for dataSource picker ---
-  const sources: DataSource[] = [
-    'comprehensive',
-    'carquery',
-    'manufacturer',
-    'market',
-    'database',
-  ];
-
-  // --- Render ---
   return (
-    <div className="p-8 bg-gray-50">
-      <h1 className="text-3xl font-bold mb-4">Supercar Pricing Aggregator</h1>
+    <div className="p-6 text-black">
+      <h1 className="text-3xl font-bold mb-4">Supercar Pricing</h1>
 
-      {/* DataSource */}
-      <div className="mb-6">
-        <label className="block mb-2 font-medium">Data Source</label>
-        <div className="flex gap-2">
-          {sources.map(src => (
-            <button
-              key={src}
-              onClick={() => setDataSource(src)}
-              className={`px-3 py-1 rounded ${
-                dataSource === src
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white border'
-              }`}
-            >
-              {src}
-            </button>
+      <div className="flex gap-4 mb-4">
+        <input
+          type="text"
+          placeholder="Make"
+          className="border p-2 rounded w-1/4 text-black"
+          value={selectedMake}
+          onChange={(e) => {
+            const make = e.target.value;
+            setSelectedMake(make);
+            fetchMakes(make);
+          }}
+          list="make-options"
+        />
+        <datalist id="make-options">
+          {makes.map((make) => (
+            <option key={make.value} value={make.value} />
           ))}
-        </div>
-      </div>
+        </datalist>
 
-      {/* Quick Fill */}
-      <div className="mb-6 grid grid-cols-3 gap-4">
-        {[
-          { make: 'Bentley', model: 'Bentayga V8', year: 2022 },
-          { make: 'Rolls Royce', model: 'Cullinan V12', year: 2022 },
-          { make: 'Bentley', model: 'Continental GT V8', year: 2022 },
-        ].map((c, i) => (
-          <button
-            key={i}
-            onClick={() => {
-              setSelectedMake(c.make);
-              setSelectedModel(c.model);
-              setSelectedYear(String(c.year));
-              setDataSource('database');
-            }}
-            className="p-3 bg-white border rounded"
-          >
-            {c.make} {c.model} ({c.year})
-          </button>
-        ))}
-      </div>
+        <input
+          type="text"
+          placeholder="Model"
+          className="border p-2 rounded w-1/4 text-black"
+          value={selectedModel}
+          onChange={(e) => {
+            const model = e.target.value;
+            setSelectedModel(model);
+            fetchModels(selectedMake, model);
+          }}
+          list="model-options"
+        />
+        <datalist id="model-options">
+          {models.map((model) => (
+            <option key={model.value} value={model.value} />
+          ))}
+        </datalist>
 
-      {/* Search Form */}
-      <div className="bg-white p-6 rounded shadow mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Make */}
-        <div ref={makeRef} className="relative">
-          <input
-            value={selectedMake}
-            onChange={e => {
-              setSelectedMake(e.target.value);
-              setShowMakeDropdown(true);
-            }}
-            onFocus={() => setShowMakeDropdown(true)}
-            placeholder="Make"
-            className="w-full p-2 border rounded"
-          />
-          {showMakeDropdown && (
-            <ul className="absolute top-full left-0 right-0 bg-white border max-h-40 overflow-auto z-10">
-              {autoComplete.makesLoading
-                ? <li className="p-2">Loading…</li>
-                : filterList(autoComplete.makes, selectedMake).map((m,i) => (
-                    <li
-                      key={i}
-                      onClick={() => {
-                        setSelectedMake(m);
-                        setShowMakeDropdown(false);
-                      }}
-                      className="p-2 hover:bg-gray-100 cursor-pointer"
-                    >
-                      {m}
-                    </li>
-                  ))
-              }
-            </ul>
-          )}
-        </div>
-
-        {/* Model */}
-        <div ref={modelRef} className="relative">
-          <input
-            value={selectedModel}
-            onChange={e => {
-              setSelectedModel(e.target.value);
-              setShowModelDropdown(true);
-            }}
-            onFocus={() => setShowModelDropdown(true)}
-            placeholder="Model"
-            disabled={!selectedMake}
-            className="w-full p-2 border rounded disabled:bg-gray-100"
-          />
-          {showModelDropdown && selectedMake && (
-            <ul className="absolute top-full left-0 right-0 bg-white border max-h-40 overflow-auto z-10">
-              {autoComplete.modelsLoading
-                ? <li className="p-2">Loading…</li>
-                : filterList(autoComplete.models, selectedModel).map((m,i) => (
-                    <li
-                      key={i}
-                      onClick={() => {
-                        setSelectedModel(m);
-                        setShowModelDropdown(false);
-                      }}
-                      className="p-2 hover:bg-gray-100 cursor-pointer"
-                    >
-                      {m}
-                    </li>
-                  ))
-              }
-            </ul>
-          )}
-        </div>
-
-        {/* Year */}
         <select
+          className="border p-2 rounded w-1/4 text-black"
           value={selectedYear}
-          onChange={e => setSelectedYear(e.target.value)}
-          disabled={!selectedMake || !selectedModel}
-          className="w-full p-2 border rounded disabled:bg-gray-100"
+          onChange={(e) => setSelectedYear(e.target.value)}
         >
-          <option value="">Year (optional)</option>
-          {autoComplete.years.map(y => (
-            <option key={y} value={y}>{y}</option>
+          <option value="">Year</option>
+          {years.map((year) => (
+            <option key={year.value} value={year.value}>
+              {year.label}
+            </option>
           ))}
         </select>
 
-        {/* Search Button */}
         <button
-          onClick={handleSearch}
-          disabled={isLoading || !selectedMake || !selectedModel}
-          className="w-full bg-blue-600 text-white p-2 rounded disabled:opacity-50"
+          className="bg-black text-white px-4 py-2 rounded"
+          onClick={fetchResults}
+          disabled={isLoading}
         >
-          {isLoading ? 'Searching…' : '🔍 Get Data'}
+          {isLoading ? 'Searching...' : 'Search'}
         </button>
       </div>
 
-      {error && <p className="text-red-600 mb-4">{error}</p>}
-
-      {/* Results */}
-      {supercarData && (
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold">
-            {supercarData.make} {supercarData.model} ({supercarData.year})
-          </h2>
-          {/* render basicSpecifications, performanceData, pricingData, etc. */}
-          {/* … */}
-        </div>
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        {searchResults.map((car, index) => (
+          <div key={index} className="border p-4 rounded shadow text-black bg-white">
+            <h2 className="text-xl font-bold mb-2">{car.basicSpecs.model_make_id} {car.basicSpecs.model_name} {car.basicSpecs.model_year}</h2>
+            {car.image && (
+              <Image
+                src={car.image}
+                alt={`${car.basicSpecs.model_make_id} ${car.basicSpecs.model_name}`}
+                width={400}
+                height={250}
+                className="object-cover mb-2 rounded"
+              />
+            )}
+            <p><strong>MSRP:</strong> {car.pricingData.baseMSRP ? `£${car.pricingData.baseMSRP}` : 'N/A'}</p>
+            <p><strong>Engine:</strong> {car.performance?.engine || 'N/A'}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
-}
+};
+
+export default SupercarPricingPage;

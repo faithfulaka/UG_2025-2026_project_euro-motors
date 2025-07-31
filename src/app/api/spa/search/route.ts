@@ -1,144 +1,85 @@
-import type { NextRequest } from 'next/server';
+// src/app/api/spa/search/route.ts
+
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { carQueryService } from '@/lib/services/carquery-api';
-import { manufacturerScraperService } from '@/lib/services/manufacturer-scrapers';
-import { marketScraperService } from '@/lib/scrapers/market-scrapers';
-import type {
-  SPASearchParams,
-  SPASearchResponse,
-  ComprehensiveSPAData,
-  SPAError,
-} from '@/types/spa';
+import { carQueryService } from '@/lib/services';
+import getWikipediaSummary from '@/lib/services/wikipedia-api';
 
-export async function POST(request: NextRequest) {
-  const params = (await request.json()) as SPASearchParams;
-  const { make, model, year, dataSource } = params;
-  const start = Date.now();
+interface CarSearchResult {
+  basicSpecs: {
+    model_make_id: string;
+    model_name: string;
+    model_year: string;
+    model_body?: string | null;
+    model_engine_cc?: string | null;
+    model_engine_type?: string | null;
+  };
+  pricingData: {
+    baseMSRP?: number | null;
+    marketRange?: string | null;
+    averageDealerPrice?: number | null;
+    dealerInventoryCount?: number | null;
+  };
+  ownershipCosts?: {
+    annualTax?: number | null;
+    insuranceGroup?: string | null;
+    fuelCostPerYear?: number | null;
+  };
+  performance?: {
+    depreciation?: unknown[];
+    engine?: string | null;
+  };
+  auctionHistory?: unknown[];
+  wikiSummary?: string;
+  image?: string | null;
+}
 
-  if (!make || !model) {
-    const resp: SPASearchResponse = {
-      success: false,
-      error: { code: 'INVALID_PARAMS', message: 'make and model required' },
-      meta: {
-        searchQuery: params,
-        executionTime: 0,
-        timestamp: new Date().toISOString(),
-        version: '1.0.0',
+export async function POST(req: Request) {
+  try {
+    const { make, model, year } = await req.json();
+
+    if (!make || !model || !year) {
+      return NextResponse.json({ error: 'Missing make, model or year' }, { status: 400 });
+    }
+
+    // Fetch core car specs from CarQuery service
+    const trims = await carQueryService.getCarData(make, model, year);
+    const specs = trims[0] ?? {};
+
+    // Wikipedia fallback
+    const { summary: wikiSummary, image: wikiImage } = await getWikipediaSummary(make, model);
+
+    const response: CarSearchResult = {
+      basicSpecs: {
+        model_make_id: make,
+        model_name: model,
+        model_year: String(year),
+        model_body: specs.model_body ?? null,
+        model_engine_cc: specs.model_engine_cc ?? null,
+        model_engine_type: specs.model_engine_type ?? null,
       },
+      pricingData: {
+        baseMSRP: specs.model_engine_cc ? Number(specs.model_engine_cc) : null,
+        marketRange: null,
+        averageDealerPrice: null,
+        dealerInventoryCount: null,
+      },
+      ownershipCosts: {
+        annualTax: null,
+        insuranceGroup: null,
+        fuelCostPerYear: null,
+      },
+      performance: {
+        depreciation: specs.model_0_to_100_kph ? [specs.model_0_to_100_kph] : [],
+        engine: specs.model_engine_type ?? null,
+      },
+      auctionHistory: [],
+      wikiSummary,
+      image: wikiImage || null,
     };
-    return NextResponse.json(resp, { status: 400 });
+
+    return NextResponse.json(response);
+  } catch (error: unknown) {
+    console.error('[SPA search] Error:', error);
+    return NextResponse.json({ error: 'Search failed' }, { status: 500 });
   }
-
-  const result: Partial<ComprehensiveSPAData> = {
-    make,
-    model,
-    year: year ?? new Date().getFullYear(),
-    dataSource,
-    timestamp: new Date().toISOString(),
-    dataSources: {
-      database: dataSource === 'database' || dataSource === 'comprehensive',
-      carQuery: dataSource === 'carquery' || dataSource === 'comprehensive',
-      manufacturer:
-        dataSource === 'manufacturer' || dataSource === 'comprehensive',
-      market: dataSource === 'market' || dataSource === 'comprehensive',
-    },
-    searchQuery: params,
-  };
-
-  // 1️⃣ CarQuery
-  if (result.dataSources.carQuery) {
-    const trims = await carQueryService.getTrims(
-      make,
-      model,
-      year?.toString()
-    );
-    const chosen =
-      trims.find((t) => t.model_year === String(year)) ?? trims[0];
-    if (chosen) {
-      result.basicSpecifications = {
-        make: chosen.model_make_display,
-        model: chosen.model_name,
-        year: parseInt(chosen.model_year, 10),
-        bodyType: chosen.model_body,
-        engine: chosen.model_engine_type,
-        doors: parseInt(chosen.model_doors, 10),
-        seats: parseInt(chosen.model_seats, 10),
-        drivetrain: chosen.model_drive,
-        transmission: chosen.model_transmission_type,
-      };
-      result.performanceData = {
-        engine: chosen.model_engine_cc,
-        horsePower: `${chosen.model_engine_power_ps} PS`,
-        torque: `${chosen.model_engine_torque_nm} Nm`,
-        acceleration060: `${chosen.model_0_to_100_kph} s`,
-        topSpeed: `${chosen.model_top_speed_kph} kph`,
-        transmission: chosen.model_transmission_type,
-        driveType: chosen.model_drive,
-        weight: `${chosen.model_weight_kg} kg`,
-      };
-    }
-  }
-
-  // 2️⃣ Manufacturer
-  if (result.dataSources.manufacturer) {
-    try {
-      result.manufacturerData = await manufacturerScraperService.scrapeManufacturerData(
-        make,
-        model,
-        year
-      );
-    } catch {
-      /* ignore */
-    }
-  }
-
-  // 3️⃣ Live market
-  if (result.dataSources.market) {
-    const mkt = await marketScraperService.scrapeAll(make, model, year);
-    if (mkt.success && mkt.data) {
-      result.marketData = mkt.data[0];
-    }
-  }
-
-  // 4️⃣ DB fallback
-  if (result.dataSources.database) {
-    const db = await prisma.buyCar.findFirst({
-      where: { make, model, year },
-      select: {
-        price: true,
-        specifications: true,
-        features: true,
-        standardEquipment: true,
-        addedOptions: true,
-      },
-    });
-    if (db) {
-      result.pricingData = {
-        baseMSRP: db.price,
-        currentMarketRange: '',
-        averageDealerPrice: db.price,
-        dealerInventoryCount: 1,
-        priceTrend: '',
-      };
-      result.basicSpecifications = db.specifications as any;
-      result.popularOptions = db.addedOptions?.map((n) => ({
-        name: n,
-        frequency: 1,
-        source: 'database',
-      }));
-    }
-  }
-
-  const response: SPASearchResponse = {
-    success: true,
-    data: result as ComprehensiveSPAData,
-    meta: {
-      searchQuery: params,
-      executionTime: Date.now() - start,
-      timestamp: new Date().toISOString(),
-      version: '1.0.0',
-    },
-  };
-  return NextResponse.json(response);
 }
