@@ -1,7 +1,8 @@
 // src/app/admin/supercar-pricing/page.tsx
+// src/app/admin/supercar-pricing/page.tsx
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import Image from 'next/image';
 
@@ -43,19 +44,33 @@ const SupercarPricingPage = () => {
   const [selectedModel, setSelectedModel] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showYearSuggestions, setShowYearSuggestions] = useState(false);
+  const yearInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchMakes = async (query: string) => {
-    const { data } = await axios.get(`/api/spa/suggestions/makes?source=combined&search=${query}`);
+  // Accepts source: 'database' | 'webbase' | 'combined'
+  const fetchMakes = async (query: string, source: 'database' | 'webbase' | 'combined' = 'combined') => {
+    const trimmed = query.trim();
+    const { data } = await axios.get(
+      `/api/spa/suggestions/makes?source=${source}&search=${encodeURIComponent(trimmed)}`
+    );
     setMakes(data.makes.map((make: string) => ({ label: make, value: make })));
   };
 
-  const fetchModels = async (make: string, query: string) => {
-    const { data } = await axios.get(`/api/spa/suggestions/models?source=combined&make=${make}&search=${query}`);
+  const fetchModels = async (make: string, query: string, source: 'database' | 'webbase' | 'combined' = 'combined') => {
+    const trimmedMake = make.trim();
+    const trimmed = query.trim();
+    const { data } = await axios.get(
+      `/api/spa/suggestions/models?source=${source}&make=${encodeURIComponent(trimmedMake)}&search=${encodeURIComponent(trimmed)}`
+    );
     setModels(data.models.map((model: string) => ({ label: model, value: model })));
   };
 
-  const fetchYears = async (make: string, model: string) => {
-    const { data } = await axios.get(`/api/spa/suggestions/years?source=combined&make=${make}&model=${model}`);
+  const fetchYears = async (make: string, model: string, source: 'database' | 'webbase' | 'combined' = 'combined') => {
+    const trimmedMake = make.trim();
+    const trimmedModel = model.trim();
+    const { data } = await axios.get(
+      `/api/spa/suggestions/years?source=${source}&make=${encodeURIComponent(trimmedMake)}&model=${encodeURIComponent(trimmedModel)}`
+    );
     setYears(data.years.map((year: string) => ({ label: year, value: year })));
   };
 
@@ -73,18 +88,18 @@ const SupercarPricingPage = () => {
   };
 
   useEffect(() => {
-    fetchMakes('');
+    fetchMakes('', 'database'); // Only database-backed suggestions on load
   }, []);
 
   useEffect(() => {
     if (selectedMake) {
-      fetchModels(selectedMake, '');
+      fetchModels(selectedMake, '', 'combined');
     }
   }, [selectedMake]);
 
   useEffect(() => {
     if (selectedMake && selectedModel) {
-      fetchYears(selectedMake, selectedModel);
+      fetchYears(selectedMake, selectedModel, 'combined');
     }
   }, [selectedMake, selectedModel]);
 
@@ -101,7 +116,7 @@ const SupercarPricingPage = () => {
           onChange={(e) => {
             const make = e.target.value;
             setSelectedMake(make);
-            fetchMakes(make);
+            fetchMakes(make, 'combined');
           }}
           list="make-options"
         />
@@ -119,7 +134,7 @@ const SupercarPricingPage = () => {
           onChange={(e) => {
             const model = e.target.value;
             setSelectedModel(model);
-            fetchModels(selectedMake, model);
+            fetchModels(selectedMake, model, 'combined');
           }}
           list="model-options"
         />
@@ -129,18 +144,36 @@ const SupercarPricingPage = () => {
           ))}
         </datalist>
 
-        <select
-          className="border p-2 rounded w-1/4 text-black"
-          value={selectedYear}
-          onChange={(e) => setSelectedYear(e.target.value)}
-        >
-          <option value="">Year</option>
-          {years.map((year) => (
-            <option key={year.value} value={year.value}>
-              {year.label}
-            </option>
-          ))}
-        </select>
+        <div className="relative w-1/4">
+          <input
+            ref={yearInputRef}
+            type="text"
+            placeholder="Year"
+            className="border p-2 rounded w-full text-black cursor-pointer"
+            value={selectedYear}
+            readOnly
+            onClick={() => setShowYearSuggestions(true)}
+            onFocus={() => setShowYearSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowYearSuggestions(false), 100)}
+          />
+          {showYearSuggestions && years.length > 0 && (
+            <ul className="absolute top-full left-0 right-0 bg-white border max-h-48 overflow-auto z-10">
+              {years.map((y) => (
+                <li
+                  key={y.value}
+                  onMouseDown={() => {
+                    setSelectedYear(y.value);
+                    setShowYearSuggestions(false);
+                    yearInputRef.current?.blur();
+                  }}
+                  className="p-2 hover:bg-gray-200 cursor-pointer"
+                >
+                  {y.label}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         <button
           className="bg-black text-white px-4 py-2 rounded"

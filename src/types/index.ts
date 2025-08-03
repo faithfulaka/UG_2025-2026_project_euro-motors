@@ -14,3 +14,14 @@ export interface CarData {
     model?: string;
     year?: string;
   }
+
+  export interface SupercarData {
+    make: string;
+    model: string;
+    year: string;
+    msrp: number;
+    image?: string;
+    summary?: string;
+  }
+
+  
