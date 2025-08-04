@@ -24,9 +24,9 @@ export interface CarSpecifications {
   weight?: string;
   wheelbase?: string;
   wheelSize?: string;
-  brakeColor?: string;
   steeringType?: string; // Added this
   colorOptions?: string; // Added this
+  vinPattern?: string; // Added VIN pattern support
   fuelEconomy?: string; // Added this
 }
 

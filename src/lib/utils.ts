@@ -1,8 +1,7 @@
 // src/lib/utils.ts
 
-/**
- * Delay helper—pauses for the given number of milliseconds.
- */
+
+// Delay helper—pauses for the given number of milliseconds.
 export async function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

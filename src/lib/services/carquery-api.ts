@@ -40,17 +40,24 @@ export async function getModels(make: string): Promise<string[]> {
     : [];
 }
 
-/** Fetch all years for a given make/model */
+/** Fetch all years for a given make/model by pulling trims and extracting years */
 export async function getYears(make: string, model: string): Promise<number[]> {
+  // Use the getTrims endpoint, then pull model_year from each trim
   const resp = await fetch(
-    `${CARQUERY_BASE}?callback=?&cmd=getYears&make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`
+    `${CARQUERY_BASE}?callback=?&cmd=getTrims&make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`
   );
   const text = await resp.text();
   const jsonStr = await stripJSONP(text);
-  const parsed = JSON.parse(jsonStr) as { Years: string[] };
-  return Array.isArray(parsed.Years)
-    ? parsed.Years.map(y => Number(y))
-    : [];
+  const parsed = JSON.parse(jsonStr) as { Trims: CarQueryTrim[] };
+  if (!Array.isArray(parsed.Trims)) return [];
+  // Extract unique numeric years
+  const yearsSet = new Set<number>();
+  parsed.Trims.forEach(trim => {
+    const y = Number(trim.model_year);
+    if (!isNaN(y)) yearsSet.add(y);
+  });
+  // Return sorted descending
+  return Array.from(yearsSet).sort((a, b) => b - a);
 }
 
 /** Fetch detailed car trim data for a given make/model/year */
