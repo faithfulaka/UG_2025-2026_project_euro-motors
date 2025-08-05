@@ -15,7 +15,7 @@ export default function CarDetailSlideshow({ carId, make, model, imageUrls }: Ca
   const safeCarId = String(carId); // Ensure carId is always a string
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isManual, setIsManual] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  
 
   // Extract the number from the carID (e.g., "car1" -> "1")
   const carNumber = safeCarId.replace(/\D/g, '') || '1'; // Fallback to '1' if extraction fails
@@ -57,25 +57,7 @@ export default function CarDetailSlideshow({ carId, make, model, imageUrls }: Ca
     setTimeout(() => setIsManual(false), 5000); // Resume auto-slide after 5 sec
   };
 
-  const handleImageError = () => {
-    console.error(`Image failed to load: ${images[currentIndex]}`);
-    setImageError(true);
-  };
 
-  if (imageError) {
-    return (
-      <div className="relative w-full h-full bg-gray-200 flex items-center justify-center">
-        <span className="text-gray-600">Image not available</span>
-        {process.env.NODE_ENV === 'development' && (
-          <div className="text-xs text-gray-500 mt-2">
-            Path: {images[currentIndex]}
-            <br />
-            Car ID: {carId}
-          </div>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className="relative w-full h-full overflow-hidden">
@@ -92,10 +74,10 @@ export default function CarDetailSlideshow({ carId, make, model, imageUrls }: Ca
               <Image
                 src={src}
                 alt={`${make} ${model} image ${index + 1}`}
-                fill
+                width={800}
+                height={600}
                 className="object-cover w-full h-full"
-                priority={index === 0}
-                onError={handleImageError}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
             </div>
           </div>
@@ -150,7 +132,7 @@ export default function CarDetailSlideshow({ carId, make, model, imageUrls }: Ca
           ></button>
         ))}
       </div>
-      
+
       {/* Image counter */}
       <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
         {currentIndex + 1} / {images.length}

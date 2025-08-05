@@ -1,3 +1,5 @@
+
+
 import Image from 'next/image';
 
 interface GalleryImage {
@@ -42,9 +44,10 @@ export default function Gallery({ images }: GalleryProps) {
             <Image
               src={image.src}
               alt={image.alt}
-              fill
-              sizes="(max-width: 768px) 100vw, 33vw"
+              width={600}
+              height={400}
               className="object-cover transition-transform duration-300 hover:scale-110"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           </div>
         ))}

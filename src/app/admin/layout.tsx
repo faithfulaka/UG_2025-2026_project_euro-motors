@@ -16,7 +16,7 @@ export default function AdminLayout({
   const { user, loading, isAdmin } = useAuth();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [imageError, setImageError] = useState(false);
+
 
   useEffect(() => {
     console.log('🔍 Admin layout check - User:', user?.email, 'Role:', user?.role, 'IsAdmin:', isAdmin);
@@ -112,22 +112,14 @@ export default function AdminLayout({
               
               {/* Euro Motors Logo - Same as User Navbar but Smaller */}
               <Link href="/admin" className="flex items-center flex-shrink-0">
-                {!imageError ? (
-                  <Image 
-                    src="/logos/logo.svg" 
-                    alt="Euro Motors Logo" 
-                    width={180}  // Smaller than user navbar (240 -> 180)
-                    height={82}   // Smaller than user navbar (110 -> 82)
-                    onError={() => setImageError(true)}
-                    priority
-                    className="hover:opacity-80 transition-opacity"
-                  />
-                ) : (
-                  <span className="font-bold text-lg"> {/* Smaller than user navbar */}
-                    <span className="text-red-600">EURO</span>
-                    <span className="text-gray-800">MOTORS</span>
-                  </span>
-                )}
+                <Image
+                  src="/logos/logo.svg"
+                  alt="Euro Motors Logo"
+                  width={180}
+                  height={82}
+                  priority
+                  className="hover:opacity-80 transition-opacity"
+                />
               </Link>
 
               {/* PRIMARY NAVIGATION - Desktop Only */}

@@ -1,7 +1,7 @@
 // src/components/ui/CarSlideshow.tsx
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 
 interface CarSlideshowProps {
@@ -13,7 +13,7 @@ interface CarSlideshowProps {
 
 export default function CarSlideshow({ carId, make, model, imageUrls }: CarSlideshowProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [imageError, setImageError] = useState(false);
+
   
   // No matter what format the carId is in, we need the number
   const carNumber = carId.replace(/\D/g, '') || '1';
@@ -37,22 +37,16 @@ export default function CarSlideshow({ carId, make, model, imageUrls }: CarSlide
   console.log('Images:', images);
   
 
-  if (imageError) {
-    return (
-      <div className="relative h-64 bg-gray-200 flex items-center justify-center">
-        <span className="text-gray-600">Image not available</span>
-      </div>
-    );
-  }
 
   return (
     <div className="relative h-64 w-full overflow-hidden">
       <Image
         src={images[currentIndex]}
         alt={`${make} ${model}`}
-        fill
+        width={800}
+        height={600}
         className="object-cover"
-        onError={() => setImageError(true)}
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
       />
       
       {/* Navigation buttons */}

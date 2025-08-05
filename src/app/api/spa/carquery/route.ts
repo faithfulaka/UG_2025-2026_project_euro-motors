@@ -38,7 +38,8 @@ export async function GET(request: NextRequest) {
         );
       }
       const raw = await carQueryService.getModels(make);
-      suggestions = raw.map(m => ({
+      const filtered = raw.filter(m => !/^(Category:|List of)/i.test(m));
+      suggestions = filtered.map(m => ({
         value: m,
         label: m,
         displayName: m,

@@ -3,8 +3,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { usePathname, useRouter } from 'next/navigation';
+
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -12,7 +13,7 @@ export default function Navbar() {
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
   const router = useRouter();
-  const [imageError, setImageError] = useState(false);
+
   
   useEffect(() => {
     async function fetchUser() {
@@ -57,21 +58,14 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         {/* Logo - Increased Size */}
         <Link href="/" className="flex items-center">
-          {!imageError ? (
-            <Image 
-              src="/logos/logo.svg" 
-              alt="Euro Motors Logo" 
-              width={240}  // Increased size
-              height={110}  // Increased size
-              onError={() => setImageError(true)}
-              priority
-            />
-          ) : (
-            <span className="font-bold text-2xl"> {/* Increased text size */}
-              <span className="text-red-600">EURO</span>
-              <span className="text-gray-800">MOTORS</span>
-            </span>
-          )}
+          <Image
+            src="/logos/logo.svg"
+            alt="Euro Motors Logo"
+            width={240}
+            height={110}
+            priority
+            className="hover:opacity-80 transition-opacity"
+          />
         </Link>
 
         {/* Desktop Navigation - Increased Spacing & Font Size */}

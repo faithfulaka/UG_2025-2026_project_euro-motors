@@ -2,8 +2,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useParams, useRouter } from 'next/navigation';
+
 import { RentalCar } from '@/types/cars';
 import { useCar } from '@/context/CarContext';
 import { useAuth } from '@/context/AuthContext';

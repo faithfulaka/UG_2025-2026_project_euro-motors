@@ -27,18 +27,33 @@ export async function getMotorsPricing(
     await page.goto(url, { waitUntil: 'networkidle2', timeout });
 
     // NOTE: if the site’s markup changes, update these selectors
-    const msrpText = await page.$eval(
-      '.price-guide__msrp .guide-value',
-      (el) => el.textContent || ''
-    );
-    const rangeText = await page.$eval(
-      '.price-guide__range .guide-value',
-      (el) => el.textContent || ''
-    );
-    const avgText = await page.$eval(
-      '.price-guide__average .guide-value',
-      (el) => el.textContent || ''
-    );
+    let msrpText = '';
+    let rangeText = '';
+    let avgText = '';
+    try {
+      msrpText = await page.$eval(
+        '.price-guide__msrp .guide-value',
+        (el) => el.textContent || ''
+      );
+    } catch {
+      msrpText = '';
+    }
+    try {
+      rangeText = await page.$eval(
+        '.price-guide__range .guide-value',
+        (el) => el.textContent || ''
+      );
+    } catch {
+      rangeText = '';
+    }
+    try {
+      avgText = await page.$eval(
+        '.price-guide__average .guide-value',
+        (el) => el.textContent || ''
+      );
+    } catch {
+      avgText = '';
+    }
 
     await browser.close();
 

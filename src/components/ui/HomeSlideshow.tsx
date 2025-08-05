@@ -1,8 +1,10 @@
+//src/components/ui/HomeSlideshow.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
+import Link from 'next/link';
+
 
 interface SlideData {
   id: number;
@@ -14,6 +16,7 @@ interface SlideData {
 export default function HomeSlideshow() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isManual, setIsManual] = useState(false);
+
 
   // Array of slide data
   const slides: SlideData[] = [
@@ -77,18 +80,19 @@ export default function HomeSlideshow() {
             className={`absolute inset-0 transition-opacity duration-[1500ms] ease-in-out ${
               index === currentIndex ? 'opacity-100 z-20' : 'opacity-0 z-10'
             }`}
-             >
+          >
             <div className="relative w-full h-[600px]">
               <Image
                 src={slide.image}
                 alt={slide.title}
                 width={1920}
-                height={600}
-                className="object-cover w-full h-full brightness-50"
-                priority={slide.id === 1}
+                height={800}
+                className="object-cover w-full h-full"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                priority
+
               />
             </div>
-
 
             {/* Text and Buttons - Left aligned and vertically centered */}
             <div className="absolute inset-0 bg-black bg-opacity-70 z-30 flex items-start h-full px-8 md:px-20 lg:px-36">

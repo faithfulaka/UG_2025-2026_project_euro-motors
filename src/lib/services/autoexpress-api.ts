@@ -1,5 +1,5 @@
 // src/lib/services/autoexpress-api.ts
-import puppeteer from 'puppeteer';
+import puppeteer, { Browser, Page, ElementHandle } from 'puppeteer';
 
 export interface AutoExpressForecast {
   msrp?: number;
@@ -11,12 +11,14 @@ export async function getAutoExpressForecast(
   model: string,
   year: string | number
 ): Promise<AutoExpressForecast> {
+  let browser: Browser | null = null;
   try {
-    const browser = await puppeteer.launch({
+    browser = await puppeteer.launch({
       headless: process.env.PUPPETEER_HEADLESS === 'true',
       args: (process.env.PUPPETEER_ARGS || '').split(','),
     });
-    const page = await browser.newPage();
+    let page: Page | null = null;
+    page = await browser.newPage();
     await page.setUserAgent(process.env.SCRAPER_USER_AGENT || '');
     const timeout = Number(process.env.SCRAPER_TIMEOUT_MS) || 30000;
 
@@ -27,30 +29,48 @@ export async function getAutoExpressForecast(
     });
 
     // Search box and results may vary—adjust these selectors
-    await page.type('input[name="q"]', `${make} ${model} ${year}`);
-    await page.keyboard.press('Enter');
-    await page.waitForSelector('.results-list .results-item', { timeout });
-    await page.click('.results-list .results-item a');
-    await page.waitForSelector('.spec-table', { timeout });
+    const searchInput = await page.$('input[name="q"]');
+    if (searchInput) {
+      const inputHandle = searchInput as ElementHandle<HTMLInputElement>;
+      await inputHandle.type(`${make} ${model} ${year}`);
+      await page.keyboard.press('Enter');
+    }
+    let msrpText = '';
+    let forecastText = '';
+    try {
+      await page.waitForSelector('.results-list .results-item', { timeout });
+      await page.click('.results-list .results-item a');
+      await page.waitForSelector('.spec-table', { timeout });
 
-    // Extract MSRP from a specs table
-    const msrpText = await page.$$eval('.spec-table tr', (rows) => {
-      for (const row of rows as HTMLElement[]) {
-        const th = row.querySelector('th')?.textContent?.toLowerCase();
-        if (th?.includes('price (rrp)')) {
-          return row.querySelector('td')?.textContent || '';
-        }
+      // Extract MSRP from a specs table
+      try {
+        msrpText = await page.$$eval('.spec-table tr', (rows: Element[]) => {
+          for (const row of rows) {
+            const th = row.querySelector('th')?.textContent?.toLowerCase();
+            if (th?.includes('price (rrp)')) {
+              return row.querySelector('td')?.textContent || '';
+            }
+          }
+          return '';
+        });
+      } catch {
+        msrpText = '';
       }
-      return '';
-    });
 
-    // Example: forecast may be embedded as data-attribute or text
-    const forecastText =
-      (await page.$eval('.forecast-chart', (el) =>
-        el.getAttribute('data-forecast')
-      )) || '';
-
-    await browser.close();
+      // Example: forecast may be embedded as data-attribute or text
+      try {
+        forecastText =
+          (await page.$eval('.forecast-chart', (el: Element) =>
+            el.getAttribute('data-forecast')
+          )) || '';
+      } catch {
+        forecastText = '';
+      }
+    } catch {
+      // Ignore errors for missing selectors, continue with partial data
+      msrpText = '';
+      forecastText = '';
+    }
 
     return {
       msrp: parseFloat(msrpText.replace(/[^0-9.]/g, '')) || undefined,
@@ -59,5 +79,9 @@ export async function getAutoExpressForecast(
   } catch (err) {
     console.error('[AutoExpress API ERROR]', err);
     return {};
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
   }
 }
