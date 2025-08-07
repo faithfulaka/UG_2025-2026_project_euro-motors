@@ -1,7 +1,7 @@
-// src/app/api/spa/suggestions/route.ts
+// src/app/api/spa/suggestions/route.ts - Updated with new reliable APIs
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { carQueryService } from '@/lib/services';
+import { unifiedCarService } from '@/lib/services/new-apis';
 import type { SPASuggestion, SPASuggestionResponse } from '@/types/spa';
 
 // Cache for suggestions to reduce API calls
@@ -44,20 +44,20 @@ export async function GET(request: NextRequest) {
     }
 
     let suggestions: SPASuggestion[] = [];
-    let source = 'combined';
+    const source = 'unified_apis';
 
     switch (type) {
       case 'make': {
-        // Get makes from multiple sources
-        const [dbMakes, carQueryMakes] = await Promise.all([
+        // Get makes from multiple reliable sources
+        const [dbMakes, apiMakes] = await Promise.all([
           // Database makes
           prisma.buyCar.findMany({
             select: { make: true },
             distinct: ['make'],
             orderBy: { make: 'asc' }
           }),
-          // CarQuery makes
-          carQueryService.getMakes().catch(() => [])
+          // New API makes
+          unifiedCarService.getMakes().catch(() => [])
         ]);
 
         // Combine and deduplicate
@@ -70,9 +70,9 @@ export async function GET(request: NextRequest) {
           makeMap.set(car.make, (makeMap.get(car.make) || 0) + 1);
         });
 
-        // Add CarQuery makes
-        carQueryMakes.forEach((make: string) => {
-          makeSet.add(make);
+        // Add API makes
+        apiMakes.forEach(make => {
+          makeSet.add(make.value);
         });
 
         // Filter by query if provided
@@ -80,12 +80,12 @@ export async function GET(request: NextRequest) {
           !query || make.toLowerCase().includes(query.toLowerCase())
         );
 
-        // Create suggestions
+        // Create suggestions with source info
         suggestions = filteredMakes.map(make => ({
           value: make,
           label: make,
           count: makeMap.get(make),
-          source: makeMap.has(make) ? 'database' : 'carquery',
+          source: makeMap.has(make) ? 'database' : 'api',
           type: 'make',
           displayName: make,
           popular: makeMap.get(make) ? makeMap.get(make)! > 2 : false
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Get models from multiple sources
-        const [dbModels, carQueryModels] = await Promise.all([
+        const [dbModels, apiModels] = await Promise.all([
           // Database models for this make
           prisma.buyCar.findMany({
             where: { make },
@@ -117,8 +117,8 @@ export async function GET(request: NextRequest) {
             distinct: ['model'],
             orderBy: { model: 'asc' }
           }),
-          // CarQuery models
-          carQueryService.getModels(make).catch(() => [])
+          // New API models
+          unifiedCarService.getModels(make).catch(() => [])
         ]);
 
         // Combine and deduplicate
@@ -131,9 +131,9 @@ export async function GET(request: NextRequest) {
           modelMap.set(car.model, (modelMap.get(car.model) || 0) + 1);
         });
 
-        // Add CarQuery models
-        carQueryModels.forEach((model: string) => {
-          modelSet.add(model);
+        // Add API models
+        apiModels.forEach(model => {
+          modelSet.add(model.value);
         });
 
         // Filter by query if provided
@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
           value: model,
           label: model,
           count: modelMap.get(model),
-          source: modelMap.has(model) ? 'database' : 'carquery',
+          source: modelMap.has(model) ? 'database' : 'api',
           type: 'model',
           displayName: model,
           popular: modelMap.get(model) ? modelMap.get(model)! > 2 : false
@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Get years from multiple sources
-        const [dbYears, carQueryYears] = await Promise.all([
+        const [dbYears, apiYears] = await Promise.all([
           // Database years for this make/model
           prisma.buyCar.findMany({
             where: { make, model },
@@ -178,8 +178,8 @@ export async function GET(request: NextRequest) {
             distinct: ['year'],
             orderBy: { year: 'desc' }
           }),
-          // CarQuery years
-          carQueryService.getYears(make, model).catch(() => [])
+          // New API years
+          unifiedCarService.getYears(make, model).catch(() => [])
         ]);
 
         // Combine and deduplicate years
@@ -192,9 +192,9 @@ export async function GET(request: NextRequest) {
           yearMap.set(car.year, (yearMap.get(car.year) || 0) + 1);
         });
 
-        // Add CarQuery years
-        carQueryYears.forEach((year: string) => {
-          const yearNum = parseInt(year);
+        // Add API years
+        apiYears.forEach(year => {
+          const yearNum = parseInt(year.value);
           if (!isNaN(yearNum)) {
             yearSet.add(yearNum);
           }
@@ -210,7 +210,7 @@ export async function GET(request: NextRequest) {
           value: year.toString(),
           label: year.toString(),
           count: yearMap.get(year),
-          source: yearMap.has(year) ? 'database' : 'carquery',
+          source: yearMap.has(year) ? 'database' : 'api',
           type: 'year',
           displayName: year.toString(),
           popular: yearMap.get(year) ? yearMap.get(year)! > 1 : false

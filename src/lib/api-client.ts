@@ -35,11 +35,8 @@ interface User {
   role: 'USER' | 'ADMIN';
 }
 
-// Type for headers with Authorization
-interface AuthHeaders extends Record<string, string> {
-  Authorization?: string;
-  'Content-Type': string;
-}
+// Type for headers
+type AuthHeaders = Record<string, string>;
 
 /**
  * Base API client with error handling and type safety
@@ -66,11 +63,11 @@ class APIClient {
 
     const finalHeaders: AuthHeaders = {
       'Content-Type': 'application/json',
-      ...headers as Record<string, string>,
+      ...(headers as Record<string, string> || {}),
     };
 
     if (token) {
-      finalHeaders['Authorization'] = `Bearer ${token}`;
+      finalHeaders.Authorization = `Bearer ${token}`;
     }
 
     try {

@@ -30,8 +30,19 @@ export async function getAuctionHistory(
   const json = await res.json();
   const items = json.findCompletedItemsResponse?.[0]?.searchResult?.[0]?.item || [];
 
-  return items.map((i: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
-    price: parseFloat(i.sellingStatus[0].currentPrice[0].__value__), // eslint-disable-line @typescript-eslint/no-explicit-any
+  interface EbayItem {
+    sellingStatus: Array<{
+      currentPrice: Array<{
+        __value__: string;
+      }>;
+    }>;
+    listingInfo: Array<{
+      endTime: string[];
+    }>;
+  }
+  
+  return items.map((i: EbayItem) => ({
+    price: parseFloat(i.sellingStatus[0].currentPrice[0].__value__),
     date: i.listingInfo[0].endTime[0],
     miles: undefined,
   }));

@@ -7,8 +7,7 @@ import { Combobox } from '@headlessui/react';
 import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
 import type { SPASuggestion, SPASuggestionResponse, SPASearchResponse, ComprehensiveSPAData } from '@/types/spa';
 import type { BuyCar, CarSpecifications, CarFeatures, PerformanceData, PricingData } from '@/types/cars';
-import { safeJsonParse } from '@/lib/utils';
-import { parseBuyCar } from '@/lib/db-helpers';
+
 
 export default function SupercarPricingPage() {
   const [selectedMake, setSelectedMake] = useState<string>('');
@@ -136,7 +135,7 @@ export default function SupercarPricingPage() {
         const filteredCars = data.data?.filter((car: BuyCar) => 
           car.make.toLowerCase() === selectedMake.toLowerCase() &&
           car.model.toLowerCase() === selectedModel.toLowerCase() &&
-          car.year.toString() === selectedYear
+          car.year === parseInt(selectedYear)
         ) || [];
         
         setDatabaseCars(filteredCars);
@@ -151,9 +150,13 @@ export default function SupercarPricingPage() {
         
         setSearchResult(data);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Search error:', err);
-      setSearchError(err.response?.data?.error?.message || err.message || 'Search failed');
+      const error = err as Error | { response?: { data?: { error?: { message?: string } } }; message?: string };
+      const errorMessage = 
+        ('response' in error && error.response?.data?.error?.message) || 
+        (error instanceof Error ? error.message : 'Search failed');
+      setSearchError(errorMessage);
     } finally {
       setIsLoading(false);
     }

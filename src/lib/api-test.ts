@@ -3,9 +3,7 @@
 
 import type { 
   BuyCar, 
-  RentalCar, 
-  CarFormData, 
-  RentalCarFormData 
+  RentalCar
 } from '@/types/cars';
 import type { 
   AdminDashboardStats
@@ -323,12 +321,19 @@ export const publicAPITests = {
 };
 
 // Run all tests
+interface TestResults {
+  admin: Record<string, unknown>;
+  spa: Record<string, unknown>;
+  public: Record<string, unknown>;
+  errors: string[];
+}
+
 export async function runAllAPITests(authToken?: string) {
-  const results = {
-    admin: {} as any,
-    spa: {} as any,
-    public: {} as any,
-    errors: [] as string[]
+  const results: TestResults = {
+    admin: {},
+    spa: {},
+    public: {},
+    errors: []
   };
 
   // Test Public APIs
@@ -416,9 +421,11 @@ export async function runAllAPITests(authToken?: string) {
 }
 
 // Export for use in components or scripts
-export default {
+const APITests = {
   adminAPITests,
   spaAPITests,
   publicAPITests,
   runAllAPITests
 };
+
+export default APITests;

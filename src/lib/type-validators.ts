@@ -8,12 +8,11 @@ import type {
   CarFeatures,
   PerformanceData,
   PricingData,
-  SupercarData
+  CarFormData,
+  RentalCarFormData
 } from '@/types/cars';
 import type {
   AdminDashboardStats,
-  CarFormData,
-  RentalCarFormData,
   AdminScraperResult
 } from '@/types/admin';
 import type {
@@ -23,10 +22,17 @@ import type {
 } from '@/types/spa';
 
 /**
+ * Type guard helper for object validation
+ */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
  * Validate CarSpecifications object
  */
-export function validateCarSpecifications(specs: any): specs is CarSpecifications {
-  if (!specs || typeof specs !== 'object') return false;
+export function validateCarSpecifications(specs: unknown): specs is CarSpecifications {
+  if (!isRecord(specs)) return false;
   
   const requiredFields = ['color', 'interiorColor', 'mileage', 'engine', 
     'horsePower', 'transmission', 'fuelType', 'bodyType', 'driveType', 'seats', 'doors'];
@@ -37,8 +43,8 @@ export function validateCarSpecifications(specs: any): specs is CarSpecification
 /**
  * Validate CarFeatures object
  */
-export function validateCarFeatures(features: any): features is CarFeatures {
-  if (!features || typeof features !== 'object') return false;
+export function validateCarFeatures(features: unknown): features is CarFeatures {
+  if (!isRecord(features)) return false;
   
   return (
     Array.isArray(features.interior) &&
@@ -50,8 +56,8 @@ export function validateCarFeatures(features: any): features is CarFeatures {
 /**
  * Validate BuyCar object
  */
-export function validateBuyCar(car: any): car is BuyCar {
-  if (!car || typeof car !== 'object') return false;
+export function validateBuyCar(car: unknown): car is BuyCar {
+  if (!isRecord(car)) return false;
   
   const hasRequiredFields = (
     typeof car.id === 'string' &&
@@ -70,8 +76,8 @@ export function validateBuyCar(car: any): car is BuyCar {
   if (!validateCarFeatures(car.features)) return false;
   
   // Optional arrays should be arrays or null
-  if (car.standardEquipment !== null && !Array.isArray(car.standardEquipment)) return false;
-  if (car.addedOptions !== null && !Array.isArray(car.addedOptions)) return false;
+  if (car.standardEquipment !== null && car.standardEquipment !== undefined && !Array.isArray(car.standardEquipment)) return false;
+  if (car.addedOptions !== null && car.addedOptions !== undefined && !Array.isArray(car.addedOptions)) return false;
   
   return true;
 }
@@ -79,8 +85,8 @@ export function validateBuyCar(car: any): car is BuyCar {
 /**
  * Validate RentalCar object
  */
-export function validateRentalCar(car: any): car is RentalCar {
-  if (!car || typeof car !== 'object') return false;
+export function validateRentalCar(car: unknown): car is RentalCar {
+  if (!isRecord(car)) return false;
   
   const hasRequiredFields = (
     typeof car.id === 'string' &&
@@ -106,8 +112,8 @@ export function validateRentalCar(car: any): car is RentalCar {
 /**
  * Validate PerformanceData object
  */
-export function validatePerformanceData(data: any): data is PerformanceData {
-  if (!data || typeof data !== 'object') return false;
+export function validatePerformanceData(data: unknown): data is PerformanceData {
+  if (!isRecord(data)) return false;
   
   const requiredFields = ['engine', 'horsePower', 'torque', 'acceleration060', 
     'topSpeed', 'transmission', 'driveType', 'weight'];
@@ -120,8 +126,8 @@ export function validatePerformanceData(data: any): data is PerformanceData {
 /**
  * Validate PricingData object
  */
-export function validatePricingData(data: any): data is PricingData {
-  if (!data || typeof data !== 'object') return false;
+export function validatePricingData(data: unknown): data is PricingData {
+  if (!isRecord(data)) return false;
   
   return (
     typeof data.baseMSRP === 'number' &&
@@ -135,8 +141,8 @@ export function validatePricingData(data: any): data is PricingData {
 /**
  * Validate AdminDashboardStats object
  */
-export function validateAdminDashboardStats(stats: any): stats is AdminDashboardStats {
-  if (!stats || typeof stats !== 'object') return false;
+export function validateAdminDashboardStats(stats: unknown): stats is AdminDashboardStats {
+  if (!isRecord(stats)) return false;
   
   const requiredFields = [
     'totalUsers', 'totalOrders', 'totalRentals', 'totalTradeIns',
@@ -160,23 +166,23 @@ export function validateAdminDashboardStats(stats: any): stats is AdminDashboard
 /**
  * Validate SPASearchParams object
  */
-export function validateSPASearchParams(params: any): params is SPASearchParams {
-  if (!params || typeof params !== 'object') return false;
+export function validateSPASearchParams(params: unknown): params is SPASearchParams {
+  if (!isRecord(params)) return false;
   
   return (
     typeof params.make === 'string' &&
     typeof params.model === 'string' &&
     (params.year === undefined || typeof params.year === 'number') &&
     (params.trim === undefined || typeof params.trim === 'string') &&
-    ['comprehensive', 'database', 'carquery', 'manufacturer', 'market'].includes(params.dataSource)
+    ['comprehensive', 'database', 'carquery', 'manufacturer', 'market'].includes(params.dataSource as string)
   );
 }
 
 /**
  * Validate ComprehensiveSPAData object
  */
-export function validateComprehensiveSPAData(data: any): data is ComprehensiveSPAData {
-  if (!data || typeof data !== 'object') return false;
+export function validateComprehensiveSPAData(data: unknown): data is ComprehensiveSPAData {
+  if (!isRecord(data)) return false;
   
   const hasRequiredFields = (
     typeof data.make === 'string' &&
@@ -184,8 +190,8 @@ export function validateComprehensiveSPAData(data: any): data is ComprehensiveSP
     typeof data.year === 'number' &&
     typeof data.dataSource === 'string' &&
     typeof data.timestamp === 'string' &&
-    data.dataSources && typeof data.dataSources === 'object' &&
-    data.searchQuery && typeof data.searchQuery === 'object'
+    isRecord(data.dataSources) &&
+    isRecord(data.searchQuery)
   );
   
   return hasRequiredFields;
@@ -194,14 +200,14 @@ export function validateComprehensiveSPAData(data: any): data is ComprehensiveSP
 /**
  * Validate SPASuggestion object
  */
-export function validateSPASuggestion(suggestion: any): suggestion is SPASuggestion {
-  if (!suggestion || typeof suggestion !== 'object') return false;
+export function validateSPASuggestion(suggestion: unknown): suggestion is SPASuggestion {
+  if (!isRecord(suggestion)) return false;
   
   return (
     typeof suggestion.value === 'string' &&
     typeof suggestion.label === 'string' &&
     typeof suggestion.source === 'string' &&
-    ['make', 'model', 'year'].includes(suggestion.type) &&
+    ['make', 'model', 'year'].includes(suggestion.type as string) &&
     typeof suggestion.displayName === 'string'
   );
 }
@@ -256,22 +262,25 @@ export function ensureCarFeatures(features: Partial<CarFeatures>): CarFeatures {
 /**
  * Clean and validate form data for car creation/update
  */
-export function cleanCarFormData(data: any, type: 'buy' | 'rent'): CarFormData | RentalCarFormData {
+export function cleanCarFormData(data: unknown, type: 'buy' | 'rent'): CarFormData | RentalCarFormData {
+  // Type guard for input data
+  const inputData = data as Record<string, unknown>;
+  
   // Ensure specifications are valid
-  const specifications = ensureCarSpecifications(data.specifications || {});
+  const specifications = ensureCarSpecifications((inputData.specifications || {}) as Partial<CarSpecifications>);
   
   // Ensure features are valid
-  const features = ensureCarFeatures(data.features || {});
+  const features = ensureCarFeatures((inputData.features || {}) as Partial<CarFeatures>);
   
   // Base fields common to both types
   const baseData = {
-    id: data.id,
-    make: data.make || '',
-    model: data.model || '',
-    trim: data.trim || null,
-    year: parseInt(data.year) || new Date().getFullYear(),
-    description: data.description || '',
-    isAvailable: data.isAvailable !== false,
+    id: inputData.id as string | undefined,
+    make: (inputData.make as string) || '',
+    model: (inputData.model as string) || '',
+    trim: (inputData.trim as string | null) || null,
+    year: parseInt(String(inputData.year)) || new Date().getFullYear(),
+    description: (inputData.description as string) || '',
+    isAvailable: inputData.isAvailable !== false,
     specifications,
     features
   };
@@ -279,16 +288,16 @@ export function cleanCarFormData(data: any, type: 'buy' | 'rent'): CarFormData |
   if (type === 'buy') {
     return {
       ...baseData,
-      price: parseFloat(data.price) || 0,
-      standardEquipment: Array.isArray(data.standardEquipment) ? data.standardEquipment : [],
-      addedOptions: Array.isArray(data.addedOptions) ? data.addedOptions : []
+      price: parseFloat(String(inputData.price)) || 0,
+      standardEquipment: Array.isArray(inputData.standardEquipment) ? inputData.standardEquipment as string[] : [],
+      addedOptions: Array.isArray(inputData.addedOptions) ? inputData.addedOptions as string[] : []
     } as CarFormData;
   } else {
     return {
       ...baseData,
-      hourlyRate: parseFloat(data.hourlyRate) || 0,
-      dailyRate: parseFloat(data.dailyRate) || 0,
-      weeklyRate: parseFloat(data.weeklyRate) || 0
+      hourlyRate: parseFloat(String(inputData.hourlyRate)) || 0,
+      dailyRate: parseFloat(String(inputData.dailyRate)) || 0,
+      weeklyRate: parseFloat(String(inputData.weeklyRate)) || 0
     } as RentalCarFormData;
   }
 }
@@ -296,8 +305,8 @@ export function cleanCarFormData(data: any, type: 'buy' | 'rent'): CarFormData |
 /**
  * Validate API response structure
  */
-export function validateAPIResponse(response: any): boolean {
-  if (!response || typeof response !== 'object') return false;
+export function validateAPIResponse(response: unknown): boolean {
+  if (!isRecord(response)) return false;
   
   // Check for success flag
   if (!('success' in response)) return false;
@@ -306,7 +315,8 @@ export function validateAPIResponse(response: any): boolean {
   if (!response.success && !response.error) return false;
   
   // If successful, should have data (unless it's a delete operation)
-  if (response.success && !('data' in response) && !response.message?.includes('deleted')) {
+  const message = response.message as string | undefined;
+  if (response.success && !('data' in response) && !message?.includes('deleted')) {
     return false;
   }
   
@@ -316,10 +326,10 @@ export function validateAPIResponse(response: any): boolean {
 /**
  * Type guard to check if error has expected structure
  */
-export function isAPIError(error: any): error is { code: string; message: string; details?: string } {
+export function isAPIError(error: unknown): error is { code: string; message: string; details?: string } {
+  if (!isRecord(error)) return false;
+  
   return (
-    error &&
-    typeof error === 'object' &&
     typeof error.code === 'string' &&
     typeof error.message === 'string'
   );
@@ -379,11 +389,11 @@ export function transformScraperToCarData(
  * Batch validate an array of items
  */
 export function batchValidate<T>(
-  items: any[],
-  validator: (item: any) => item is T
-): { valid: T[]; invalid: any[] } {
+  items: unknown[],
+  validator: (item: unknown) => item is T
+): { valid: T[]; invalid: unknown[] } {
   const valid: T[] = [];
-  const invalid: any[] = [];
+  const invalid: unknown[] = [];
   
   items.forEach(item => {
     if (validator(item)) {

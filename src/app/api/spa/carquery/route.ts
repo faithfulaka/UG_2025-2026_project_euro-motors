@@ -1,6 +1,6 @@
-// src/app/api/spa/carquery/route.ts
+// src/app/api/spa/carquery/route.ts - Replaced with Unified API Services
 import { NextRequest, NextResponse } from 'next/server';
-import { carQueryService } from '@/lib/services';
+import { unifiedCarService } from '@/lib/services/new-apis';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -19,12 +19,12 @@ export async function GET(request: NextRequest) {
 
   switch (action) {
     case 'makes': {
-      const raw = await carQueryService.getMakes();
+      const raw = await unifiedCarService.getMakes();
       suggestions = raw.map(m => ({
-        value: m,
-        label: m,
-        displayName: m,
-        source: 'carquery',
+        value: m.value,
+        label: m.label,
+        displayName: m.label,
+        source: m.source,
         type: 'make'
       }));
       break;
@@ -37,13 +37,12 @@ export async function GET(request: NextRequest) {
           { status: 400 }
         );
       }
-      const raw = await carQueryService.getModels(make);
-      const filtered = raw.filter(m => !/^(Category:|List of)/i.test(m));
-      suggestions = filtered.map(m => ({
-        value: m,
-        label: m,
-        displayName: m,
-        source: 'carquery',
+      const raw = await unifiedCarService.getModels(make);
+      suggestions = raw.map(m => ({
+        value: m.value,
+        label: m.label,
+        displayName: m.label,
+        source: m.source,
         type: 'model'
       }));
       break;
@@ -56,17 +55,14 @@ export async function GET(request: NextRequest) {
           { status: 400 }
         );
       }
-      const raw = await carQueryService.getYears(make, model);
-      suggestions = raw.map(y => {
-        const s = String(y);
-        return {
-          value: s,
-          label: s,
-          displayName: s,
-          source: 'carquery',
-          type: 'year'
-        };
-      });
+      const raw = await unifiedCarService.getYears(make, model);
+      suggestions = raw.map(y => ({
+        value: y.value,
+        label: y.label,
+        displayName: y.label,
+        source: y.source,
+        type: 'year'
+      }));
       break;
     }
 
@@ -77,17 +73,44 @@ export async function GET(request: NextRequest) {
           { status: 400 }
         );
       }
-      const trims = await carQueryService.getCarData(make, model, year);
-      suggestions = trims.map(trim => {
-        const display = trim.model_trim || trim.model_name;
-        return {
-          value: display,
-          label: display,
-          displayName: display,
-          source: 'carquery',
-          type: 'trim'
-        };
-      });
+      const searchResults = await unifiedCarService.searchVehicles(make, model, parseInt(year));
+      
+      // Extract trim information from different API sources
+      const trims: string[] = [];
+      
+      // From Car Data API
+      if (searchResults.carData) {
+        searchResults.carData.forEach(vehicle => {
+          if (vehicle.type) {
+            trims.push(vehicle.type);
+          }
+        });
+      }
+      
+      // From MarketCheck API
+      if (searchResults.marketCheck) {
+        searchResults.marketCheck.forEach(vehicle => {
+          if (vehicle.build?.body_type) {
+            trims.push(vehicle.build.body_type);
+          }
+        });
+      }
+
+      // From Edmunds API
+      if (searchResults.edmunds?.bodyType) {
+        trims.push(searchResults.edmunds.bodyType);
+      }
+
+      // Deduplicate trims
+      const uniqueTrims = Array.from(new Set(trims));
+      
+      suggestions = uniqueTrims.map(trim => ({
+        value: trim,
+        label: trim,
+        displayName: trim,
+        source: 'unified_apis',
+        type: 'trim'
+      }));
       break;
     }
 
@@ -102,8 +125,16 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     success: true,
     suggestions,
-    source: 'carquery',
+    source: 'unified_apis',
     cached: false,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    meta: {
+      action,
+      make,
+      model,
+      year,
+      apiSources: ['edmunds', 'marketcheck', 'cis_automotive', 'car_data'],
+      version: '2.0.0'
+    }
   });
 }

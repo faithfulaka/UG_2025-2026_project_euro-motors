@@ -14,7 +14,8 @@
     "db:studio": "prisma studio",
     "enrich:cars": "npx tsx scripts/enrich-cars-with-spa.ts",
     "test:types": "npx tsx scripts/test-type-alignment.ts",
-    "check:types": "bash scripts/check-types.sh"
+    "check:types": "bash scripts/check-types.sh",
+    "test:apis": "curl http://localhost:3000/api/spa/test-apis?api=all"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
@@ -22,7 +23,6 @@
     "@prisma/client": "^6.13.0",
     "axios": "^1.10.0",
     "bcryptjs": "^2.4.3",
-    "cheerio": "^1.1.2",
     "clone-deep": "^4.0.1",
     "dotenv": "^17.2.0",
     "jose": "^6.0.12",
@@ -33,31 +33,39 @@
     "next-transpile-modules": "^10.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-hook-form": "^7.48.2",
-    "wikidata-sdk": "^8.1.1"
+    "react-hook-form": "^7.48.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
     "@types/bcryptjs": "^2.4.6",
-    "@types/cheerio": "^0.22.31",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.17.0",
-    "@types/node-fetch": "^2.6.12",
-    "@types/puppeteer": "^5.4.7",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@types/webpack": "^5.28.5",
     "autoprefixer": "^10.4.21",
     "eslint": "^8.57.0",
     "eslint-config-next": "^15.4.2",
-    "node-fetch": "^2.7.0",
     "postcss": "^8.5.6",
     "prisma": "^6.12.0",
-    "puppeteer": "^24.15.0",
     "tailwindcss": "^3.4.17",
     "ts-node": "^10.9.2",
     "tsx": "^4.7.0",
     "typescript": "^5.8.3",
     "webpack": "^5.101.0"
+  },
+  "_removed_dependencies": {
+    "note": "The following dependencies were removed as part of the API cleanup:",
+    "dependencies": {
+      "cheerio": "^1.1.2 - Used for HTML scraping, no longer needed",
+      "wikidata-sdk": "^8.1.1 - Used for Wikipedia API, removed as unreliable"
+    },
+    "devDependencies": {
+      "@types/cheerio": "^0.22.31 - Types for cheerio scraping library",
+      "@types/node-fetch": "^2.6.12 - Types for node-fetch, replaced by axios",
+      "@types/puppeteer": "^5.4.7 - Types for Puppeteer scraping",
+      "node-fetch": "^2.7.0 - HTTP client, replaced by axios",
+      "puppeteer": "^24.15.0 - Browser automation for scraping, removed"
+    }
   }
 }
