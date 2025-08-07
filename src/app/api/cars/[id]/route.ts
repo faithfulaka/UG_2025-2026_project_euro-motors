@@ -1,6 +1,8 @@
-//src/app/api/cars/[id]/route.ts 
+// src/app/api/cars/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { parseBuyCar, buyCarInclude } from '@/lib/db-helpers';
+import type { BuyCar } from '@/types/cars';
 
 export async function GET(
   request: NextRequest, 
@@ -10,58 +12,45 @@ export async function GET(
     // NEXT.JS 15 FIX: Await params
     const { id } = await params;
 
-    const car = await prisma.buyCar.findUnique({
+    // Fetch car with proper includes
+    const rawCar = await prisma.buyCar.findUnique({
       where: { id },
-      include: {
-        images: true
-      }
+      include: buyCarInclude
     });
 
-    if (!car) {
-      return NextResponse.json({ error: 'Car not found' }, { status: 404 });
+    if (!rawCar) {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Car not found'
+          }
+        },
+        { status: 404 }
+      );
     }
 
-    // Parse JSON fields safely
-    const parsedCar = {
-      ...car,
-      specifications: typeof car.specifications === 'string' 
-        ? JSON.parse(car.specifications) 
-        : car.specifications,
-      features: typeof car.features === 'string' 
-        ? JSON.parse(car.features) 
-        : car.features,
-      standardEquipment: car.standardEquipment 
-        ? (typeof car.standardEquipment === 'string' 
-            ? JSON.parse(car.standardEquipment) 
-            : car.standardEquipment)
-        : [],
-      addedOptions: car.addedOptions 
-        ? (typeof car.addedOptions === 'string' 
-            ? JSON.parse(car.addedOptions) 
-            : car.addedOptions) 
-        : [],
-      performanceData: car.performanceData 
-        ? (typeof car.performanceData === 'string' 
-            ? JSON.parse(car.performanceData) 
-            : car.performanceData)
-        : null,
-      supercarData: car.supercarData 
-        ? (typeof car.supercarData === 'string' 
-            ? JSON.parse(car.supercarData) 
-            : car.supercarData)
-        : null,
-      pricingData: car.pricingData 
-        ? (typeof car.pricingData === 'string' 
-            ? JSON.parse(car.pricingData) 
-            : car.pricingData)
-        : null
-    };
+    // Parse JSON fields using centralized helper
+    const parsedCar: BuyCar = parseBuyCar(rawCar);
 
-    return NextResponse.json(parsedCar);
+    return NextResponse.json({
+      success: true,
+      data: parsedCar,
+      timestamp: new Date().toISOString()
+    });
+    
   } catch (error) {
     console.error('Error fetching car:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch car data' },
+      { 
+        success: false,
+        error: {
+          code: 'FETCH_ERROR',
+          message: 'Failed to fetch car data',
+          details: error instanceof Error ? error.message : 'Unknown error'
+        }
+      },
       { status: 500 }
     );
   }

@@ -1,8 +1,13 @@
 // src/types/cars.ts
+
+// Car Specifications (JSON FIELD IN DATABASE)
 export interface CarSpecifications {
+  // Basic Info
   color: string;
   interiorColor: string;
   mileage: number;
+  
+  // Engine & Performance
   engine: string;
   horsePower: number;
   transmission: string;
@@ -12,31 +17,64 @@ export interface CarSpecifications {
   seats: number;
   doors: number;
   
-  // ADDED MISSING PROPERTIES (fixes TypeScript errors)
+  // Optional Performance Fields (from SPA data)
   topSpeed?: string;
   acceleration100?: string;
-  acceleration60?: string; // Added this
+  acceleration60?: string;
   powerKW?: string;
   powerPS?: string;
-  powerRPM?: string; // Added this
+  powerRPM?: string;
   torque?: string;
-  torqueRange?: string; // Added this
+  torqueRange?: string;
   weight?: string;
   wheelbase?: string;
   wheelSize?: string;
-  brakeColor?: string; // Added brake color property
-  steeringType?: string; // Added this
-  colorOptions?: string; // Added this
-  vinPattern?: string; // Added VIN pattern support
-  fuelEconomy?: string; // Added this
+  brakeColor?: string;
+  steeringType?: string;
+  colorOptions?: string;
+  vinPattern?: string;
+  fuelEconomy?: string;
 }
 
+// Car Features (JSON FIELD IN DATABASE)
 export interface CarFeatures {
   interior: string[];
   exterior: string[];
   safety: string[];
 }
 
+// Form Data Types for Admin Operations
+export interface CarFormData {
+  id?: string;
+  make: string;
+  model: string;
+  trim?: string | null;
+  year: number;
+  price: number;
+  description: string;
+  isAvailable: boolean;
+  specifications: CarSpecifications;
+  features: CarFeatures;
+  standardEquipment: string[];
+  addedOptions: string[];
+}
+
+export interface RentalCarFormData {
+  id?: string;
+  make: string;
+  model: string;
+  trim?: string | null;
+  year: number;
+  hourlyRate: number;
+  dailyRate: number;
+  weeklyRate: number;
+  description: string;
+  isAvailable: boolean;
+  specifications: CarSpecifications;
+  features: CarFeatures;
+}
+
+// Car Image (SEPARATE TABLE)
 export interface CarImage {
   id: string;
   carId: string;
@@ -45,7 +83,7 @@ export interface CarImage {
   imageType: string | null;
 }
 
-// SPA Data (Admin Helper Only - doesn't affect user experience)
+// Performance Data (JSON FIELD - FROM SPA)
 export interface PerformanceData {
   engine: string;
   horsePower: string;
@@ -58,57 +96,21 @@ export interface PerformanceData {
   fuelEconomy?: string;
 }
 
+// Pricing Data (JSON FIELD - FROM SPA)
 export interface PricingData {
   baseMSRP: number;
   currentMarketRange: string;
   averageDealerPrice: number;
   dealerInventoryCount: number;
   priceTrend: string;
+  priceDistribution?: {
+    min: number;
+    max: number;
+    median: number;
+  };
 }
 
-export interface AuctionHistory {
-  recentSales: string;
-  averageAuctionPrice: number;
-  highestSale: string;
-  lowestSale: string;
-  commonAuctionNotes: string[];
-}
-
-export interface PopularConfigurations {
-  basePrice: number;
-  mostSelectedOptions: Array<{
-    name: string;
-    price: number;
-  }>;
-  mostPopularExteriorColor: string;
-  mostPopularInterior: string;
-}
-
-export interface DepreciationData {
-  year1: string;
-  year3: string;
-  year5: string;
-  residualValueRating: string;
-  rareOptionsForResale: string[];
-}
-
-export interface CompetingModels {
-  primaryCompetitors: Array<{
-    name: string;
-    avgPrice: number;
-  }>;
-  pricePosition: string;
-}
-
-export interface OwnershipCosts {
-  insuranceGroup: number;
-  annualRoadTax: number;
-  typicalFinancing: string;
-  fuelCost: string;
-  estimatedAnnualMaintenance: string;
-}
-
-// Complete SPA Data Structure (ADMIN HELPER ONLY)
+//     Supercar Data (JSON FIELD - COMPLETE SPA DATA)
 export interface SupercarData {
   make: string;
   model: string;
@@ -118,11 +120,43 @@ export interface SupercarData {
   vinPattern: string;
   performanceData: PerformanceData;
   pricingData: PricingData;
-  auctionHistory: AuctionHistory;
-  popularConfigurations: PopularConfigurations;
-  depreciationData: DepreciationData;
-  competingModels: CompetingModels;
-  ownershipCosts: OwnershipCosts;
+  auctionHistory: {
+    recentSales: string;
+    averageAuctionPrice: number;
+    highestSale: string;
+    lowestSale: string;
+    commonAuctionNotes: string[];
+  };
+  popularConfigurations: {
+    basePrice: number;
+    mostSelectedOptions: Array<{
+      name: string;
+      price: number;
+    }>;
+    mostPopularExteriorColor: string;
+    mostPopularInterior: string;
+  };
+  depreciationData: {
+    year1: string;
+    year3: string;
+    year5: string;
+    residualValueRating: string;
+    rareOptionsForResale: string[];
+  };
+  competingModels: {
+    primaryCompetitors: Array<{
+      name: string;
+      avgPrice: number;
+    }>;
+    pricePosition: string;
+  };
+  ownershipCosts: {
+    insuranceGroup: number;
+    annualRoadTax: number;
+    typicalFinancing: string;
+    fuelCost: string;
+    estimatedAnnualMaintenance: string;
+  };
   dealerData: {
     averageDaysOnMarket: number;
     currentUKInventory: number;
@@ -138,33 +172,95 @@ export interface SupercarData {
   };
 }
 
-// MAIN CAR INTERFACES (What users see - unchanged)
+// ===== BUY CAR (MATCHES PRISMA SCHEMA EXACTLY) =====
 export interface BuyCar {
   id: string;
   make: string;
   model: string;
   trim: string | null;
   year: number;
-  price: number; // Main price users see
-  baseMSRP?: number; // Reference from SPA
-  specifications: CarSpecifications; // What users see
-  features: CarFeatures; // What users see
+  price: number; // Float in Prisma
+  
+  // JSON fields - parsed at runtime
+  specifications: CarSpecifications;
+  features: CarFeatures;
   standardEquipment: string[] | null;
   addedOptions: string[] | null;
   
-  // SPA Data (ADMIN REFERENCE ONLY - users don't see this)
-  performanceData?: PerformanceData;
-  supercarData?: SupercarData;
-  pricingData?: PricingData;
+  // SPA JSON fields - optional and parsed at runtime
+  supercarData?: SupercarData | null;
+  baseMSRP?: number | null; // Float in Prisma
+  performanceData?: PerformanceData | null;
+  pricingData?: PricingData | null;
   
+  // Basic fields
   description: string;
   isAvailable: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  
+  // Relations
   images: CarImage[];
-  createdAt?: Date;
-  updatedAt?: Date;
 }
 
+// ===== RENTAL CAR (MATCHES PRISMA SCHEMA EXACTLY) =====
 export interface RentalCar {
+  id: string;
+  make: string;
+  model: string;
+  trim: string | null;
+  year: number;
+  hourlyRate: number; // Float in Prisma
+  dailyRate: number; // Float in Prisma
+  weeklyRate: number; // Float in Prisma
+  
+  // JSON fields - parsed at runtime
+  specifications: CarSpecifications;
+  features: CarFeatures;
+  
+  // SPA JSON fields - optional and parsed at runtime
+  supercarData?: SupercarData | null;
+  baseMSRP?: number | null; // Float in Prisma
+  performanceData?: PerformanceData | null;
+  
+  // Basic fields
+  description: string;
+  isAvailable: boolean;
+  stripeProductId?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  
+  // Relations
+  images: CarImage[];
+}
+
+// ===== UNION TYPE =====
+export type Car = BuyCar | RentalCar;
+
+// ===== RAW DATABASE TYPES (BEFORE JSON PARSING) =====
+export interface RawBuyCar {
+  id: string;
+  make: string;
+  model: string;
+  trim: string | null;
+  year: number;
+  price: number;
+  specifications: string | CarSpecifications;
+  features: string | CarFeatures;
+  standardEquipment: string | string[] | null;
+  addedOptions: string | string[] | null;
+  supercarData: string | SupercarData | null;
+  baseMSRP?: number | null;
+  performanceData: string | PerformanceData | null;
+  pricingData: string | PricingData | null;
+  description: string;
+  isAvailable: boolean;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  images: CarImage[];
+}
+
+export interface RawRentalCar {
   id: string;
   make: string;
   model: string;
@@ -173,20 +269,15 @@ export interface RentalCar {
   hourlyRate: number;
   dailyRate: number;
   weeklyRate: number;
-  baseMSRP?: number;
-  specifications: CarSpecifications; // What users see
-  features: CarFeatures; // What users see
-  
-  // SPA Data (ADMIN REFERENCE ONLY)
-  performanceData?: PerformanceData;
-  supercarData?: SupercarData;
-  
+  specifications: string | CarSpecifications;
+  features: string | CarFeatures;
+  supercarData: string | SupercarData | null;
+  baseMSRP?: number | null;
+  performanceData: string | PerformanceData | null;
   description: string;
   isAvailable: boolean;
-  stripeProductId?: string;
+  stripeProductId?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
   images: CarImage[];
-  createdAt?: Date;
-  updatedAt?: Date;
 }
-
-export type Car = BuyCar | RentalCar;

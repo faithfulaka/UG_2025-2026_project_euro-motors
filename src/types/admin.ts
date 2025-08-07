@@ -1,5 +1,5 @@
 // src/types/admin.ts
-import { BuyCar, RentalCar, CarSpecifications, CarFeatures } from '@/types/cars';
+import { BuyCar, RentalCar, CarSpecifications, CarFeatures, CarFormData, RentalCarFormData } from '@/types/cars';
 
 // Enhanced AdminDashboardStats (fixes the missing properties error)
 export interface AdminDashboardStats {
@@ -37,98 +37,6 @@ export interface AdminCarListProps {
   onDelete: (id: string) => void;
 }
 
-export interface CarFormData {
-  id?: string;
-  make: string;
-  model: string;
-  trim?: string | null;
-  year: number;
-  price: number;
-  description: string;
-  isAvailable: boolean;
-  specifications: {
-    color: string;
-    interiorColor: string;
-    mileage: number;
-    engine: string;
-    horsePower: number;
-    torque: string;
-    fuelType: string;
-    transmission: string;
-    driveType: string;
-    bodyType: string;
-    doors: number;
-    seats: number;
-    topSpeed?: string;
-    acceleration100?: string;
-    acceleration60?: string; // Added for TypeScript completeness
-    powerKW?: string;
-    powerPS?: string;
-    powerRPM?: string; // Added for TypeScript completeness
-    torqueRange?: string; // Added for TypeScript completeness
-    weight?: string;
-    wheelbase?: string;
-    wheelSize?: string;
-    brakeColor?: string;
-    steeringType?: string;
-    colorOptions?: string; // Added for TypeScript completeness
-    fuelEconomy?: string; // Added for TypeScript completeness
-  };
-  features: {
-    interior: string[];
-    exterior: string[];
-    safety: string[];
-  };
-  standardEquipment: string[];
-  addedOptions: string[];
-}
-
-export interface RentalCarFormData {
-  id?: string;
-  make: string;
-  model: string;
-  trim?: string | null;
-  year: number;
-  hourlyRate: number;
-  dailyRate: number;
-  weeklyRate: number;
-  description: string;
-  isAvailable: boolean;
-  specifications: {
-    color: string;
-    interiorColor: string;
-    mileage: number;
-    engine: string;
-    horsePower: number;
-    torque: string;
-    fuelType: string;
-    transmission: string;
-    driveType: string;
-    bodyType: string;
-    doors: number;
-    seats: number;
-    topSpeed?: string;
-    acceleration100?: string;
-    acceleration60?: string; // Added for completeness
-    powerKW?: string;
-    powerPS?: string;
-    powerRPM?: string; // Added for completeness
-    torqueRange?: string; // Added for completeness
-    weight?: string;
-    wheelbase?: string;
-    wheelSize?: string;
-    brakeColor?: string;
-    steeringType?: string;
-    colorOptions?: string; // Added for completeness
-    fuelEconomy?: string; // Added for completeness
-  };
-  features: {
-    interior: string[];
-    exterior: string[];
-    safety: string[];
-  };
-}
-
 export interface AdminCarFormProps {
   car?: BuyCar | RentalCar;
   type: 'buy' | 'rent';
@@ -137,7 +45,9 @@ export interface AdminCarFormProps {
   onCancel: () => void;
 }
 
-// SPA/Scraper Interfaces (renamed to avoid conflicts)
+// SPA/Scraper Interfaces (for future use with scraper functionality)
+// These interfaces are defined for when implementing web scraping features
+// Currently not actively used but kept for future implementation
 export interface AdminScraperResult {
   make: string;
   model: string;
