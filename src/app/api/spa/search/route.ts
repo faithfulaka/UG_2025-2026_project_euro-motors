@@ -1,8 +1,8 @@
-// src/app/api/spa/search/route.ts - Updated with new reliable APIs
+// src/app/api/spa/search/route.ts - SIMPLIFIED to use only CarQuery
 import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { unifiedCarService, newAPIServices } from '@/lib/services/new-apis';
-import type { ComprehensiveSPAData, SPASearchResponse, SPASearchParams, MarketData } from '@/types/spa';
+import { maximumDataAggregator } from '@/lib/services/new-apis/maximum-data-aggregator';
+import type { ComprehensiveSPAData, SPASearchResponse, SPASearchParams } from '@/types/spa';
 import type { PerformanceData, PricingData } from '@/types/cars';
 
 async function handleSearch(
@@ -14,6 +14,8 @@ async function handleSearch(
   const startTime = Date.now();
   
   try {
+    console.log(`🔍 Starting search: ${year} ${make} ${model}`);
+    
     // Initialize search params
     const searchParams: SPASearchParams = {
       make,
@@ -22,170 +24,142 @@ async function handleSearch(
       dataSource: source as 'comprehensive' | 'database' | 'carquery' | 'manufacturer' | 'market'
     };
 
-    // Fetch data from various reliable sources
-    const [
-      apiSearchResults,
-      dbEntries,
-      marketStats,
-      dealerInfo
-    ] = await Promise.all([
-      // Comprehensive search across all new APIs
-      source !== 'database' ? unifiedCarService.searchVehicles(make, model, parseInt(year)) : null,
-      // Database entries
-      source === 'database' || source === 'comprehensive' 
-        ? prisma.buyCar.findMany({ 
-            where: { make, model, year: Number(year) },
-            include: { images: true }
-          }) 
-        : [],
-      // Market data from MarketCheck
-      newAPIServices.marketCheck.getMarketStats(make, model, parseInt(year)).catch(() => null),
-      // Dealer information
-      newAPIServices.cisAutomotive.findNearestDealers(make, {}).catch(() => [])
-    ]);
+    // Get database entries
+    const databaseCars = await prisma.buyCar.findMany({ 
+      where: { make, model, year: Number(year) },
+      include: { images: true }
+    });
 
-    // Process Edmunds data for specifications
-    const edmundsData = apiSearchResults?.edmunds;
-    const basicSpecifications = edmundsData ? {
+    // Get data from CarQuery (the only working API)
+    const vehicleData = await maximumDataAggregator.getMaximumVehicleData(
+      make,
+      model,
+      parseInt(year)
+    );
+
+    console.log('📊 Data retrieved from:', vehicleData.sources);
+
+    // Build basic specifications
+    const basicSpecifications = {
       make,
       model,
       year: parseInt(year),
-      bodyType: edmundsData.bodyType || '',
-      engine: `${edmundsData.engine?.displacement || 'N/A'}L ${edmundsData.engine?.type || 'N/A'}`,
-      engineCC: edmundsData.engine?.displacement?.toString() || undefined,
-      cylinders: edmundsData.engine?.cylinders?.toString() || undefined,
-      doors: 0, // Not provided in Edmunds API structure
-      seats: 0, // Not provided in Edmunds API structure
-      drivetrain: edmundsData.drivetrain || '',
-      transmission: edmundsData.transmission || '',
-      fuelType: edmundsData.engine?.fuelType || undefined
+      bodyType: vehicleData.basic.bodyType || 
+                databaseCars[0]?.specifications?.bodyType || 
+                'N/A',
+      engine: vehicleData.engine.description || 
+              databaseCars[0]?.specifications?.engine || 
+              'N/A',
+      engineCC: vehicleData.engine.displacement || 
+                databaseCars[0]?.specifications?.engineCC || 
+                'N/A',
+      cylinders: vehicleData.engine.cylinders || 
+                 databaseCars[0]?.specifications?.cylinders || 
+                 'N/A',
+      doors: vehicleData.dimensions.doors || 
+             databaseCars[0]?.specifications?.doors || 
+             0,
+      seats: vehicleData.dimensions.seats || 
+             databaseCars[0]?.specifications?.seats || 
+             0,
+      drivetrain: vehicleData.drivetrain.type || 
+                  databaseCars[0]?.specifications?.driveType || 
+                  'N/A',
+      transmission: vehicleData.transmission.type || 
+                   databaseCars[0]?.specifications?.transmission || 
+                   'N/A',
+      fuelType: vehicleData.engine.fuelType || 
+               databaseCars[0]?.specifications?.fuelType || 
+               'N/A'
+    };
+
+    // Build performance data
+    const performanceData: PerformanceData = {
+      engine: basicSpecifications.engine,
+      horsePower: vehicleData.engine.horsepower?.toString() || 
+                  databaseCars[0]?.specifications?.horsePower || 
+                  'N/A',
+      torque: vehicleData.engine.torque || 
+              databaseCars[0]?.specifications?.torque || 
+              'N/A',
+      acceleration060: vehicleData.performance.acceleration060 || 
+                      databaseCars[0]?.specifications?.acceleration60 || 
+                      'N/A',
+      topSpeed: vehicleData.performance.topSpeed || 
+               databaseCars[0]?.specifications?.topSpeed || 
+               'N/A',
+      transmission: basicSpecifications.transmission,
+      driveType: basicSpecifications.drivetrain,
+      weight: vehicleData.dimensions.weight || 
+             databaseCars[0]?.specifications?.weight || 
+             'N/A',
+      fuelEconomy: vehicleData.fuelEconomy.combined ? 
+        `${vehicleData.fuelEconomy.combined} MPG combined` :
+        (vehicleData.fuelEconomy.city && vehicleData.fuelEconomy.highway ? 
+          `${vehicleData.fuelEconomy.city}/${vehicleData.fuelEconomy.highway} MPG (city/hwy)` :
+          databaseCars[0]?.specifications?.fuelEconomy || undefined)
+    };
+
+    // Build pricing data (from database only since APIs don't provide it)
+    const pricingData: PricingData | undefined = databaseCars[0]?.price ? {
+      baseMSRP: databaseCars[0]?.baseMSRP || 0,
+      currentMarketRange: 'N/A',
+      averageDealerPrice: databaseCars[0]?.price || 0,
+      dealerInventoryCount: databaseCars.length,
+      priceTrend: undefined, // Remove priceTrend as it's causing type errors
+      priceDistribution: undefined
     } : undefined;
 
-    // Process performance data from Edmunds
-    const performanceData: PerformanceData | undefined = edmundsData ? {
-      engine: `${edmundsData.engine?.displacement || 'N/A'}L ${edmundsData.engine?.type || 'N/A'}`,
-      horsePower: edmundsData.engine?.horsepower?.toString() || 'N/A',
-      torque: edmundsData.engine?.torque ? `${edmundsData.engine.torque} lb-ft` : 'N/A',
-      acceleration060: 'N/A', // Not available in Edmunds response structure
-      topSpeed: 'N/A', // Not available in Edmunds response structure
-      transmission: edmundsData.transmission || 'N/A',
-      driveType: edmundsData.drivetrain || 'N/A',
-      weight: 'N/A', // Not available in Edmunds response structure
-      fuelEconomy: edmundsData.mpg ? `${edmundsData.mpg.combined || 'N/A'} MPG combined` : undefined
+    // Extract dimensions
+    const dimensions = vehicleData.dimensions ? {
+      length: vehicleData.dimensions.length,
+      width: vehicleData.dimensions.width,
+      height: vehicleData.dimensions.height,
+      wheelbase: vehicleData.dimensions.wheelbase,
+      weight: vehicleData.dimensions.weight
     } : undefined;
 
-    // Calculate pricing data from all sources
-    const allPrices: number[] = [
-      ...dbEntries.map(car => car.price),
-      ...(apiSearchResults?.marketCheck || []).map(item => item.price),
-      ...(edmundsData?.price?.msrp ? [edmundsData.price.msrp] : []),
-    ].filter(p => p && p > 0);
-
-    const baseMSRP = dbEntries[0]?.baseMSRP || 
-                     edmundsData?.price?.msrp || 
-                     (allPrices.length > 0 ? Math.min(...allPrices) : 0);
-
-    const pricingData: PricingData | undefined = allPrices.length > 0 || marketStats ? {
-      baseMSRP: baseMSRP || 0,
-      currentMarketRange: marketStats ? 
-        `£${marketStats.minPrice.toLocaleString()} - £${marketStats.maxPrice.toLocaleString()}` :
-        (allPrices.length > 0 
-          ? `£${Math.min(...allPrices).toLocaleString()} - £${Math.max(...allPrices).toLocaleString()}`
-          : 'N/A'),
-      averageDealerPrice: marketStats?.averagePrice || 
-                         (allPrices.length > 0 ? allPrices.reduce((a, b) => a + b, 0) / allPrices.length : 0),
-      dealerInventoryCount: dbEntries.length,
-      priceTrend: 'stable', // Default trend
-      priceDistribution: allPrices.length > 0 ? {
-        min: Math.min(...allPrices),
-        max: Math.max(...allPrices),
-        median: allPrices.sort((a, b) => a - b)[Math.floor(allPrices.length / 2)]
-      } : undefined
-    } : undefined;
-
-    // Construct market data
-    const marketData: MarketData | undefined = marketStats ? {
-      listings: (apiSearchResults?.marketCheck || []).map(vehicle => ({
-        title: vehicle.heading,
-        price: vehicle.price.toString(),
-        priceNumeric: vehicle.price,
-        mileage: vehicle.miles?.toString(),
-        year: vehicle.build?.year,
-        location: `${vehicle.dealer?.city}, ${vehicle.dealer?.state}`,
-        dealer: vehicle.dealer?.name,
-        specs: `${vehicle.build?.engine} ${vehicle.build?.transmission}`,
-        url: vehicle.vdp_url,
-        imageUrl: vehicle.media?.photo_links?.[0]
-      })),
-      averagePrice: marketStats.averagePrice,
-      priceRange: `£${marketStats.minPrice.toLocaleString()} - £${marketStats.maxPrice.toLocaleString()}`,
-      inventoryCount: marketStats.totalListings,
-      priceDistribution: {
-        min: marketStats.minPrice,
-        max: marketStats.maxPrice,
-        median: marketStats.medianPrice,
-        q1: marketStats.priceDistribution.q1,
-        q3: marketStats.priceDistribution.q3
-      },
-      dataSource: 'MarketCheck API',
-      searchParams: { make, model, year: parseInt(year) },
-      timestamp: new Date().toISOString()
-    } : undefined;
-
-    // Aggregate popular options from database entries
-    const popularOptions = dbEntries.length > 0 ? 
-      dbEntries
-        .flatMap(car => {
-          const options = car.addedOptions;
-          if (typeof options === 'string') {
-            try {
-              return JSON.parse(options) as string[];
-            } catch {
-              return [];
-            }
-          }
-          return Array.isArray(options) ? options : [];
-        })
-        .reduce((acc: Array<{ name: string; frequency?: number; source: 'database' | 'market' | 'manufacturer' }>, option: string) => {
-          const existing = acc.find(o => o.name === option);
-          if (existing) {
-            existing.frequency = (existing.frequency || 1) + 1;
-          } else {
-            acc.push({ 
-              name: option, 
-              frequency: 1, 
-              source: 'database'
-            });
-          }
-          return acc;
-        }, [])
-        .sort((a, b) => (b.frequency || 0) - (a.frequency || 0))
-        .slice(0, 10)
-      : undefined;
+    // Colors (empty since no API provides this)
+    const colors = {
+      exterior: vehicleData.colors.exterior || [],
+      interior: vehicleData.colors.interior || [],
+      totalCombinations: 0
+    };
 
     // Build comprehensive SPA data
     const comprehensiveData: ComprehensiveSPAData = {
       make,
       model,
       year: parseInt(year),
-      bodyType: basicSpecifications?.bodyType,
-      trim: dbEntries[0]?.trim || undefined,
+      bodyType: basicSpecifications.bodyType,
+      trim: vehicleData.basic.trim || databaseCars[0]?.trim,
       basicSpecifications,
       performanceData,
       pricingData,
-      marketData,
-      popularOptions,
+      dimensions,
+      colors,
+      fuelEconomy: vehicleData.fuelEconomy,
+      // Data sources tracking
       dataSources: {
-        database: dbEntries.length > 0,
-        carQuery: false, // No longer using CarQuery
-        manufacturer: !!edmundsData, 
-        market: !!marketStats
+        database: databaseCars.length > 0,
+        carQuery: vehicleData.sources.includes('CarQuery'),
+        manufacturer: false, // Removed non-working APIs
+        market: false // Removed non-working APIs
       },
       dataSource: source,
       searchQuery: searchParams,
       timestamp: new Date().toISOString(),
       cacheExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
     };
+
+    console.log('✅ Data compiled:', {
+      hasBasicSpecs: !!basicSpecifications,
+      hasPerformance: !!performanceData,
+      hasPricing: !!pricingData,
+      hasDimensions: !!dimensions,
+      dataSources: comprehensiveData.dataSources,
+      totalDataPoints: countDataPoints(comprehensiveData)
+    });
 
     return {
       success: true,
@@ -194,12 +168,14 @@ async function handleSearch(
         searchQuery: searchParams,
         executionTime: Date.now() - startTime,
         timestamp: new Date().toISOString(),
-        version: '2.0.0' // Updated version with new APIs
+        version: '3.0.0',
+        dataPoints: countDataPoints(comprehensiveData),
+        sources: vehicleData.sources
       }
     };
 
   } catch (error) {
-    console.error('SPA Search Error:', error);
+    console.error('❌ SPA Search Error:', error);
     
     return {
       success: false,
@@ -217,10 +193,34 @@ async function handleSearch(
         },
         executionTime: Date.now() - startTime,
         timestamp: new Date().toISOString(),
-        version: '2.0.0'
+        version: '3.0.0'
       }
     };
   }
+}
+
+function countDataPoints(data: any): number {
+  let count = 0;
+  
+  function traverse(obj: any) {
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        const value = obj[key];
+        if (value !== null && value !== undefined && value !== '' && value !== 'N/A') {
+          if (Array.isArray(value)) {
+            count += value.length;
+          } else if (typeof value === 'object') {
+            traverse(value);
+          } else {
+            count++;
+          }
+        }
+      }
+    }
+  }
+  
+  traverse(data);
+  return count;
 }
 
 export async function GET(req: NextRequest) {
@@ -247,7 +247,7 @@ export async function GET(req: NextRequest) {
           },
           executionTime: 0,
           timestamp: new Date().toISOString(),
-          version: '2.0.0'
+          version: '3.0.0'
         }
       },
       { status: 400 }
@@ -279,7 +279,7 @@ export async function POST(req: Request) {
           },
           executionTime: 0,
           timestamp: new Date().toISOString(),
-          version: '2.0.0'
+          version: '3.0.0'
         }
       },
       { status: 400 }

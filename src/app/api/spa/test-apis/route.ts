@@ -1,4 +1,4 @@
-// src/app/api/spa/test-apis/route.ts - Test endpoint for new reliable APIs
+// src/app/api/spa/test-apis/route.ts - Updated with correct endpoints
 import { NextRequest, NextResponse } from 'next/server';
 import { newAPIServices } from '@/lib/services/new-apis';
 
@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   const make = searchParams.get('make') || 'BMW';
   const model = searchParams.get('model') || 'X5';
   const year = parseInt(searchParams.get('year') || '2023');
+  const vin = searchParams.get('vin');
 
   const startTime = Date.now();
 
@@ -15,28 +16,14 @@ export async function GET(request: NextRequest) {
     let results: any = {};
 
     switch (api) {
-      case 'edmunds': {
+      case 'cardata': {
         results = {
-          api: 'Edmunds',
-          tests: {
-            makes: await newAPIServices.edmunds.getMakes(),
-            models: await newAPIServices.edmunds.getModels(make.toLowerCase()),
-            vehicleSpecs: await newAPIServices.edmunds.getVehicleSpecs(make, model, year),
-            searchResults: await newAPIServices.edmunds.searchVehicles({ make, model, year })
-          }
-        };
-        break;
-      }
-
-      case 'marketcheck': {
-        results = {
-          api: 'MarketCheck',
-          tests: {
-            makes: await newAPIServices.marketCheck.getAvailableMakes(),
-            models: await newAPIServices.marketCheck.getAvailableModels(make),
-            searchResults: await newAPIServices.marketCheck.searchByMakeModelYear(make, model, year),
-            marketStats: await newAPIServices.marketCheck.getMarketStats(make, model, year),
-            featuredVehicles: await newAPIServices.marketCheck.getFeaturedVehicles(10)
+          api: 'Car Data API',
+          endpoints: {
+            cars: await newAPIServices.carData.getCars({ make, model, year, limit: 5 }),
+            types: await newAPIServices.carData.getTypes(),
+            makes: await newAPIServices.carData.getMakes(),
+            years: await newAPIServices.carData.getYears()
           }
         };
         break;
@@ -45,28 +32,65 @@ export async function GET(request: NextRequest) {
       case 'cis': {
         results = {
           api: 'CIS Automotive',
-          tests: {
-            makes: await newAPIServices.cisAutomotive.getAvailableMakes(),
-            models: await newAPIServices.cisAutomotive.getAvailableModels(make),
-            dealers: await newAPIServices.cisAutomotive.getDealersByBrand(make, { state: 'CA' }),
-            vehicles: await newAPIServices.cisAutomotive.searchVehicles({ make, model, year }),
-            dealerById: await newAPIServices.cisAutomotive.getDealerByID('29319') // Example dealer ID
+          staticData: {
+            brands: await newAPIServices.cisAutomotive.getBrands(),
+            regions: await newAPIServices.cisAutomotive.getRegions(),
+            models: await newAPIServices.cisAutomotive.getModels()
+          },
+          pricingData: await newAPIServices.cisAutomotive.getComprehensivePricing(make, model, year)
+        };
+        break;
+      }
+
+      case 'carapi2': {
+        results = {
+          api: 'Car API2',
+          endpoints: {
+            years: await newAPIServices.carApi2.getYears(),
+            makes: await newAPIServices.carApi2.getMakes(),
+            models: await newAPIServices.carApi2.getModels(make),
+            trims: await newAPIServices.carApi2.getTrims(make, model, year),
+            bodies: await newAPIServices.carApi2.getBodies(make, model, year),
+            engines: await newAPIServices.carApi2.getEngines(make, model, year),
+            exteriorColors: await newAPIServices.carApi2.getExteriorColors(make, model, year),
+            interiorColors: await newAPIServices.carApi2.getInteriorColors(make, model, year),
+            mileages: await newAPIServices.carApi2.getMileages(make, model, year),
+            vinDecode: vin ? await newAPIServices.carApi2.decodeVIN(vin) : null
           }
         };
         break;
       }
 
-      case 'cardata': {
+      case 'marketcheck': {
+        const searchResult = await newAPIServices.marketCheck.searchVehicles({
+          make,
+          model,
+          year,
+          rows: 10
+        });
+        
         results = {
-          api: 'Car Data',
-          tests: {
-            makes: await newAPIServices.carData.getMakes(),
-            models: await newAPIServices.carData.getModels(make),
-            years: await newAPIServices.carData.getYears(),
-            types: await newAPIServices.carData.getTypes(),
-            searchResults: await newAPIServices.carData.searchCars(make, model, year),
-            popularCars: await newAPIServices.carData.getPopularCars(10),
-            comprehensiveData: await newAPIServices.carData.getComprehensiveCarData(make, model, year)
+          api: 'MarketCheck (Car Search API)',
+          searchResults: {
+            totalFound: searchResult?.num_found || 0,
+            listings: searchResult?.listings || [],
+            stats: searchResult?.stats || null
+          },
+          marketStats: await newAPIServices.marketCheck.getMarketStats(make, model, year)
+        };
+        break;
+      }
+
+      case 'comprehensive': {
+        results = {
+          api: 'Comprehensive Aggregator',
+          vehicleData: await newAPIServices.aggregator.getComprehensiveVehicleData(
+            make, model, year, { vin }
+          ),
+          suggestions: {
+            makes: await newAPIServices.aggregator.getEnhancedSuggestions('make'),
+            models: await newAPIServices.aggregator.getEnhancedSuggestions('model', { make }),
+            years: await newAPIServices.aggregator.getEnhancedSuggestions('year')
           }
         };
         break;
@@ -74,74 +98,55 @@ export async function GET(request: NextRequest) {
 
       case 'all':
       default: {
-        // Test all APIs with basic functionality
-        const [edmundsTest, marketCheckTest, cisTest, carDataTest] = await Promise.allSettled([
-          // Edmunds test
-          Promise.all([
-            newAPIServices.edmunds.getMakes(),
-            newAPIServices.edmunds.getVehicleSpecs(make, model, year)
-          ]),
-          // MarketCheck test
-          Promise.all([
-            newAPIServices.marketCheck.getAvailableMakes(),
-            newAPIServices.marketCheck.getMarketStats(make, model, year)
-          ]),
-          // CIS Automotive test
-          Promise.all([
-            newAPIServices.cisAutomotive.getAvailableMakes(),
-            newAPIServices.cisAutomotive.getDealerByID('29319')
-          ]),
-          // Car Data test
-          Promise.all([
-            newAPIServices.carData.getMakes(),
-            newAPIServices.carData.searchCars(make, model, year, { limit: 5 })
-          ])
+        // Test all APIs with minimal calls
+        const [carDataTest, cisTest, carApi2Test, marketCheckTest] = await Promise.allSettled([
+          // Car Data API
+          newAPIServices.carData.getCars({ make, model, year, limit: 2 }),
+          
+          // CIS Automotive
+          newAPIServices.cisAutomotive.getComprehensivePricing(make, model, year),
+          
+          // Car API2
+          newAPIServices.carApi2.getTrims(make, model, year),
+          
+          // MarketCheck
+          newAPIServices.marketCheck.searchVehicles({ make, model, year, rows: 5 })
         ]);
 
         results = {
-          summary: 'Testing all new reliable APIs',
+          summary: 'Testing all APIs',
           testParams: { make, model, year },
           results: {
-            edmunds: {
-              status: edmundsTest.status,
-              data: edmundsTest.status === 'fulfilled' ? {
-                makesCount: edmundsTest.value[0]?.length || 0,
-                vehicleSpecs: edmundsTest.value[1] ? 'Found' : 'Not found'
-              } : { error: edmundsTest.reason?.message },
-              working: edmundsTest.status === 'fulfilled'
-            },
-            marketCheck: {
-              status: marketCheckTest.status,
-              data: marketCheckTest.status === 'fulfilled' ? {
-                makesCount: marketCheckTest.value[0]?.length || 0,
-                marketStats: marketCheckTest.value[1] ? 'Found' : 'Not found'
-              } : { error: marketCheckTest.reason?.message },
-              working: marketCheckTest.status === 'fulfilled'
+            carData: {
+              status: carDataTest.status,
+              working: carDataTest.status === 'fulfilled',
+              carsFound: carDataTest.status === 'fulfilled' ? carDataTest.value.length : 0
             },
             cisAutomotive: {
               status: cisTest.status,
-              data: cisTest.status === 'fulfilled' ? {
-                makesCount: cisTest.value[0]?.length || 0,
-                dealerTest: cisTest.value[1] ? 'Found dealer' : 'No dealer found'
-              } : { error: cisTest.reason?.message },
-              working: cisTest.status === 'fulfilled'
+              working: cisTest.status === 'fulfilled',
+              hasPricing: cisTest.status === 'fulfilled' && cisTest.value ? 
+                !!(cisTest.value.valuation || cisTest.value.listPrice || cisTest.value.salePrice) : false
             },
-            carData: {
-              status: carDataTest.status,
-              data: carDataTest.status === 'fulfilled' ? {
-                makesCount: carDataTest.value[0]?.length || 0,
-                searchResults: carDataTest.value[1]?.length || 0
-              } : { error: carDataTest.reason?.message },
-              working: carDataTest.status === 'fulfilled'
+            carApi2: {
+              status: carApi2Test.status,
+              working: carApi2Test.status === 'fulfilled',
+              trimsFound: carApi2Test.status === 'fulfilled' ? carApi2Test.value.length : 0
+            },
+            marketCheck: {
+              status: marketCheckTest.status,
+              working: marketCheckTest.status === 'fulfilled',
+              listingsFound: marketCheckTest.status === 'fulfilled' && marketCheckTest.value ? 
+                marketCheckTest.value.listings.length : 0
             }
           },
           workingApis: [
-            edmundsTest.status === 'fulfilled' ? 'edmunds' : null,
-            marketCheckTest.status === 'fulfilled' ? 'marketCheck' : null,
+            carDataTest.status === 'fulfilled' ? 'carData' : null,
             cisTest.status === 'fulfilled' ? 'cisAutomotive' : null,
-            carDataTest.status === 'fulfilled' ? 'carData' : null
+            carApi2Test.status === 'fulfilled' ? 'carApi2' : null,
+            marketCheckTest.status === 'fulfilled' ? 'marketCheck' : null
           ].filter(Boolean),
-          totalWorkingApis: [edmundsTest, marketCheckTest, cisTest, carDataTest]
+          totalWorkingApis: [carDataTest, cisTest, carApi2Test, marketCheckTest]
             .filter(test => test.status === 'fulfilled').length
         };
         break;
@@ -155,8 +160,8 @@ export async function GET(request: NextRequest) {
       meta: {
         executionTime: Date.now() - startTime,
         timestamp: new Date().toISOString(),
-        version: '2.0.0',
-        note: 'All old unreliable APIs and scrapers have been removed. These are the new reliable APIs.'
+        version: '3.0.0',
+        note: 'Using only specified endpoints. Edmunds removed.'
       }
     });
 
@@ -173,67 +178,7 @@ export async function GET(request: NextRequest) {
       meta: {
         executionTime: Date.now() - startTime,
         timestamp: new Date().toISOString(),
-        version: '2.0.0'
-      }
-    }, { status: 500 });
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const { apis, make = 'BMW', model = 'X5', year = 2023 } = await request.json();
-
-    if (!apis || !Array.isArray(apis)) {
-      return NextResponse.json({
-        success: false,
-        error: {
-          code: 'INVALID_PARAMS',
-          message: 'APIs array is required'
-        }
-      }, { status: 400 });
-    }
-
-    const results: any = {};
-
-    for (const api of apis) {
-      const url = new URL(request.url);
-      const params = new URLSearchParams({
-        api,
-        make,
-        model,
-        year: year.toString()
-      });
-
-      const response = await fetch(
-        `${url.origin}/api/spa/test-apis?${params}`,
-        {
-          method: 'GET',
-          headers: request.headers
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        results[api] = data.results;
-      } else {
-        results[api] = { error: 'Failed to test API' };
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      batchTest: true,
-      results,
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error) {
-    console.error('Batch API test error:', error);
-    return NextResponse.json({
-      success: false,
-      error: {
-        code: 'BATCH_TEST_ERROR',
-        message: 'Failed to run batch API tests'
+        version: '3.0.0'
       }
     }, { status: 500 });
   }
