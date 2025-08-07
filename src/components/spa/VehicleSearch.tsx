@@ -64,7 +64,10 @@ export default function VehicleSearch({ onResults, showDemo = false }: VehicleSe
 
   const loadSuggestions = async (type: 'make' | 'model' | 'year', make?: string, model?: string) => {
     try {
-      const params = new URLSearchParams({ type });
+      const params = new URLSearchParams({ 
+        type,
+        source: 'web' // Use web sources (CarQuery) for vehicle search, not database
+      });
       if (make) params.set('make', make);
       if (model) params.set('model', model);
 
@@ -185,7 +188,7 @@ export default function VehicleSearch({ onResults, showDemo = false }: VehicleSe
             <option value="">Select Make</option>
             {suggestions.makes.map((make, index) => (
               <option key={index} value={make.value}>
-                {make.label} {make.popular && '⭐'} ({make.source})
+                {make.label} {make.popular && '⭐'}
               </option>
             ))}
           </select>
@@ -205,7 +208,7 @@ export default function VehicleSearch({ onResults, showDemo = false }: VehicleSe
             <option value="">Select Model</option>
             {suggestions.models.map((model, index) => (
               <option key={index} value={model.value}>
-                {model.label} {model.popular && '⭐'} ({model.source})
+                {model.label} {model.popular && '⭐'}
               </option>
             ))}
           </select>
@@ -225,7 +228,7 @@ export default function VehicleSearch({ onResults, showDemo = false }: VehicleSe
             <option value="">Select Year</option>
             {suggestions.years.map((year, index) => (
               <option key={index} value={year.value}>
-                {year.label} {year.popular && '⭐'}
+                {year.label}
               </option>
             ))}
           </select>

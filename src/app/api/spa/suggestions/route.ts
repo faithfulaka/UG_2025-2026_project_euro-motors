@@ -1,6 +1,7 @@
-// src/app/api/spa/suggestions/route.ts - Updated with new reliable APIs
+// src/app/api/spa/suggestions/route.ts - Hybrid approach with working CarQuery + new APIs
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { carQueryService } from '@/lib/services';
 import { unifiedCarService } from '@/lib/services/new-apis';
 import type { SPASuggestion, SPASuggestionResponse } from '@/types/spa';
 
@@ -15,6 +16,7 @@ export async function GET(request: NextRequest) {
     const make = searchParams.get('make');
     const model = searchParams.get('model');
     const query = searchParams.get('query') || '';
+    const source = searchParams.get('source') || 'web'; // Default to web sources only
 
     if (!type) {
       return NextResponse.json(
@@ -29,7 +31,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const cacheKey = `${type}-${make || ''}-${model || ''}-${query}`;
+    const cacheKey = `${type}-${make || ''}-${model || ''}-${query}-${source}`;
     
     // Check cache first
     const cached = suggestionCache.get(cacheKey);
@@ -44,52 +46,61 @@ export async function GET(request: NextRequest) {
     }
 
     let suggestions: SPASuggestion[] = [];
-    const source = 'unified_apis';
 
     switch (type) {
       case 'make': {
-        // Get makes from multiple reliable sources
-        const [dbMakes, apiMakes] = await Promise.all([
-          // Database makes
-          prisma.buyCar.findMany({
+        const makeSet = new Set<string>();
+        const makeMap = new Map<string, { count?: number; source: string }>();
+
+        // For database source, only get database makes
+        if (source === 'database' || source === 'all') {
+          const dbMakes = await prisma.buyCar.findMany({
             select: { make: true },
             distinct: ['make'],
             orderBy: { make: 'asc' }
-          }),
-          // New API makes
-          unifiedCarService.getMakes().catch(() => [])
-        ]);
+          });
 
-        // Combine and deduplicate
-        const makeSet = new Set<string>();
-        const makeMap = new Map<string, number>();
+          dbMakes.forEach(car => {
+            if (source === 'database' || !makeSet.has(car.make)) {
+              makeSet.add(car.make);
+              makeMap.set(car.make, { count: (makeMap.get(car.make)?.count || 0) + 1, source: 'database' });
+            }
+          });
+        }
 
-        // Add database makes with count
-        dbMakes.forEach(car => {
-          makeSet.add(car.make);
-          makeMap.set(car.make, (makeMap.get(car.make) || 0) + 1);
-        });
-
-        // Add API makes
-        apiMakes.forEach(make => {
-          makeSet.add(make.value);
-        });
+        // For web source or all, get CarQuery makes (primary reliable source)
+        if (source === 'web' || source === 'all') {
+          try {
+            const carQueryMakes = await carQueryService.getMakes();
+            carQueryMakes.forEach(make => {
+              if (!makeSet.has(make)) {
+                makeSet.add(make);
+                makeMap.set(make, { source: 'carquery' });
+              }
+            });
+          } catch (error) {
+            console.error('CarQuery error:', error);
+          }
+        }
 
         // Filter by query if provided
         const filteredMakes = Array.from(makeSet).filter(make =>
           !query || make.toLowerCase().includes(query.toLowerCase())
         );
 
-        // Create suggestions with source info
-        suggestions = filteredMakes.map(make => ({
-          value: make,
-          label: make,
-          count: makeMap.get(make),
-          source: makeMap.has(make) ? 'database' : 'api',
-          type: 'make',
-          displayName: make,
-          popular: makeMap.get(make) ? makeMap.get(make)! > 2 : false
-        }));
+        // Create suggestions with proper source info
+        suggestions = filteredMakes.map(make => {
+          const info = makeMap.get(make);
+          return {
+            value: make,
+            label: make,
+            count: info?.count,
+            source: info?.source || 'unknown',
+            type: 'make',
+            displayName: make,
+            popular: info?.count ? info.count > 2 : false
+          };
+        });
 
         break;
       }
@@ -108,33 +119,42 @@ export async function GET(request: NextRequest) {
           );
         }
 
-        // Get models from multiple sources
-        const [dbModels, apiModels] = await Promise.all([
-          // Database models for this make
-          prisma.buyCar.findMany({
+        const modelSet = new Set<string>();
+        const modelMap = new Map<string, { count?: number; source: string }>();
+
+        // For database source, only get database models
+        if (source === 'database' || source === 'all') {
+          const dbModels = await prisma.buyCar.findMany({
             where: { make },
             select: { model: true },
             distinct: ['model'],
             orderBy: { model: 'asc' }
-          }),
-          // New API models
-          unifiedCarService.getModels(make).catch(() => [])
-        ]);
+          });
 
-        // Combine and deduplicate
-        const modelSet = new Set<string>();
-        const modelMap = new Map<string, number>();
+          dbModels.forEach(car => {
+            if (source === 'database' || !modelSet.has(car.model)) {
+              modelSet.add(car.model);
+              modelMap.set(car.model, { count: (modelMap.get(car.model)?.count || 0) + 1, source: 'database' });
+            }
+          });
+        }
 
-        // Add database models with count
-        dbModels.forEach(car => {
-          modelSet.add(car.model);
-          modelMap.set(car.model, (modelMap.get(car.model) || 0) + 1);
-        });
-
-        // Add API models
-        apiModels.forEach(model => {
-          modelSet.add(model.value);
-        });
+        // For web source or all, get CarQuery models (primary reliable source)
+        if (source === 'web' || source === 'all') {
+          try {
+            const carQueryModels = await carQueryService.getModels(make);
+            carQueryModels
+              .filter(model => !/^(Category:|List of)/i.test(model))
+              .forEach(model => {
+                if (!modelSet.has(model)) {
+                  modelSet.add(model);
+                  modelMap.set(model, { source: 'carquery' });
+                }
+              });
+          } catch (error) {
+            console.error('CarQuery error:', error);
+          }
+        }
 
         // Filter by query if provided
         const filteredModels = Array.from(modelSet).filter(model =>
@@ -142,15 +162,18 @@ export async function GET(request: NextRequest) {
         );
 
         // Create suggestions
-        suggestions = filteredModels.map(model => ({
-          value: model,
-          label: model,
-          count: modelMap.get(model),
-          source: modelMap.has(model) ? 'database' : 'api',
-          type: 'model',
-          displayName: model,
-          popular: modelMap.get(model) ? modelMap.get(model)! > 2 : false
-        }));
+        suggestions = filteredModels.map(model => {
+          const info = modelMap.get(model);
+          return {
+            value: model,
+            label: model,
+            count: info?.count,
+            source: info?.source || 'unknown',
+            type: 'model',
+            displayName: model,
+            popular: info?.count ? info.count > 2 : false
+          };
+        });
 
         break;
       }
@@ -169,36 +192,40 @@ export async function GET(request: NextRequest) {
           );
         }
 
-        // Get years from multiple sources
-        const [dbYears, apiYears] = await Promise.all([
-          // Database years for this make/model
-          prisma.buyCar.findMany({
+        const yearSet = new Set<number>();
+        const yearMap = new Map<number, { count?: number; source: string }>();
+
+        // For database source, only get database years
+        if (source === 'database' || source === 'all') {
+          const dbYears = await prisma.buyCar.findMany({
             where: { make, model },
             select: { year: true },
             distinct: ['year'],
             orderBy: { year: 'desc' }
-          }),
-          // New API years
-          unifiedCarService.getYears(make, model).catch(() => [])
-        ]);
+          });
 
-        // Combine and deduplicate years
-        const yearSet = new Set<number>();
-        const yearMap = new Map<number, number>();
+          dbYears.forEach(car => {
+            if (source === 'database' || !yearSet.has(car.year)) {
+              yearSet.add(car.year);
+              yearMap.set(car.year, { count: (yearMap.get(car.year)?.count || 0) + 1, source: 'database' });
+            }
+          });
+        }
 
-        // Add database years with count
-        dbYears.forEach(car => {
-          yearSet.add(car.year);
-          yearMap.set(car.year, (yearMap.get(car.year) || 0) + 1);
-        });
-
-        // Add API years
-        apiYears.forEach(year => {
-          const yearNum = parseInt(year.value);
-          if (!isNaN(yearNum)) {
-            yearSet.add(yearNum);
+        // For web source or all, get CarQuery years (primary reliable source)
+        if (source === 'web' || source === 'all') {
+          try {
+            const carQueryYears = await carQueryService.getYears(make, model);
+            carQueryYears.forEach(year => {
+              if (!yearSet.has(year)) {
+                yearSet.add(year);
+                yearMap.set(year, { source: 'carquery' });
+              }
+            });
+          } catch (error) {
+            console.error('CarQuery error:', error);
           }
-        });
+        }
 
         // Filter by query if provided
         const filteredYears = Array.from(yearSet).filter(year =>
@@ -206,15 +233,18 @@ export async function GET(request: NextRequest) {
         );
 
         // Create suggestions
-        suggestions = filteredYears.map(year => ({
-          value: year.toString(),
-          label: year.toString(),
-          count: yearMap.get(year),
-          source: yearMap.has(year) ? 'database' : 'api',
-          type: 'year',
-          displayName: year.toString(),
-          popular: yearMap.get(year) ? yearMap.get(year)! > 1 : false
-        }));
+        suggestions = filteredYears.map(year => {
+          const info = yearMap.get(year);
+          return {
+            value: year.toString(),
+            label: year.toString(),
+            count: info?.count,
+            source: info?.source || 'unknown',
+            type: 'year',
+            displayName: year.toString(),
+            popular: info?.count ? info.count > 1 : false
+          };
+        });
 
         break;
       }
@@ -241,7 +271,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Limit results
-    suggestions = suggestions.slice(0, 20);
+    suggestions = suggestions.slice(0, 50); // Increased limit for better coverage
 
     // Cache the results
     suggestionCache.set(cacheKey, { data: suggestions, timestamp: Date.now() });

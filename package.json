@@ -15,7 +15,10 @@
     "enrich:cars": "npx tsx scripts/enrich-cars-with-spa.ts",
     "test:types": "npx tsx scripts/test-type-alignment.ts",
     "check:types": "bash scripts/check-types.sh",
-    "test:apis": "curl http://localhost:3000/api/spa/test-apis?api=all"
+    "test:apis": "node scripts/test-new-apis/validate-apis.js",
+    "test:integration": "bash scripts/test-new-apis/full-integration-test.sh",
+    "test:spa": "curl -s http://localhost:3000/api/spa/test-apis?api=all | json_pp",
+    "demo:spa": "echo 'SPA Demo: http://localhost:3000/spa-demo' && open http://localhost:3000/spa-demo"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
@@ -54,18 +57,34 @@
     "typescript": "^5.8.3",
     "webpack": "^5.101.0"
   },
-  "_removed_dependencies": {
-    "note": "The following dependencies were removed as part of the API cleanup:",
-    "dependencies": {
-      "cheerio": "^1.1.2 - Used for HTML scraping, no longer needed",
-      "wikidata-sdk": "^8.1.1 - Used for Wikipedia API, removed as unreliable"
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "_migration_notes": {
+    "version": "2.0.0",
+    "date": "2024-08-07",
+    "description": "Major API cleanup and integration with reliable services",
+    "removed_dependencies": {
+      "cheerio": "HTML scraping library - no longer needed with API integration",
+      "wikidata-sdk": "Wikipedia API client - unreliable data source",
+      "@types/cheerio": "TypeScript types for cheerio",
+      "@types/node-fetch": "TypeScript types for node-fetch",
+      "@types/puppeteer": "TypeScript types for Puppeteer",
+      "node-fetch": "HTTP client - replaced with axios for consistency",
+      "puppeteer": "Browser automation - eliminated scraping approach"
     },
-    "devDependencies": {
-      "@types/cheerio": "^0.22.31 - Types for cheerio scraping library",
-      "@types/node-fetch": "^2.6.12 - Types for node-fetch, replaced by axios",
-      "@types/puppeteer": "^5.4.7 - Types for Puppeteer scraping",
-      "node-fetch": "^2.7.0 - HTTP client, replaced by axios",
-      "puppeteer": "^24.15.0 - Browser automation for scraping, removed"
+    "new_apis_integrated": [
+      "Edmunds API - Official vehicle specifications and pricing",
+      "MarketCheck API - Real-time market data and listings", 
+      "CIS Automotive API - Dealer information and inventory",
+      "Car Data API - Comprehensive vehicle database"
+    ],
+    "new_npm_scripts": {
+      "test:apis": "Validate all new API endpoints",
+      "test:integration": "Complete integration test",
+      "test:spa": "Quick SPA API test",
+      "demo:spa": "Open SPA demo page in browser"
     }
   }
 }
