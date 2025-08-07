@@ -1,5 +1,4 @@
 // src/types/context.ts
-
 import type { ComprehensiveSPAData } from './spa';
 
 export interface CartItem {

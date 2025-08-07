@@ -1,6 +1,5 @@
 // src/lib/services/classicvaluer-api.ts
 import puppeteer from 'puppeteer';
-
 import { delay } from '@/lib/utils';
 
 export interface ClassicValuerData {

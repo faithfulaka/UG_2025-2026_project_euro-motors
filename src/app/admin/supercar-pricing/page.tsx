@@ -10,13 +10,13 @@ export default function SupercarPricingPage() {
   const [selectedMake, setSelectedMake] = useState<string>('');
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<string>('');
+  const [source, setSource] = useState<'webbase' | 'database'>('webbase');
   const [makes, setMakes] = useState<SPASuggestion[]>([]);
   const [models, setModels] = useState<SPASuggestion[]>([]);
   const [years, setYears] = useState<SPASuggestion[]>([]);
-  const [source, setSource] = useState<'webbase' | 'database'>('webbase');
   const [searchResult, setSearchResult] = useState<Record<string, unknown> | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string>('');
 
   const fetchMakes = useCallback(async (q: string) => {
     const resp = await axios.get<SPASuggestionResponse>('/api/spa/suggestions/makes', {
@@ -26,7 +26,10 @@ export default function SupercarPricingPage() {
   }, [source]);
 
   const fetchModels = useCallback(async (make: string, q: string) => {
-    if (!make) return setModels([]);
+    if (!make) {
+      setModels([]);
+      return;
+    }
     const resp = await axios.get<SPASuggestionResponse>('/api/spa/suggestions/models', {
       params: { source, make, search: q.trim() },
     });
@@ -34,7 +37,10 @@ export default function SupercarPricingPage() {
   }, [source]);
 
   const fetchYears = useCallback(async (make: string, model: string) => {
-    if (!make || !model) return setYears([]);
+    if (!make || !model) {
+      setYears([]);
+      return;
+    }
     const resp = await axios.get<SPASuggestionResponse>('/api/spa/suggestions/years', {
       params: { source, make, model },
     });
@@ -70,7 +76,7 @@ export default function SupercarPricingPage() {
       return;
     }
     setIsLoading(true);
-    setSearchError(null);
+    setSearchError('');
     try {
       const { data } = await axios.get('/api/spa/search', {
         params: { source, make: selectedMake, model: selectedModel, year: selectedYear },
@@ -87,12 +93,12 @@ export default function SupercarPricingPage() {
     <div className="p-8 max-w-4xl mx-auto text-black">
       <h1 className="text-3xl font-bold mb-6">Supercar Pricing</h1>
 
-      {/* Data Source */}
+      {/* Data Source Buttons */}
       <div className="flex gap-4 mb-8">
-        {['webbase', 'database'].map(key => (
+        {(['webbase', 'database'] as const).map(key => (
           <button
             key={key}
-            onClick={() => setSource(key as 'webbase' | 'database')}
+            onClick={() => setSource(key)}
             className={`flex-1 p-3 border rounded ${
               source === key ? 'border-blue-600 bg-blue-50' : 'border-gray-300'
             }`}
@@ -102,10 +108,15 @@ export default function SupercarPricingPage() {
         ))}
       </div>
 
-      {/* Form */}
+      {/* Form Inputs */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        {/* Make */}
-        <Combobox value={selectedMake} onChange={val => { setSelectedMake(val); setSelectedModel(''); setSelectedYear(''); fetchModels(val, ''); }}>
+        {/* Make Combobox */}
+        <Combobox value={selectedMake} onChange={(val: string) => {
+          setSelectedMake(val);
+          setSelectedModel('');
+          setSelectedYear('');
+          fetchModels(val, '');
+        }}>
           <div className="relative">
             <Combobox.Input
               className="w-full p-2 border rounded"
@@ -130,8 +141,12 @@ export default function SupercarPricingPage() {
           </div>
         </Combobox>
 
-        {/* Model */}
-        <Combobox value={selectedModel} onChange={val => { setSelectedModel(val); setSelectedYear(''); fetchYears(selectedMake, val); }} disabled={!selectedMake}>
+        {/* Model Combobox */}
+        <Combobox value={selectedModel} onChange={(val: string) => {
+          setSelectedModel(val);
+          setSelectedYear('');
+          fetchYears(selectedMake, val);
+        }} disabled={!selectedMake}>
           <div className="relative">
             <Combobox.Input
               className="w-full p-2 border rounded disabled:opacity-50"
@@ -156,13 +171,13 @@ export default function SupercarPricingPage() {
           </div>
         </Combobox>
 
-        {/* Year */}
-        <Combobox value={selectedYear} onChange={val => setSelectedYear(val)} disabled={!selectedModel || years.length === 0}>
+        {/* Year Combobox */}
+        <Combobox value={selectedYear} onChange={(val: string) => setSelectedYear(val)} disabled={!selectedModel}>
           <div className="relative">
             <Combobox.Input
               className="w-full p-2 border rounded disabled:opacity-50"
-              displayValue={(val: string) => val}
               placeholder="Year"
+              displayValue={(val: string) => val}
             />
             <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
               <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
@@ -182,17 +197,23 @@ export default function SupercarPricingPage() {
         </Combobox>
       </div>
 
-      <button
-        onClick={fetchSearch}
-        disabled={isLoading}
-        className="bg-black text-white px-5 py-2 rounded mb-4"
-      >
-        {isLoading ? 'Loading…' : 'Search'}
-      </button>
-      {searchError && <p className="text-red-600">{searchError}</p>}
+      {/* Search Button */}
+      <div className="mb-6">
+        <button
+          onClick={fetchSearch}
+          disabled={isLoading}
+          className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+        >
+          {isLoading ? 'Searching...' : 'Search'}
+        </button>
+      </div>
 
+      {/* Error or Result */}
+      {searchError && (
+        <div className="text-red-600 mb-4">{searchError}</div>
+      )}
       {searchResult && (
-        <pre className="mt-4 bg-gray-100 p-4 rounded overflow-x-auto">
+        <pre className="bg-gray-100 p-4 rounded overflow-auto">
           {JSON.stringify(searchResult, null, 2)}
         </pre>
       )}
