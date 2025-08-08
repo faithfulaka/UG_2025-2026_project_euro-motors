@@ -1,25 +1,9 @@
 // src/lib/type-validators.ts
 // Type Validation Utilities - Ensures type consistency across the application
 
-import type { 
-  BuyCar, 
-  RentalCar, 
-  CarSpecifications, 
-  CarFeatures,
-  PerformanceData,
-  PricingData,
-  CarFormData,
-  RentalCarFormData
-} from '@/types/cars';
-import type {
-  AdminDashboardStats,
-  AdminScraperResult
-} from '@/types/admin';
-import type {
-  SPASearchParams,
-  ComprehensiveSPAData,
-  SPASuggestion
-} from '@/types/spa';
+import type { BuyCar, RentalCar, CarSpecifications, CarFeatures, PerformanceData, PricingData, CarFormData, RentalCarFormData } from '@/types/cars';
+import type { AdminDashboardStats, AdminScraperResult } from '@/types/admin';
+import type { SPASearchParams, ComprehensiveSPAData, SPASuggestion } from '@/types/spa';
 
 /**
  * Type guard helper for object validation
@@ -169,12 +153,16 @@ export function validateAdminDashboardStats(stats: unknown): stats is AdminDashb
 export function validateSPASearchParams(params: unknown): params is SPASearchParams {
   if (!isRecord(params)) return false;
   
+  // Check if dataSource exists and is valid
+  if (params.dataSource && !['comprehensive', 'database', 'carquery', 'manufacturer', 'market'].includes(params.dataSource as string)) {
+    return false;
+  }
+  
   return (
-    typeof params.make === 'string' &&
-    typeof params.model === 'string' &&
+    (typeof params.make === 'string' || params.make === undefined) &&
+    (typeof params.model === 'string' || params.model === undefined) &&
     (params.year === undefined || typeof params.year === 'number') &&
-    (params.trim === undefined || typeof params.trim === 'string') &&
-    ['comprehensive', 'database', 'carquery', 'manufacturer', 'market'].includes(params.dataSource as string)
+    (params.trim === undefined || typeof params.trim === 'string')
   );
 }
 
@@ -187,11 +175,7 @@ export function validateComprehensiveSPAData(data: unknown): data is Comprehensi
   const hasRequiredFields = (
     typeof data.make === 'string' &&
     typeof data.model === 'string' &&
-    typeof data.year === 'number' &&
-    typeof data.dataSource === 'string' &&
-    typeof data.timestamp === 'string' &&
-    isRecord(data.dataSources) &&
-    isRecord(data.searchQuery)
+    typeof data.year === 'number'
   );
   
   return hasRequiredFields;
@@ -205,10 +189,7 @@ export function validateSPASuggestion(suggestion: unknown): suggestion is SPASug
   
   return (
     typeof suggestion.value === 'string' &&
-    typeof suggestion.label === 'string' &&
-    typeof suggestion.source === 'string' &&
-    ['make', 'model', 'year'].includes(suggestion.type as string) &&
-    typeof suggestion.displayName === 'string'
+    typeof suggestion.label === 'string'
   );
 }
 

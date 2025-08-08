@@ -224,7 +224,11 @@ export async function enrichCarWithSPAData(
     // Ensure baseMSRP has a value (default to 0 if undefined)
     const pricingDataWithMSRP: PricingData = {
       ...spaData.pricingData,
-      baseMSRP: spaData.pricingData.baseMSRP || 0
+      baseMSRP: spaData.pricingData.baseMSRP || 0,
+      currentMarketRange: spaData.pricingData.currentMarketRange || 'N/A',
+      averageDealerPrice: spaData.pricingData.averageDealerPrice || 0,
+      dealerInventoryCount: spaData.pricingData.dealerInventoryCount || 0,
+      priceTrend: 'stable' // Default value since it's required
     };
     (enriched as Partial<BuyCar>).pricingData = pricingDataWithMSRP;
     if (spaData.pricingData.baseMSRP) {
@@ -232,15 +236,16 @@ export async function enrichCarWithSPAData(
     }
   }
   
-  // Add popular options
+  // Add popular options if they have the correct structure
   if (spaData.popularOptions && spaData.popularOptions.length > 0) {
-    (enriched as Partial<BuyCar>).addedOptions = spaData.popularOptions.map(opt => opt.name);
+    (enriched as Partial<BuyCar>).addedOptions = spaData.popularOptions.map(opt => 
+      typeof opt === 'string' ? opt : opt.name
+    );
   }
   
-  // Store complete SPA data for reference
-  // Note: SupercarData and ComprehensiveSPAData have different structures
-  // We can't directly assign ComprehensiveSPAData to supercarData field
-  // enriched.supercarData would need conversion if required
+  // Note: We cannot directly assign ComprehensiveSPAData to supercarData
+  // as they have different structures. Convert if needed:
+  // enriched.supercarData = convertSPADataToSupercarData(spaData);
   
   return enriched;
 }

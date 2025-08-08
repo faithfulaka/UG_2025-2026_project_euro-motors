@@ -1,4 +1,4 @@
-// src/types/spa.ts - SIMPLIFIED types for CarQuery-only system
+// src/types/spa.ts - COMPLETE types for CarQuery-only system
 export interface SPASearchParams {
   make?: string;
   model?: string;
@@ -21,7 +21,7 @@ export interface SPASuggestionResponse {
   success: boolean;
   suggestions: SPASuggestion[];
   source: string;
-  cached: boolean;
+  cached?: boolean;
   timestamp: string;
   error?: {
     code: string;
@@ -30,13 +30,17 @@ export interface SPASuggestionResponse {
   };
 }
 
-// Add these missing exports
+// Export these missing types
 export interface SPAMakesResponse {
   success: boolean;
   makes: string[];
   source?: string;
   cached?: boolean;
   timestamp?: string;
+  error?: {
+    code: string;
+    message: string;
+  };
 }
 
 export interface SPAModelsResponse {
@@ -45,6 +49,10 @@ export interface SPAModelsResponse {
   source?: string;
   cached?: boolean;
   timestamp?: string;
+  error?: {
+    code: string;
+    message: string;
+  };
 }
 
 export interface ComprehensiveSPAData {
@@ -113,19 +121,43 @@ export interface ComprehensiveSPAData {
     totalCombinations?: number;
   };
   
+  // Available trims
+  availableTrims?: Array<{
+    name: string;
+    msrp?: number;
+    invoice?: number;
+    engine?: string;
+    transmission?: string;
+    drivetrain?: string;
+  }>;
+  
+  // Available engines
+  availableEngines?: string[];
+  
+  // Available body types
+  availableBodies?: string[];
+  
+  // Brand info
+  brandInfo?: {
+    brands?: Array<{ id: string; name: string; country?: string }>;
+    models?: Array<{ id: string; name: string; yearFrom?: number; yearTo?: number }>;
+    regions?: string[];
+  };
+  
   // Fuel economy
   fuelEconomy?: {
     city?: number;
     highway?: number;
     combined?: number;
     tankCapacity?: string;
+    co2?: string;
   };
   
   // Market data (optional)
   marketData?: MarketData;
   
   // Popular options/features
-  popularOptions?: string[];
+  popularOptions?: Array<{ name: string; description?: string }>;
   
   // Data source information
   dataSources?: {
@@ -136,6 +168,74 @@ export interface ComprehensiveSPAData {
   };
   
   // Metadata
+  dataSource?: string;
+  searchQuery?: SPASearchParams;
+  timestamp?: string;
+  cacheExpiry?: string;
+}
+
+// Simplified vehicle data for basic display
+export interface SimplifiedVehicleData {
+  make: string;
+  model: string;
+  year: number;
+  bodyType?: string;
+  trim?: string;
+  basicSpecifications?: {
+    make: string;
+    model: string;
+    year: number;
+    bodyType?: string;
+    engine?: string;
+    engineCC?: string;
+    cylinders?: string;
+    doors?: number;
+    seats?: number;
+    drivetrain?: string;
+    transmission?: string;
+    fuelType?: string;
+  };
+  performanceData?: {
+    engine?: string;
+    horsePower?: string;
+    torque?: string;
+    acceleration060?: string;
+    topSpeed?: string;
+    transmission?: string;
+    driveType?: string;
+    weight?: string;
+    fuelEconomy?: string;
+  };
+  pricingData?: {
+    baseMSRP?: number;
+    currentMarketRange?: string;
+    averageDealerPrice?: number;
+    dealerInventoryCount?: number;
+  };
+  dimensions?: {
+    length?: string;
+    width?: string;
+    height?: string;
+    wheelbase?: string;
+    weight?: string;
+  };
+  colors?: {
+    exterior?: string[];
+    interior?: string[];
+    totalCombinations?: number;
+  };
+  fuelEconomy?: {
+    city?: number;
+    highway?: number;
+    combined?: number;
+    tankCapacity?: string;
+  };
+  dataSources?: {
+    database: boolean;
+    carQuery: boolean;
+    manufacturer: boolean;
+    market: boolean;
+  };
   dataSource?: string;
   searchQuery?: SPASearchParams;
   timestamp?: string;
@@ -202,7 +302,7 @@ export interface SPAListingInfo {
 export type SPADataSource = 'database' | 'carquery' | 'api' | 'cache';
 
 export interface SPACacheEntry {
-  data: any;
+  data: unknown;
   timestamp: number;
   expiresAt: number;
 }

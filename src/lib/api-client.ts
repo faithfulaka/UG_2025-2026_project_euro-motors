@@ -3,7 +3,7 @@
 
 import type { BuyCar, RentalCar, CarFormData, RentalCarFormData } from '@/types/cars';
 import type { AdminDashboardStats } from '@/types/admin';
-import type { SPASearchParams, SPASearchResponse, SPASuggestionResponse, SPAMakesResponse, SPAModelsResponse, ComprehensiveSPAData, SPASuggestion } from '@/types/spa';
+import type { SPASearchParams, SPASearchResponse, SPASuggestionResponse, ComprehensiveSPAData, SPASuggestion } from '@/types/spa';
 import { validateAPIResponse, isAPIError } from '@/lib/type-validators';
 
 // API Configuration
@@ -234,7 +234,7 @@ export const adminAPI = {
 };
 
 /**
- * SPA API Methods
+ * SPA API Methods - Only using existing endpoints
  */
 export const spaAPI = {
   /**
@@ -286,22 +286,6 @@ export const spaAPI = {
     model?: string
   ): Promise<APIResponse<Record<string, SPASuggestion[]>>> {
     return apiClient.post('/api/spa/suggestions', { types, make, model });
-  },
-
-  /**
-   * Get CarQuery makes
-   */
-  async getCarQueryMakes(): Promise<SPAMakesResponse> {
-    const response = await apiClient.get<string[]>('/api/spa/carquery/makes');
-    return response as unknown as SPAMakesResponse;
-  },
-
-  /**
-   * Get CarQuery models
-   */
-  async getCarQueryModels(make: string): Promise<SPAModelsResponse> {
-    const response = await apiClient.get<string[]>(`/api/spa/carquery/models?make=${make}`);
-    return response as unknown as SPAModelsResponse;
   }
 };
 

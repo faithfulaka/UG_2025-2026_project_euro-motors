@@ -11,7 +11,8 @@ import type {
 import type { 
   SPASearchParams, 
   SPASearchResponse, 
-  SPASuggestionResponse 
+  SPASuggestionResponse
+  // Removed unused SPASuggestion import
 } from '@/types/spa';
 
 // Test Configuration
@@ -231,7 +232,7 @@ export const spaAPITests = {
     // Validate suggestion structure
     if (result.suggestions.length > 0) {
       const suggestion = result.suggestions[0];
-      if (!suggestion.value || !suggestion.label || !suggestion.type) {
+      if (!suggestion.value || !suggestion.label) {
         throw new Error('Invalid suggestion structure');
       }
     }

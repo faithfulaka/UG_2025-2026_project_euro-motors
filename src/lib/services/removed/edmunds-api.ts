@@ -1,4 +1,4 @@
-// src/lib/services/new-apis/edmunds-api.ts
+// src/lib/services/removed/edmunds-api.ts - REMOVED API (not working)
 import axios from 'axios';
 
 const EDMUNDS_BASE_URL = 'https://community-edmunds.p.rapidapi.com/api';
