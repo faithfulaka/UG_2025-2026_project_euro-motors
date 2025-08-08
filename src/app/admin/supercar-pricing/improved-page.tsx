@@ -4,9 +4,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Combobox } from '@headlessui/react';
-import { ChevronUpDownIcon, XMarkIcon } from '@heroicons/react/24/solid';
+import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
 import type { SPASuggestion, SPASearchResponse, ComprehensiveSPAData } from '@/types/spa';
-import type { BuyCar } from '@/types/cars';
 
 // Define year range for manual selection when API doesn't have data
 const generateYearRange = (startYear: number = 1990) => {
@@ -182,7 +181,7 @@ export default function ImprovedSupercarPricingPage() {
       
       setSearchResult(res.data);
     } catch (error) {
-      const err = error as any;
+      const err = error as { response?: { data?: { error?: { message?: string } } }; message?: string };
       setSearchError(err.response?.data?.error?.message || err.message || 'Search failed');
     } finally {
       setIsLoading(false);
@@ -353,9 +352,9 @@ export default function ImprovedSupercarPricingPage() {
           ) : (
             // API-driven year selection
             <Combobox
-              value={selectedYear}
-              onChange={setSelectedYear}
-              disabled={!selectedModel}
+            value={selectedYear}
+            onChange={(value: string | null) => setSelectedYear(value || '')}
+            disabled={!selectedModel}
             >
               <div className="relative">
                 <div className="relative">
@@ -447,8 +446,8 @@ export default function ImprovedSupercarPricingPage() {
             {data.year} {data.make} {data.model}
           </h2>
           <div className="flex gap-2 mb-4">
-            {Object.entries(data.dataSources)
-              .filter(([_, active]) => active)
+            {Object.entries(data.dataSources || {})
+              .filter(([, active]) => active)
               .map(([source]) => (
                 <span key={source} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
                   {source}
@@ -477,7 +476,7 @@ export default function ImprovedSupercarPricingPage() {
               <div className="space-y-1 text-sm">
                 <p>Range: {data.pricingData.currentMarketRange}</p>
                 <p>Avg Price: £{data.pricingData.averageDealerPrice?.toLocaleString()}</p>
-                <p>Trend: {data.pricingData.priceTrend}</p>
+                {data.pricingData.priceTrend && <p>Trend: {data.pricingData.priceTrend}</p>}
               </div>
             </div>
           )}
@@ -502,7 +501,7 @@ export default function ImprovedSupercarPricingPage() {
       <div className="mt-8 bg-blue-50 p-4 rounded-lg border border-blue-200">
         <h3 className="font-semibold text-blue-900 mb-2">Tips:</h3>
         <ul className="text-sm text-blue-800 space-y-1">
-          <li>• If years don't appear, use manual selection or type a custom year</li>
+          <li>• If years don&apos;t appear, use manual selection or type a custom year</li>
           <li>• CarQuery API is free but may not have all luxury/exotic models</li>
           <li>• Database results show only if you have matching cars in your system</li>
           <li>• For best results, add cars manually to your database</li>

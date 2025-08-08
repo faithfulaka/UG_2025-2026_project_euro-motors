@@ -98,6 +98,7 @@ export interface ComprehensiveSPAData {
     currentMarketRange?: string;
     averageDealerPrice?: number;
     dealerInventoryCount?: number;
+    priceTrend?: string;
     priceDistribution?: {
       min: number;
       max: number;
@@ -211,6 +212,7 @@ export interface SimplifiedVehicleData {
     currentMarketRange?: string;
     averageDealerPrice?: number;
     dealerInventoryCount?: number;
+    priceTrend?: string;
   };
   dimensions?: {
     length?: string;
