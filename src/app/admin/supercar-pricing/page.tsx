@@ -1,4 +1,4 @@
-// src/app/admin/supercar-pricing/improved-page.tsx
+// src/app/admin/supercar-pricing/page.tsx
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -198,6 +198,24 @@ export default function ImprovedSupercarPricingPage() {
     setAllowManualYear(false);
   };
 
+  // Handle make selection with proper typing
+  const handleMakeChange = (value: string) => {
+    setSelectedMake(value);
+    setSelectedModel('');
+    setSelectedYear('');
+  };
+
+  // Handle model selection with proper typing
+  const handleModelChange = (value: string) => {
+    setSelectedModel(value);
+    setSelectedYear('');
+  };
+
+  // Handle year selection with proper typing
+  const handleYearChange = (value: string) => {
+    setSelectedYear(value);
+  };
+
   const renderSearchForm = () => (
     <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
@@ -218,14 +236,7 @@ export default function ImprovedSupercarPricingPage() {
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         {/* Make Selection */}
-        <Combobox
-          value={selectedMake}
-          onChange={(val: string) => {
-            setSelectedMake(val);
-            setSelectedModel('');
-            setSelectedYear('');
-          }}
-        >
+        <Combobox value={selectedMake} onChange={handleMakeChange}>
           <div className="relative">
             <Combobox.Label className="block text-sm font-medium text-gray-700 mb-1">
               Make
@@ -273,10 +284,7 @@ export default function ImprovedSupercarPricingPage() {
         {/* Model Selection */}
         <Combobox
           value={selectedModel}
-          onChange={(val: string) => {
-            setSelectedModel(val);
-            setSelectedYear('');
-          }}
+          onChange={handleModelChange}
           disabled={!selectedMake}
         >
           <div className="relative">
@@ -352,9 +360,9 @@ export default function ImprovedSupercarPricingPage() {
           ) : (
             // API-driven year selection
             <Combobox
-            value={selectedYear}
-            onChange={(value: string | null) => setSelectedYear(value || '')}
-            disabled={!selectedModel}
+              value={selectedYear}
+              onChange={handleYearChange}
+              disabled={!selectedModel}
             >
               <div className="relative">
                 <div className="relative">
