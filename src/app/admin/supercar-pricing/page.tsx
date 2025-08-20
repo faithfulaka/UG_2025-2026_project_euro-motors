@@ -1,4 +1,5 @@
 // src/app/admin/supercar-pricing/page.tsx
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';

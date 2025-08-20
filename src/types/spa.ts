@@ -258,9 +258,10 @@ export interface MarketData {
   popularOptions?: string[];
 }
 
+// Updated to accept both comprehensive and simplified data
 export interface SPASearchResponse {
   success: boolean;
-  data?: ComprehensiveSPAData;
+  data?: SimplifiedVehicleData | ComprehensiveSPAData;
   error?: {
     code: string;
     message: string;

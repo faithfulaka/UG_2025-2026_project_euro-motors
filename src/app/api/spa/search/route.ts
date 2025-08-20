@@ -1,15 +1,50 @@
-// src/app/api/spa/search/route.ts - Simplified single API approach
+// src/app/api/spa/search/route.ts
 import { NextResponse, NextRequest } from 'next/server';
 import axios from 'axios';
 import type { SimplifiedVehicleData, SPASearchResponse } from '@/types/spa';
 
-// CarQuery API helper - ONLY API we use
-async function fetchCarQueryData(params: Record<string, string>): Promise<any> {
+interface SearchRequestBody {
+  make: string;
+  model: string;
+  year: number;
+  source?: string;
+}
+
+interface CarQueryTrim {
+  model_id?: string;
+  model_make_id?: string;
+  model_name?: string;
+  model_trim?: string;
+  model_year?: string;
+  model_body?: string;
+  model_engine_cc?: string;
+  model_engine_cyl?: string;
+  model_engine_type?: string;
+  model_engine_power_ps?: string;
+  model_engine_torque_nm?: string;
+  model_engine_fuel?: string;
+  model_drive?: string;
+  model_transmission_type?: string;
+  model_doors?: string;
+  model_seats?: string;
+  model_top_speed_kph?: string;
+  model_weight_kg?: string;
+  model_length_mm?: string;
+  model_width_mm?: string;
+  model_height_mm?: string;
+  model_wheelbase_mm?: string;
+}
+
+interface CarQueryResponse {
+  Trims?: CarQueryTrim[];
+}
+
+async function fetchCarQueryData(params: Record<string, string>): Promise<CarQueryResponse | null> {
   try {
     const queryString = new URLSearchParams(params).toString();
     const url = `https://www.carqueryapi.com/api/0.3/?${queryString}&callback=test`;
     
-    const response = await axios.get(url, {
+    const response = await axios.get<string>(url, {
       timeout: 8000,
       headers: {
         'Accept': 'text/javascript',
@@ -17,24 +52,21 @@ async function fetchCarQueryData(params: Record<string, string>): Promise<any> {
       }
     });
     
-    // Extract JSON from JSONP response
     const data = response.data;
     if (typeof data === 'string') {
       const match = data.match(/test\((.*)\);?$/s);
-      if (match) {
-        return JSON.parse(match[1]);
+      if (match && match[1]) {
+        return JSON.parse(match[1]) as CarQueryResponse;
       }
     }
-    return data;
-  } catch (error) {
-    console.error('CarQuery API error:', error);
+    return data as CarQueryResponse;
+  } catch {
     return null;
   }
 }
 
 async function searchVehicleData(make: string, model: string, year: number): Promise<SPASearchResponse> {
   try {
-    // Get trims for the specific vehicle
     const carQueryData = await fetchCarQueryData({
       cmd: 'getTrims',
       make: make.toLowerCase().replace(/\s+/g, '-'),
@@ -52,10 +84,8 @@ async function searchVehicleData(make: string, model: string, year: number): Pro
       };
     }
 
-    // Use the first trim result (they're usually similar for the same year)
     const trim = carQueryData.Trims[0];
 
-    // Build the simplified data structure - ONLY the fields you want
     const vehicleData: SimplifiedVehicleData = {
       make,
       model,
@@ -81,7 +111,7 @@ async function searchVehicleData(make: string, model: string, year: number): Pro
         engine: trim.model_engine_type ? `${trim.model_engine_cc}cc ${trim.model_engine_type}` : 'N/A',
         horsePower: trim.model_engine_power_ps || 'N/A',
         torque: trim.model_engine_torque_nm ? `${trim.model_engine_torque_nm} Nm` : 'N/A',
-        acceleration060: 'N/A', // CarQuery doesn't provide this
+        acceleration060: 'N/A',
         topSpeed: trim.model_top_speed_kph ? `${trim.model_top_speed_kph} km/h` : 'N/A',
         transmission: trim.model_transmission_type || 'N/A',
         driveType: trim.model_drive || 'N/A',
@@ -114,40 +144,103 @@ async function searchVehicleData(make: string, model: string, year: number): Pro
   }
 }
 
-export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const make = url.searchParams.get('make');
-  const model = url.searchParams.get('model');
-  const year = url.searchParams.get('year');
-
-  if (!make || !model || !year) {
-    return NextResponse.json({
-      success: false,
-      error: {
-        code: 'INVALID_PARAMS',
-        message: 'Make, model, and year are required'
-      }
-    } as SPASearchResponse, { status: 400 });
+// Type guard function to validate request body
+function isValidSearchRequestBody(body: unknown): body is SearchRequestBody {
+  if (typeof body !== 'object' || body === null) {
+    return false;
   }
-
-  const result = await searchVehicleData(make, model, parseInt(year));
-  return NextResponse.json(result);
+  
+  const obj = body as Record<string, unknown>;
+  
+  return (
+    typeof obj.make === 'string' &&
+    typeof obj.model === 'string' &&
+    typeof obj.year === 'number' &&
+    (obj.source === undefined || typeof obj.source === 'string')
+  );
 }
 
-export async function POST(req: Request) {
-  const body = await req.json();
-  const { make, model, year } = body;
+async function parseRequestBody(req: Request): Promise<SearchRequestBody> {
+  try {
+    const body: unknown = await req.json();
+    
+    if (!isValidSearchRequestBody(body)) {
+      throw new Error('Invalid request body format');
+    }
+    
+    return body;
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : 'Failed to parse request body');
+  }
+}
 
-  if (!make || !model || !year) {
+export async function GET(req: NextRequest): Promise<NextResponse<SPASearchResponse>> {
+  try {
+    const url = new URL(req.url);
+    const make = url.searchParams.get('make');
+    const model = url.searchParams.get('model');
+    const year = url.searchParams.get('year');
+
+    if (!make || !model || !year) {
+      return NextResponse.json({
+        success: false,
+        error: {
+          code: 'INVALID_PARAMS',
+          message: 'Make, model, and year are required'
+        }
+      }, { status: 400 });
+    }
+
+    const yearNumber = parseInt(year);
+    if (isNaN(yearNumber) || yearNumber < 1900 || yearNumber > new Date().getFullYear() + 2) {
+      return NextResponse.json({
+        success: false,
+        error: {
+          code: 'INVALID_YEAR',
+          message: 'Year must be a valid number between 1900 and the current year + 2'
+        }
+      }, { status: 400 });
+    }
+
+    const result = await searchVehicleData(make, model, yearNumber);
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error('GET request error:', error);
     return NextResponse.json({
       success: false,
       error: {
-        code: 'INVALID_PARAMS',
-        message: 'Make, model, and year are required'
+        code: 'INTERNAL_ERROR',
+        message: 'Internal server error'
       }
-    } as SPASearchResponse, { status: 400 });
+    }, { status: 500 });
   }
+}
 
-  const result = await searchVehicleData(make, model, parseInt(year));
-  return NextResponse.json(result);
+export async function POST(req: Request): Promise<NextResponse<SPASearchResponse>> {
+  try {
+    const body = await parseRequestBody(req);
+    const { make, model, year } = body;
+
+    if (!make || !model || !year) {
+      return NextResponse.json({
+        success: false,
+        error: {
+          code: 'INVALID_PARAMS',
+          message: 'Make, model, and year are required'
+        }
+      }, { status: 400 });
+    }
+
+    const result = await searchVehicleData(make, model, year);
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error('POST request error:', error);
+    return NextResponse.json({
+      success: false,
+      error: {
+        code: 'INVALID_REQUEST_BODY',
+        message: error instanceof Error ? error.message : 'Invalid request body'
+      }
+    }, { status: 400 });
+  }
 }

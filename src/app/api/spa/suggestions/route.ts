@@ -1,13 +1,11 @@
-// src/app/api/spa/suggestions/route.ts - Simplified single API approach with proper types
+// src/app/api/spa/suggestions/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 import type { SPASuggestion, SPASuggestionResponse } from '@/types/spa';
 
-// Cache for suggestions
 const suggestionCache = new Map<string, { data: SPASuggestion[], timestamp: number }>();
 const CACHE_DURATION = 1000 * 60 * 10; // 10 minutes cache
 
-// Type for CarQuery response
 interface CarQueryMake {
   make_id: string;
   make_display: string;
@@ -41,13 +39,12 @@ interface CarQueryResponse {
   Trims?: CarQueryTrim[];
 }
 
-// CarQuery API helper - ONLY API we use
 async function fetchCarQueryData(params: Record<string, string>): Promise<CarQueryResponse | null> {
   try {
     const queryString = new URLSearchParams(params).toString();
     const url = `https://www.carqueryapi.com/api/0.3/?${queryString}&callback=test`;
     
-    const response = await axios.get(url, {
+    const response = await axios.get<string>(url, {
       timeout: 8000,
       headers: {
         'Accept': 'text/javascript',
@@ -55,22 +52,20 @@ async function fetchCarQueryData(params: Record<string, string>): Promise<CarQue
       }
     });
     
-    // Extract JSON from JSONP response
     const data = response.data;
     if (typeof data === 'string') {
       const match = data.match(/test\((.*)\);?$/s);
-      if (match) {
+      if (match && match[1]) {
         return JSON.parse(match[1]) as CarQueryResponse;
       }
     }
     return data as CarQueryResponse;
-  } catch (error) {
-    console.error('CarQuery API error:', error);
+  } catch {
     return null;
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse<SPASuggestionResponse>> {
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') as 'make' | 'model' | 'year' | null;
@@ -79,29 +74,26 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('query') || '';
 
     if (!type) {
-      const errorResponse: SPASuggestionResponse = {
+      return NextResponse.json({
         success: false,
         suggestions: [],
         source: 'error',
         cached: false,
         timestamp: new Date().toISOString()
-      };
-      return NextResponse.json(errorResponse, { status: 400 });
+      }, { status: 400 });
     }
 
     const cacheKey = `${type}-${make || ''}-${model || ''}-${query}`;
     
-    // Check cache
     const cached = suggestionCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      const cachedResponse: SPASuggestionResponse = {
+      return NextResponse.json({
         success: true,
         suggestions: cached.data,
         source: 'cache',
         cached: true,
         timestamp: new Date().toISOString()
-      };
-      return NextResponse.json(cachedResponse);
+      });
     }
 
     let suggestions: SPASuggestion[] = [];
@@ -118,16 +110,15 @@ export async function GET(request: NextRequest) {
             })
             .map((makeItem: CarQueryMake) => {
               const makeName = makeItem.make_display || makeItem.make_id;
-              const suggestion: SPASuggestion = {
+              return {
                 value: makeName,
                 label: makeName,
                 displayName: makeName,
-                source: 'carquery',
-                type: 'make'
+                source: 'carquery' as const,
+                type: 'make' as const
               };
-              return suggestion;
             })
-            .sort((a: SPASuggestion, b: SPASuggestion) => a.label.localeCompare(b.label));
+            .sort((a, b) => a.label.localeCompare(b.label));
 
           suggestions = filteredMakes.slice(0, 50);
         }
@@ -136,14 +127,13 @@ export async function GET(request: NextRequest) {
 
       case 'model': {
         if (!make) {
-          const errorResponse: SPASuggestionResponse = {
+          return NextResponse.json({
             success: false,
             suggestions: [],
             source: 'error',
             cached: false,
             timestamp: new Date().toISOString()
-          };
-          return NextResponse.json(errorResponse, { status: 400 });
+          }, { status: 400 });
         }
 
         const carQueryData = await fetchCarQueryData({ 
@@ -158,16 +148,15 @@ export async function GET(request: NextRequest) {
               return modelName && (!query || modelName.toLowerCase().includes(query.toLowerCase()));
             })
             .map((modelItem: CarQueryModel) => {
-              const suggestion: SPASuggestion = {
+              return {
                 value: modelItem.model_name,
                 label: modelItem.model_name,
                 displayName: modelItem.model_name,
-                source: 'carquery',
-                type: 'model'
+                source: 'carquery' as const,
+                type: 'model' as const
               };
-              return suggestion;
             })
-            .sort((a: SPASuggestion, b: SPASuggestion) => a.label.localeCompare(b.label));
+            .sort((a, b) => a.label.localeCompare(b.label));
 
           suggestions = filteredModels.slice(0, 50);
         }
@@ -176,14 +165,13 @@ export async function GET(request: NextRequest) {
 
       case 'year': {
         if (!make || !model) {
-          const errorResponse: SPASuggestionResponse = {
+          return NextResponse.json({
             success: false,
             suggestions: [],
             source: 'error',
             cached: false,
             timestamp: new Date().toISOString()
-          };
-          return NextResponse.json(errorResponse, { status: 400 });
+          }, { status: 400 });
         }
 
         const carQueryData = await fetchCarQueryData({ 
@@ -206,16 +194,15 @@ export async function GET(request: NextRequest) {
 
           suggestions = Array.from(yearSet)
             .filter(year => !query || year.toString().includes(query))
-            .sort((a, b) => b - a) // Newest first
+            .sort((a, b) => b - a)
             .map(year => {
-              const suggestion: SPASuggestion = {
+              return {
                 value: year.toString(),
                 label: year.toString(),
                 displayName: year.toString(),
-                source: 'carquery',
-                type: 'year'
+                source: 'carquery' as const,
+                type: 'year' as const
               };
-              return suggestion;
             })
             .slice(0, 30);
         }
@@ -223,28 +210,23 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Cache the results
     suggestionCache.set(cacheKey, { data: suggestions, timestamp: Date.now() });
 
-    const response: SPASuggestionResponse = {
+    return NextResponse.json({
       success: true,
       suggestions,
       source: 'carquery',
       cached: false,
       timestamp: new Date().toISOString()
-    };
-    
-    return NextResponse.json(response);
+    });
 
-  } catch (error) {
-    console.error('Suggestions API error:', error);
-    const errorResponse: SPASuggestionResponse = {
+  } catch {
+    return NextResponse.json({
       success: false,
       suggestions: [],
       source: 'error',
       cached: false,
       timestamp: new Date().toISOString()
-    };
-    return NextResponse.json(errorResponse, { status: 500 });
+    }, { status: 500 });
   }
 }

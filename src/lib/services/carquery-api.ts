@@ -1,20 +1,89 @@
-// src/lib/services/carquery-api.ts - PROPERLY INTEGRATED VERSION
-// CarQuery API is the BEST for real-time suggestions/autocomplete
-// This version properly integrates with the new system
+// src/lib/services/carquery-api.ts
 
 import axios from 'axios';
 
 const CARQUERY_BASE_URL = 'https://www.carqueryapi.com/api/0.3';
 
 // Cache for API responses
-const cache = new Map<string, { data: any; timestamp: number }>();
+const cache = new Map<string, { data: unknown; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-function getCacheKey(params: Record<string, any>): string {
+// CarQuery API response types
+interface CarQueryMake {
+  make_id: string;
+  make_display: string;
+  make_is_common?: string;
+  make_country?: string;
+}
+
+interface CarQueryModel {
+  model_name: string;
+  model_make_id?: string;
+}
+
+interface CarQueryTrim {
+  model_id?: string;
+  model_make_id?: string;
+  model_name?: string;
+  model_trim?: string;
+  model_year?: string;
+  model_body?: string;
+  model_engine_cc?: string;
+  model_engine_cyl?: string;
+  model_engine_type?: string;
+  model_engine_power_ps?: string;
+  model_engine_torque_nm?: string;
+  model_engine_fuel?: string;
+  model_drive?: string;
+  model_transmission_type?: string;
+  model_doors?: string;
+  model_seats?: string;
+  model_lkm_city?: string;
+  model_lkm_hwy?: string;
+  model_lkm_mixed?: string;
+  model_top_speed_kph?: string;
+  model_weight_kg?: string;
+  model_length_mm?: string;
+  model_width_mm?: string;
+  model_height_mm?: string;
+  model_wheelbase_mm?: string;
+}
+
+interface CarQueryResponse {
+  Makes?: CarQueryMake[];
+  Models?: CarQueryModel[];
+  Trims?: CarQueryTrim[];
+}
+
+interface ProcessedCarData {
+  make: string;
+  model: string;
+  year: number;
+  trim?: string;
+  engine?: {
+    cylinders?: string;
+    displacement?: string;
+    power?: string;
+    torque?: string;
+    fuel?: string;
+  };
+  transmission?: string;
+  drivetrain?: string;
+  body?: string;
+  doors?: string;
+  seats?: string;
+  mpg?: {
+    city?: string;
+    highway?: string;
+    combined?: string;
+  };
+}
+
+function getCacheKey(params: Record<string, string>): string {
   return JSON.stringify(params);
 }
 
-function getCachedData(key: string): any | null {
+function getCachedData(key: string): unknown | null {
   const cached = cache.get(key);
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
     return cached.data;
@@ -22,14 +91,14 @@ function getCachedData(key: string): any | null {
   return null;
 }
 
-function setCachedData(key: string, data: any): void {
+function setCachedData(key: string, data: unknown): void {
   cache.set(key, { data, timestamp: Date.now() });
 }
 
 // CarQuery uses JSONP, so we need to handle it differently
-async function fetchCarQueryData(params: Record<string, string>): Promise<any> {
+async function fetchCarQueryData(params: Record<string, string>): Promise<CarQueryResponse | null> {
   const cacheKey = getCacheKey(params);
-  const cached = getCachedData(cacheKey);
+  const cached = getCachedData(cacheKey) as CarQueryResponse | null;
   if (cached) {
     return cached;
   }
@@ -38,7 +107,7 @@ async function fetchCarQueryData(params: Record<string, string>): Promise<any> {
     const queryString = new URLSearchParams(params).toString();
     const url = `${CARQUERY_BASE_URL}/?${queryString}&callback=test`;
     
-    const response = await axios.get(url, {
+    const response = await axios.get<string>(url, {
       timeout: 5000,
       headers: {
         'Accept': 'text/javascript',
@@ -50,16 +119,16 @@ async function fetchCarQueryData(params: Record<string, string>): Promise<any> {
     if (typeof data === 'string') {
       const match = data.match(/test\((.*)\);?$/s);
       if (match) {
-        const parsedData = JSON.parse(match[1]);
+        const parsedData = JSON.parse(match[1]) as CarQueryResponse;
         setCachedData(cacheKey, parsedData);
         return parsedData;
       }
     }
     
-    setCachedData(cacheKey, data);
-    return data;
-  } catch (error) {
-    console.error('CarQuery API error:', error);
+    const typedData = data as CarQueryResponse;
+    setCachedData(cacheKey, typedData);
+    return typedData;
+  } catch {
     return null;
   }
 }
@@ -72,11 +141,11 @@ export async function getMakes(): Promise<string[]> {
     const data = await fetchCarQueryData({ cmd: 'getMakes' });
     
     if (data?.Makes) {
-      return data.Makes.map((make: any) => make.make_display || make.make_id)
+      return data.Makes.map((make: CarQueryMake) => make.make_display || make.make_id)
         .filter((make: string) => make && make.length > 0)
         .sort();
     }
-  } catch (error) {
+  } catch {
     console.log('CarQuery unavailable, using fallback makes');
   }
   
@@ -95,11 +164,11 @@ export async function getModels(make: string): Promise<string[]> {
     });
     
     if (data?.Models) {
-      return data.Models.map((model: any) => model.model_name)
+      return data.Models.map((model: CarQueryModel) => model.model_name)
         .filter((model: string) => model && model.length > 0)
         .sort();
     }
-  } catch (error) {
+  } catch {
     console.log('CarQuery unavailable for models');
   }
   
@@ -120,7 +189,7 @@ export async function getYears(make: string, model: string): Promise<number[]> {
     
     if (data?.Trims) {
       const years = new Set<number>();
-      data.Trims.forEach((trim: any) => {
+      data.Trims.forEach((trim: CarQueryTrim) => {
         if (trim.model_year) {
           const year = parseInt(trim.model_year);
           if (year > 1900 && year <= new Date().getFullYear() + 1) {
@@ -130,7 +199,7 @@ export async function getYears(make: string, model: string): Promise<number[]> {
       });
       return Array.from(years).sort((a, b) => b - a);
     }
-  } catch (error) {
+  } catch {
     console.log('CarQuery unavailable for years');
   }
   
@@ -141,7 +210,7 @@ export async function getYears(make: string, model: string): Promise<number[]> {
 /**
  * Get detailed car data
  */
-export async function getCarData(make: string, model: string, year: string | number): Promise<any[]> {
+export async function getCarData(make: string, model: string, year: string | number): Promise<ProcessedCarData[]> {
   try {
     const data = await fetchCarQueryData({
       cmd: 'getTrims',
@@ -151,10 +220,10 @@ export async function getCarData(make: string, model: string, year: string | num
     });
     
     if (data?.Trims) {
-      return data.Trims.map((trim: any) => ({
-        make: trim.make_display || make,
+      return data.Trims.map((trim: CarQueryTrim): ProcessedCarData => ({
+        make: trim.model_make_id || make,
         model: trim.model_name || model,
-        year: parseInt(trim.model_year || year),
+        year: parseInt(trim.model_year || year.toString()),
         trim: trim.model_trim,
         engine: {
           cylinders: trim.model_engine_cyl,
@@ -175,7 +244,7 @@ export async function getCarData(make: string, model: string, year: string | num
         }
       }));
     }
-  } catch (error) {
+  } catch {
     console.log('CarQuery unavailable for detailed data');
   }
   
@@ -188,8 +257,8 @@ export async function getCarData(make: string, model: string, year: string | num
 export async function testCarQueryConnection(): Promise<boolean> {
   try {
     const data = await fetchCarQueryData({ cmd: 'getMakes' });
-    return data?.Makes?.length > 0;
-  } catch (error) {
+    return Boolean(data?.Makes?.length);
+  } catch {
     return false;
   }
 }
