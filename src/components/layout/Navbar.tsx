@@ -1,7 +1,7 @@
 //src/components/layout/Navbar.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -16,6 +16,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { cartItems } = useCar();
+  const cartRef = useRef<HTMLDivElement>(null);
 
   
   useEffect(() => {
@@ -33,6 +34,22 @@ export default function Navbar() {
 
     fetchUser();
   }, []);
+
+  // Close cart when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (cartRef.current && !cartRef.current.contains(event.target as Node)) {
+        setCartOpen(false);
+      }
+    }
+
+    if (cartOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [cartOpen]);
 
   const isActive = (path: string) => {
     return pathname === path ? 'text-red-600 font-bold' : 'text-gray-800';
@@ -98,7 +115,7 @@ export default function Navbar() {
 
         {/* Cart Button with Dropdown */}
         <div className="hidden md:flex items-center space-x-4">
-          <div className="relative">
+          <div className="relative" ref={cartRef}>
             <button
               onClick={() => setCartOpen(!cartOpen)}
               className="relative p-2 text-gray-800 hover:text-red-600 transition duration-300"
@@ -144,13 +161,15 @@ export default function Navbar() {
                       ))}
                     </div>
                     <div className="p-4 border-t border-gray-200 flex gap-2">
-                      <Link 
-                        href="/buy/checkout"
+                      <button 
+                        onClick={() => {
+                          router.push('/checkout');
+                          setCartOpen(false);
+                        }}
                         className="flex-1 text-center bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
-                        onClick={() => setCartOpen(false)}
                       >
                         Checkout
-                      </Link>
+                      </button>
                       <button 
                         className="flex-1 text-center border border-gray-300 text-gray-800 py-2 rounded hover:bg-gray-100 transition"
                         onClick={() => setCartOpen(false)}
