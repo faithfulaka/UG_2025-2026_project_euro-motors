@@ -518,6 +518,7 @@ export default function CarRentForm({ car, mode, onSubmit, onCancel }: CarFormPr
         <div className="mb-6">
           <ImageUpload 
             carId={car?.id}
+            carType="rent"
             existingImages={car?.images?.filter(img => !img.url.startsWith('blob:')).map(img => ({
               id: img.id,
               url: img.url,

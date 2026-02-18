@@ -48,11 +48,15 @@ export default async function RentPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {parsedCars.map((car) => (
               <div key={car.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
-                {/* CarSlideshow with simplified props */}
+                {/* CarSlideshow with main image first */}
                 <CarSlideshow 
                   carId={car.id} 
                   make={car.make} 
-                  model={car.model} 
+                  model={car.model}
+                  imageUrls={[
+                    ...car.images.filter((img) => img.isMain).map((img) => img.url),
+                    ...car.images.filter((img) => !img.isMain).map((img) => img.url)
+                  ]}
                 />
                 
                 <div className="p-4 bg-white">

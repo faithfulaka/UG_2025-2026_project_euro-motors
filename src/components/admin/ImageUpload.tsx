@@ -5,12 +5,13 @@ import Image from 'next/image';
 
 interface ImageUploadProps {
   carId?: string;
+  carType?: 'buy' | 'rent';
   existingImages?: Array<{ id: string; url: string; isMain: boolean }>;
   onImagesChange?: (images: Array<{ url: string; isMain: boolean; imageType: string | null }>) => void;
   onFilesSelected?: (files: Array<{ file: File; isMain: boolean }>) => void;
 }
 
-export default function ImageUpload({ carId, existingImages = [], onImagesChange, onFilesSelected }: ImageUploadProps) {
+export default function ImageUpload({ carId, carType = 'buy', existingImages = [], onImagesChange, onFilesSelected }: ImageUploadProps) {
   const [images, setImages] = useState<Array<{ file: File; preview: string; isMain: boolean }>>([]);
   const [uploading, setUploading] = useState(false);
   const [displayedImages, setDisplayedImages] = useState(existingImages);
@@ -154,7 +155,7 @@ export default function ImageUpload({ carId, existingImages = [], onImagesChange
         formData.append(`image${index + 1}`, img.file);
       });
       formData.append('carId', carId || '');
-      formData.append('type', 'buy'); // or 'rent' based on context
+      formData.append('type', carType);
 
       const response = await fetch('/api/admin/cars/upload-images', {
         method: 'POST',
