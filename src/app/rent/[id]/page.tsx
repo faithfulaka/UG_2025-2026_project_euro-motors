@@ -158,52 +158,52 @@ export default function RentalCarDetailPage() {
           
           {/* Rental Rates */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-2">Rental Rates</h3>
+            <h3 className="text-lg font-semibold mb-2 text-black">Rental Rates</h3>
             <div className="grid grid-cols-3 gap-4">
-              <div className="bg-gray-100 p-3 rounded">
-                <div className="font-medium">Hourly</div>
-                <div className="text-xl font-bold">£{car.hourlyRate.toLocaleString()}</div>
+              <div className="bg-white border border-gray-300 p-3 rounded">
+                <div className="font-medium text-black">Hourly</div>
+                <div className="text-xl font-bold text-black">£{car.hourlyRate.toLocaleString()}</div>
               </div>
-              <div className="bg-gray-100 p-3 rounded">
-                <div className="font-medium">Daily</div>
-                <div className="text-xl font-bold">£{car.dailyRate.toLocaleString()}</div>
+              <div className="bg-white border border-gray-300 p-3 rounded">
+                <div className="font-medium text-black">Daily</div>
+                <div className="text-xl font-bold text-black">£{car.dailyRate.toLocaleString()}</div>
               </div>
-              <div className="bg-gray-100 p-3 rounded">
-                <div className="font-medium">Weekly</div>
-                <div className="text-xl font-bold">£{car.weeklyRate.toLocaleString()}</div>
+              <div className="bg-white border border-gray-300 p-3 rounded">
+                <div className="font-medium text-black">Weekly</div>
+                <div className="text-xl font-bold text-black">£{car.weeklyRate.toLocaleString()}</div>
               </div>
             </div>
           </div>
 
           {/* Rental Form */}
-          <div className="mb-6 p-4 border rounded-lg">
-            <h3 className="text-lg font-semibold mb-4">Book Rental</h3>
+          <div className="mb-6 p-4 border rounded-lg bg-white">
+            <h3 className="text-lg font-semibold mb-4 text-black">Book Rental</h3>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Start Date</label>
+                <label className="block text-sm font-medium mb-1 text-black">Start Date</label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border rounded px-3 py-2 text-black bg-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">End Date</label>
+                <label className="block text-sm font-medium mb-1 text-black">End Date</label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border rounded px-3 py-2 text-black bg-white"
                 />
               </div>
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">Duration Type</label>
+              <label className="block text-sm font-medium mb-1 text-black">Duration Type</label>
               <select
                 value={duration}
                 onChange={(e) => setDuration(e.target.value as 'HOURLY' | 'DAILY' | 'WEEKLY')}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border rounded px-3 py-2 text-black bg-white"
               >
                 <option value="HOURLY">Hourly</option>
                 <option value="DAILY">Daily</option>
