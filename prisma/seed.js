@@ -846,16 +846,49 @@ async function main() {
     }
   }
 
+  // ===== CREATE GALLERY IMAGES =====
+  console.log('🖼️ Creating gallery images...');
+
+  const galleryImages = [
+    { title: 'McLaren 570S', alt: 'McLaren 570S', url: '/images/gallery/component1.jpg', order: 1 },
+    { title: 'Ferrari SF90', alt: 'Ferrari SF90', url: '/images/gallery/component2.jpg', order: 2 },
+    { title: 'Porsche 911 GT3', alt: 'Porsche 911 GT3', url: '/images/gallery/component3.jpg', order: 3 },
+    { title: 'Lamborghini Urus', alt: 'Lamborghini Urus', url: '/images/gallery/component4.jpg', order: 4 },
+    { title: 'Rolls Royce Cullinan', alt: 'Rolls Royce Cullinan', url: '/images/gallery/component5.jpg', order: 5 },
+    { title: 'Aston Martin DBX', alt: 'Aston Martin DBX', url: '/images/gallery/component6.jpg', order: 6 },
+    { title: 'BMW X7', alt: 'BMW X7', url: '/images/gallery/component7.jpg', order: 7 },
+    { title: 'Range Rover', alt: 'Range Rover', url: '/images/gallery/component8.jpg', order: 8 },
+    { title: 'Bentley Flying Spur', alt: 'Bentley Flying Spur', url: '/images/gallery/component9.jpg', order: 9 },
+    { title: 'Audi Q8', alt: 'Audi Q8', url: '/images/gallery/component10.jpg', order: 10 },
+    { title: 'Lexus RX', alt: 'Lexus RX', url: '/images/gallery/component11.jpg', order: 11 },
+    { title: 'BMW M8', alt: 'BMW M8', url: '/images/gallery/component12.jpg', order: 12 }
+  ];
+
+  for (const img of galleryImages) {
+    await prisma.galleryImage.upsert({
+      where: { url: img.url },
+      update: {},
+      create: {
+        title: img.title,
+        alt: img.alt,
+        url: img.url,
+        order: img.order,
+        isActive: true,
+      },
+    });
+  }
+
   console.log('✅ Database seeding completed successfully!');
   console.log('📊 Summary:');
   console.log('  - Created 2 users (admin & regular)');
   console.log('  - Created 3 buy cars with COMPLETE SPA data');
   console.log('  - Created 3 rental cars with COMPLETE SPA data');
   console.log('  - Created 66 car images (33 for buy, 33 for rental)');
+  console.log('  - Created 12 gallery images (default gallery)');
   console.log('  - All cars have: performanceData, supercarData, pricingData');
   console.log('  - ✅ ALL TypeScript properties included');
   console.log('  - ✅ NO null values in SPA fields');
-  console.log('🚀 Ready for SPA integration and trade-in system!');
+  console.log('🚀 Ready for SPA integration, gallery management, and trade-in system!');
 }
 
 main()

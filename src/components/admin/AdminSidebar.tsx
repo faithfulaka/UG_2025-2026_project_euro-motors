@@ -43,6 +43,11 @@ export default function AdminSidebar() {
       href: '/admin/trade-ins',
     },
     {
+      title: 'Gallery',
+      icon: '🖼️',
+      href: '/admin/gallery',
+    },
+    {
       title: 'Users',
       icon: '👥',
       href: '/admin/users',
