@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       });
       
       // Use centralized parsing logic
-      const parsedCars: BuyCar[] = parseBuyCars(rawCars);
+      const parsedCars: BuyCar[] = parseBuyCars(rawCars as any);
       
       return NextResponse.json({
         success: true,
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       });
 
       // Use centralized parsing logic
-      const parsedCars: RentalCar[] = parseRentalCars(rawCars);
+      const parsedCars: RentalCar[] = parseRentalCars(rawCars as any);
 
       return NextResponse.json({
         success: true,
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
         include: buyCarInclude
       });
 
-      const parsedCar = parseBuyCars([newCar])[0];
+      const parsedCar = parseBuyCars([newCar] as any)[0];
 
       return NextResponse.json({
         success: true,
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
         include: rentalCarInclude
       });
 
-      const parsedCar = parseRentalCars([newCar])[0];
+      const parsedCar = parseRentalCars([newCar] as any)[0];
 
       return NextResponse.json({
         success: true,

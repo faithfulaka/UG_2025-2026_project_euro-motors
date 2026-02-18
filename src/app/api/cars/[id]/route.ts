@@ -32,7 +32,7 @@ export async function GET(
     }
 
     // Parse JSON fields using centralized helper
-    const parsedCar: BuyCar = parseBuyCar(rawCar);
+    const parsedCar: BuyCar = parseBuyCar(rawCar as any);
 
     return NextResponse.json({
       success: true,

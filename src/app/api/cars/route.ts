@@ -19,7 +19,7 @@ export async function GET() {
     });
 
     // Parse JSON fields to ensure type safety
-    const parsedCars: BuyCar[] = parseBuyCars(rawCars);
+    const parsedCars: BuyCar[] = parseBuyCars(rawCars as any);
 
     // Return properly typed response
     return NextResponse.json({
@@ -126,8 +126,8 @@ export async function POST(req: Request) {
             }
 
             // Add popular options if not provided
-            if (!addedOptions && spaData.popularOptions) {
-              body.addedOptions = spaData.popularOptions.map((opt: any) => opt.name);
+            if (!addedOptions && (spaData as any).popularOptions) {
+              body.addedOptions = (spaData as any).popularOptions.map((opt: any) => opt.name);
             }
           }
         }
@@ -145,14 +145,14 @@ export async function POST(req: Request) {
         trim: trim || null,
         year,
         price,
-        specifications: specifications, // Prisma will handle JSON conversion
-        features: features,
+        specifications: specifications as any, // Prisma will handle JSON conversion
+        features: features as any,
         standardEquipment: standardEquipment || null,
         addedOptions: addedOptions || null,
-        supercarData: spaData,
+        supercarData: spaData as any,
         baseMSRP: baseMSRP,
-        performanceData: performanceData,
-        pricingData: pricingData,
+        performanceData: performanceData as any,
+        pricingData: pricingData as any,
         description: description || '',
         isAvailable: true,
         images: {
@@ -167,7 +167,7 @@ export async function POST(req: Request) {
     });
 
     // Parse the created car to ensure proper types
-    const parsedCar: BuyCar = parseBuyCars([newCar])[0];
+    const parsedCar: BuyCar = parseBuyCars([newCar] as any)[0];
 
     return NextResponse.json({
       success: true,
@@ -253,15 +253,15 @@ export async function PATCH(req: Request) {
               const updatedCar = await prisma.buyCar.update({
                 where: { id: carId },
                 data: {
-                  supercarData: spaResult.data,
-                  performanceData: spaResult.data.performanceData,
-                  pricingData: spaResult.data.pricingData,
+                  supercarData: spaResult.data as any,
+                  performanceData: spaResult.data.performanceData as any,
+                  pricingData: spaResult.data.pricingData as any,
                   baseMSRP: spaResult.data.pricingData?.baseMSRP
                 },
                 include: buyCarInclude
               });
 
-              updatedCars.push(parseBuyCars([updatedCar])[0]);
+              updatedCars.push(parseBuyCars([updatedCar] as any)[0]);
             }
           }
         }

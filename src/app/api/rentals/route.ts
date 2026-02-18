@@ -17,7 +17,7 @@ export async function GET() {
     });
 
     // Parse JSON fields to ensure type safety
-    const parsedCars: RentalCar[] = parseRentalCars(rawCars);
+    const parsedCars: RentalCar[] = parseRentalCars(rawCars as any);
 
     // Return properly typed response
     return NextResponse.json({
