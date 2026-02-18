@@ -41,6 +41,7 @@ export default function GalleryImageUpload({ onImageUploaded }: UploadProps) {
     }
 
     setLoading(true);
+    setError('');
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -52,8 +53,10 @@ export default function GalleryImageUpload({ onImageUploaded }: UploadProps) {
         body: formData,
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to upload image');
+        throw new Error(responseData.error || 'Failed to upload image');
       }
 
       setFile(null);

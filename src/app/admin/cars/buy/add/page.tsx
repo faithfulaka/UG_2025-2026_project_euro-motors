@@ -40,16 +40,11 @@ export default function AdminAddCarPage() {
         throw new Error(result.error?.message || 'Failed to add car');
       }
 
-      // Return the car ID so images can be uploaded
-      const carId = result.data?.id;
-      
       // Wait a bit for any image uploads to complete, then redirect
       setTimeout(() => {
         router.push('/admin/cars/buy');
         alert('Car added successfully!');
       }, 1000);
-      
-      return { carId };
     } catch (error) {
       console.error('Error adding car:', error);
       alert(error instanceof Error ? error.message : 'Failed to add car. Please try again.');

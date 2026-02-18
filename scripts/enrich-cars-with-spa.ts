@@ -12,20 +12,17 @@ async function enrichCarsWithSPAData() {
   let errorCount = 0;
 
   try {
-    // Fetch all buy cars
-    const buyCars = await prisma.buyCar.findMany({
-      where: {
-        OR: [
-          { supercarData: null },
-          { performanceData: null },
-          { pricingData: null }
-        ]
-      }
-    });
+    // Fetch all buy cars - get all and filter in-memory
+    const buyCars = await prisma.buyCar.findMany();
 
-    console.log(`Found ${buyCars.length} cars to enrich`);
+    // Filter cars that need enrichment
+    const needsEnrichment = buyCars.filter(car =>
+      !car.supercarData || !car.performanceData || !car.pricingData
+    );
 
-    for (const car of buyCars) {
+    console.log(`Found ${needsEnrichment.length} cars to enrich`);
+
+    for (const car of needsEnrichment) {
       try {
         console.log(`Enriching ${car.make} ${car.model} ${car.year}...`);
         
@@ -76,14 +73,10 @@ async function enrichCarsWithSPAData() {
     }
 
     // Also enrich rental cars
-    const rentalCars = await prisma.rentalCar.findMany({
-      where: {
-        OR: [
-          { supercarData: null },
-          { performanceData: null }
-        ]
-      }
-    });
+    const allRentalCars = await prisma.rentalCar.findMany();
+    const rentalCars = allRentalCars.filter(car =>
+      !car.supercarData || !car.performanceData
+    );
 
     console.log(`\nFound ${rentalCars.length} rental cars to enrich`);
 

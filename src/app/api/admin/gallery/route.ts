@@ -1,11 +1,6 @@
 // src/app/api/admin/gallery/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 export async function GET() {
   try {
@@ -37,23 +32,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Read file data
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    // Create directory if it doesn't exist
-    const uploadDir = join(process.cwd(), 'public', 'images', 'gallery');
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      return NextResponse.json(
+        { error: 'File must be an image' },
+        { status: 400 }
+      );
     }
 
-    // Generate filename
-    const timestamp = Date.now();
-    const filename = `gallery-${timestamp}-${file.name}`;
-    const filepath = join(uploadDir, filename);
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: 'File size must be less than 5MB' },
+        { status: 400 }
+      );
+    }
 
-    // Save file
-    await writeFile(filepath, buffer);
+    // Convert file to base64
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const base64 = buffer.toString('base64');
+    const dataUrl = `data:${file.type};base64,${base64}`;
 
     // Get the max order value
     const maxOrder = await prisma.galleryImage.findFirst({
@@ -61,12 +60,12 @@ export async function POST(request: NextRequest) {
       select: { order: true },
     });
 
-    // Create database record
+    // Create database record with base64 data
     const galleryImage = await prisma.galleryImage.create({
       data: {
         title,
         alt,
-        url: `/images/gallery/${filename}`,
+        url: dataUrl,
         order: (maxOrder?.order || 0) + 1,
         isActive: true,
       },
@@ -76,10 +75,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error uploading image:', error);
     return NextResponse.json(
-      { error: 'Failed to upload image' },
+      { error: 'Failed to upload image', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

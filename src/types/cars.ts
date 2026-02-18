@@ -245,8 +245,8 @@ export interface RawBuyCar {
   trim: string | null;
   year: number;
   price: number;
-  specifications: string | CarSpecifications;
-  features: string | CarFeatures;
+  specifications: string | CarSpecifications | null;
+  features: string | CarFeatures | null;
   standardEquipment: string | string[] | null;
   addedOptions: string | string[] | null;
   supercarData: string | SupercarData | null;
@@ -269,8 +269,8 @@ export interface RawRentalCar {
   hourlyRate: number;
   dailyRate: number;
   weeklyRate: number;
-  specifications: string | CarSpecifications;
-  features: string | CarFeatures;
+  specifications: string | CarSpecifications | null;
+  features: string | CarFeatures | null;
   supercarData: string | SupercarData | null;
   baseMSRP?: number | null;
   performanceData: string | PerformanceData | null;

@@ -20,7 +20,7 @@ function extractIdFromPath(url: URL): string {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify admin user
@@ -39,7 +39,7 @@ export async function GET(
       );
     }
     
-    const id = params.id;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'buy';
     
@@ -64,7 +64,7 @@ export async function GET(
       }
       
       // Parse JSON fields properly
-      const parsedCar: BuyCar = parseBuyCar(rawCar);
+      const parsedCar: BuyCar = parseBuyCar(rawCar as any);
       
       return NextResponse.json({
         success: true,
@@ -93,7 +93,7 @@ export async function GET(
       }
       
       // Parse JSON fields properly
-      const parsedCar: RentalCar = parseRentalCar(rawCar);
+      const parsedCar: RentalCar = parseRentalCar(rawCar as any);
       
       return NextResponse.json({
         success: true,
@@ -132,7 +132,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify admin user
@@ -151,7 +151,7 @@ export async function PUT(
       );
     }
     
-    const id = params.id;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'buy';
     const data = await request.json();
@@ -227,7 +227,7 @@ export async function PUT(
         include: buyCarInclude
       });
       
-      const parsedCar: BuyCar = parseBuyCar(updatedCar);
+      const parsedCar: BuyCar = parseBuyCar(updatedCar as any);
       
       return NextResponse.json({
         success: true,
@@ -278,7 +278,7 @@ export async function PUT(
         include: rentalCarInclude
       });
       
-      const parsedCar: RentalCar = parseRentalCar(updatedCar);
+      const parsedCar: RentalCar = parseRentalCar(updatedCar as any);
       
       return NextResponse.json({
         success: true,
@@ -318,7 +318,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify admin user
@@ -337,7 +337,7 @@ export async function DELETE(
       );
     }
     
-    const id = params.id;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'buy';
 

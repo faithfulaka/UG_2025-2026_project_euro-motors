@@ -1,18 +1,15 @@
 // src/app/api/admin/gallery/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { unlink } from 'fs/promises';
-import { join } from 'path';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const image = await prisma.galleryImage.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!image) {
@@ -22,18 +19,9 @@ export async function DELETE(
       );
     }
 
-    // Delete file from storage
-    try {
-      const filepath = join(process.cwd(), 'public', image.url);
-      await unlink(filepath);
-    } catch (err) {
-      console.error('Error deleting file:', err);
-      // Continue even if file deletion fails
-    }
-
-    // Delete from database
+    // Delete from database (no file deletion needed - stored in DB as base64)
     await prisma.galleryImage.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });
@@ -43,21 +31,20 @@ export async function DELETE(
       { error: 'Failed to delete image' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { title, alt, order, isActive } = body;
 
     const image = await prisma.galleryImage.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(title && { title }),
         ...(alt && { alt }),
@@ -73,7 +60,5 @@ export async function PATCH(
       { error: 'Failed to update image' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
