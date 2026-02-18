@@ -135,11 +135,6 @@ export default function ImageUpload({ carId, existingImages = [], onImagesChange
       setUploading(false);
     }
   };
-  
-  // Expose uploadImages method via ref (we'll use a different approach)
-  React.useImperativeHandle(React.forwardRef(() => null), () => ({
-    uploadImages
-  }));
 
   const handleUpload = async () => {
     if (images.length === 0) {

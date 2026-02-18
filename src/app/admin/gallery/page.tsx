@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import GalleryImageUpload from '@/components/admin/GalleryImageUpload';
+import { ChevronUpIcon, ChevronDownIcon, PencilIcon, EyeIcon, EyeSlashIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 interface GalleryImage {
   id: string;
@@ -223,30 +224,29 @@ export default function GalleryManagementPage() {
                     <div>
                       <p className="font-semibold text-gray-900">{image.title}</p>
                       <p className="text-sm text-gray-600">{image.alt}</p>
-                      <p className="text-xs text-gray-400 mt-1">{image.url}</p>
                     </div>
                   )}
                 </div>
 
                 {/* Actions */}
-                <div className="flex-shrink-0 flex items-center gap-2">
+                <div className="flex-shrink-0 flex items-center gap-3">
                   {/* Order Controls */}
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 border-r pr-3">
                     <button
                       onClick={() => handleMoveUp(index)}
                       disabled={index === 0}
-                      className="p-2 hover:bg-gray-100 disabled:opacity-50 rounded transition"
+                      className="p-2 hover:bg-blue-100 disabled:opacity-30 disabled:cursor-not-allowed rounded transition text-blue-600"
                       title="Move up"
                     >
-                      ⬆️
+                      <ChevronUpIcon className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleMoveDown(index)}
                       disabled={index === images.length - 1}
-                      className="p-2 hover:bg-gray-100 disabled:opacity-50 rounded transition"
+                      className="p-2 hover:bg-blue-100 disabled:opacity-30 disabled:cursor-not-allowed rounded transition text-blue-600"
                       title="Move down"
                     >
-                      ⬇️
+                      <ChevronDownIcon className="w-5 h-5" />
                     </button>
                   </div>
 
@@ -254,9 +254,10 @@ export default function GalleryManagementPage() {
                   {editingId === image.id ? (
                     <button
                       onClick={() => handleEditSave(image.id)}
-                      className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition"
+                      className="p-2 bg-green-100 text-green-600 rounded hover:bg-green-200 transition"
+                      title="Save changes"
                     >
-                      Save
+                      <PencilIcon className="w-5 h-5" />
                     </button>
                   ) : (
                     <button
@@ -265,31 +266,33 @@ export default function GalleryManagementPage() {
                         setEditTitle(image.title);
                         setEditAlt(image.alt);
                       }}
-                      className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                      className="p-2 hover:bg-gray-200 rounded transition text-gray-600"
+                      title="Edit"
                     >
-                      Edit
+                      <PencilIcon className="w-5 h-5" />
                     </button>
                   )}
 
                   {/* Toggle Active */}
                   <button
                     onClick={() => handleToggleActive(image.id, image.isActive)}
-                    className={`px-3 py-1 text-sm rounded transition ${
+                    className={`p-2 rounded transition ${
                       image.isActive
-                        ? 'bg-yellow-600 text-white hover:bg-yellow-700'
-                        : 'bg-gray-400 text-white hover:bg-gray-500'
+                        ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'
+                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                     }`}
-                    title={image.isActive ? 'Deactivate' : 'Activate'}
+                    title={image.isActive ? 'Hide from gallery' : 'Show in gallery'}
                   >
-                    {image.isActive ? '👁️' : '🚫'}
+                    {image.isActive ? <EyeIcon className="w-5 h-5" /> : <EyeSlashIcon className="w-5 h-5" />}
                   </button>
 
                   {/* Delete */}
                   <button
                     onClick={() => handleDelete(image.id)}
-                    className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition"
+                    className="p-2 hover:bg-red-100 text-red-600 rounded transition"
+                    title="Delete"
                   >
-                    🗑️
+                    <TrashIcon className="w-5 h-5" />
                   </button>
                 </div>
               </div>
