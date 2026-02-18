@@ -39,9 +39,6 @@ export default function RentalCarDetailPage() {
         
         const carData = await response.json();
         setCar(carData);
-        
-        // Add to recently viewed
-        addToRecentlyViewed(carId);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load car');
       } finally {
@@ -50,6 +47,11 @@ export default function RentalCarDetailPage() {
     }
 
     fetchCar();
+  }, [carId]);
+
+  useEffect(() => {
+    // Add to recently viewed separately to avoid dependency issues
+    addToRecentlyViewed(carId);
   }, [carId, addToRecentlyViewed]);
 
   const handleAddToCart = () => {

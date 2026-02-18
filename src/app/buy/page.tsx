@@ -141,7 +141,10 @@ export default function BuyPage() {
                     carId={car.id}
                     make={car.make}
                     model={car.model}
-                    imageUrls={car.images.map((img: { url: string }) => img.url)}
+                    imageUrls={[
+                      ...car.images.filter((img: { isMain?: boolean }) => img.isMain).map((img: { url: string }) => img.url),
+                      ...car.images.filter((img: { isMain?: boolean }) => !img.isMain).map((img: { url: string }) => img.url)
+                    ]}
                   />
                   <div className="p-4 bg-white">
                     <h2 className="text-xl font-semibold mb-2 text-black">{car.make} {car.model}</h2>
