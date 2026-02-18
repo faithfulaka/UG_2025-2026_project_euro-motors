@@ -271,3 +271,13 @@ enum TradeInStatus {
   REJECTED
   COMPLETED
 }
+model GalleryImage {
+  id        String   @id @default(cuid())
+  title     String
+  alt       String
+  url       String   @unique
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

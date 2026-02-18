@@ -73,9 +73,9 @@ export default function AdminSidebar() {
   };
 
   return (
-    <div className="w-64 bg-white text-gray-900 min-h-screen flex flex-col shadow-lg border-r border-gray-200">
-      {/* Logo */}
-      <div className="p-6 border-b border-gray-200">
+    <div className="w-64 bg-white text-gray-900 h-screen flex flex-col shadow-lg border-r border-gray-200">
+      {/* Logo - Static at Top */}
+      <div className="p-6 border-b border-gray-200 flex-shrink-0">
         <Link href="/admin" className="flex items-center">
           <Image
             src="/logos/logo.svg"
@@ -89,8 +89,8 @@ export default function AdminSidebar() {
         <p className="text-xs text-gray-500 mt-2 font-semibold tracking-wide">ADMIN PANEL</p>
       </div>
 
-      {/* User Info */}
-      <div className="p-4 border-b border-gray-200 bg-gray-50">
+      {/* User Info - Static */}
+      <div className="p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center flex-shrink-0">
             <span className="text-white font-semibold text-sm">
@@ -107,7 +107,7 @@ export default function AdminSidebar() {
         </div>
       </div>
 
-      {/* Navigation Menu */}
+      {/* Navigation Menu - Scrollable */}
       <nav className="flex-1 overflow-y-auto p-4 space-y-2">
         {menuItems.map((item) => {
           const active = isActive(item.href, item.exact);
@@ -137,8 +137,8 @@ export default function AdminSidebar() {
         })}
       </nav>
 
-      {/* Footer */}
-      <div className="p-4 space-y-2 border-t border-gray-200">
+      {/* Footer - Static at Bottom */}
+      <div className="p-4 space-y-2 border-t border-gray-200 flex-shrink-0 bg-white">
         <Link
           href="/"
           className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 hover:text-red-600 transition-colors font-medium"
