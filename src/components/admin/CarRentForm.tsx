@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { RentalCar } from '@/types/cars';
+import CarImageManager from './CarImageManager';
 
 interface CarFormProps {
   car?: RentalCar;
@@ -53,6 +54,25 @@ export default function CarRentForm({ car, mode, onSubmit, onCancel }: CarFormPr
             />
           </div>
         </div>
+
+        {/* Existing Images Manager */}
+        {car?.id && car?.images && car.images.length > 0 && (
+          <div className="mt-6 mb-6">
+            <CarImageManager
+              carId={car.id}
+              existingImages={car.images.map(img => ({
+                id: img.id,
+                url: img.url,
+                isMain: img.isMain,
+              }))}
+              onImagesUpdated={(updatedImages) => {
+                // Reload the page to show updated images
+                window.location.reload();
+              }}
+              carType="rent"
+            />
+          </div>
+        )}
 
         <div className="flex gap-4 mt-6">
           <button

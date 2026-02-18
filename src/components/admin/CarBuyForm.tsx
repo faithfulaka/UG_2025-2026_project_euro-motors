@@ -952,6 +952,25 @@ export default function CarBuyForm({ car, mode, onSubmit, onCancel }: CarFormPro
             <code className="bg-gray-100 px-2 py-1 rounded">/public/car{car?.id?.replace(/\D/g, '') || '[id]'}/pov1.jpg</code> through <code className="bg-gray-100 px-2 py-1 rounded">pov11.jpg</code>
           </p>
         </div>
+
+        {/* Existing Images Manager */}
+        {car?.id && car?.images && car.images.length > 0 && (
+          <div className="mb-6">
+            <CarImageManager
+              carId={car.id}
+              existingImages={car.images.map(img => ({
+                id: img.id,
+                url: img.url,
+                isMain: img.isMain,
+              }))}
+              onImagesUpdated={(updatedImages) => {
+                // Reload the page to show updated images
+                window.location.reload();
+              }}
+              carType="buy"
+            />
+          </div>
+        )}
         
         {/* Form Actions */}
         <div className="flex justify-end space-x-4 mt-8">

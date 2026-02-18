@@ -203,55 +203,8 @@ export default function ImageUpload({ carId, existingImages = [], onImagesChange
     <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Car Images (up to 11 images: pov1.jpg - pov11.jpg)
+          Add New Car Images
         </label>
-        
-        {/* Existing Images */}
-        {displayedImages.length > 0 && (
-          <div className="mb-4">
-            <p className="text-sm text-gray-600 mb-2">Existing Images ({displayedImages.length}):</p>
-            <div className="grid grid-cols-4 gap-4">
-              {displayedImages.map((img, index) => {
-                // Skip blob URLs - these are only for previews, not existing images
-                if (img.url.startsWith('blob:')) {
-                  console.warn('Skipping blob URL for existing image:', img.url);
-                  return null;
-                }
-                
-                // Ensure URL starts with / for Next.js Image (database URLs like "car123/pov1.jpg")
-                const imageUrl = img.url.startsWith('/') ? img.url : `/${img.url}`;
-                
-                console.log('Displaying existing image:', { id: img.id, url: img.url, imageUrl });
-                
-                return (
-                  <div key={img.id || index} className="relative">
-                    <div className="aspect-square relative border-2 border-gray-300 rounded-lg overflow-hidden bg-gray-100">
-                      <Image
-                        src={imageUrl}
-                        alt={`Car image ${index + 1}`}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                        onError={(e) => {
-                          console.error('Image load error:', imageUrl, img);
-                          // Fallback to a placeholder or hide the image
-                        }}
-                      />
-                      {img.isMain && (
-                        <div className="absolute top-1 left-1 bg-blue-600 text-white text-xs px-2 py-1 rounded z-10">
-                          Main
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-xs text-center mt-1 text-gray-500 truncate">
-                      {img.url}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {/* New Image Upload */}
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
@@ -334,12 +287,6 @@ export default function ImageUpload({ carId, existingImages = [], onImagesChange
         )}
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-        <p className="text-sm text-blue-800">
-          <strong>Note:</strong> For new cars, save the car first to get an ID, then upload images. 
-          Images will be saved as <code className="bg-blue-100 px-1 rounded">/public/car[carId]/pov1.jpg</code> through <code className="bg-blue-100 px-1 rounded">pov11.jpg</code>
-        </p>
-      </div>
     </div>
   );
 }
