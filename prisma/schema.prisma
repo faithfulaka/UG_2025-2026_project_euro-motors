@@ -207,6 +207,20 @@ model TradeInRequest {
   images                 Json?
   estimatedValue         Float?
   actualValue            Float?
+  
+  // Transaction details - stored for admin visibility
+  targetCarMake          String?       // The car they want to buy
+  targetCarModel         String?
+  targetCarYear          Int?
+  targetCarPrice         Float?        // Price of the car they want to purchase
+  balanceDue             Float?        // Remaining after trade-in value deducted
+  cashDeposit            Float?        // Down payment amount
+  financingTerm          Int?          // Number of months for financing
+  monthlyPayment         Float?        // Monthly installment amount
+  remainingAfterDeposit  Float?        // Amount to be financed (balance - deposit)
+  overage                Float?        // Credit if trade-in exceeds car price
+  paymentMethod          String?       // How payment will be made
+  
   status                 TradeInStatus @default(PENDING)
   adminNotes             String?
   createdAt              DateTime      @default(now())

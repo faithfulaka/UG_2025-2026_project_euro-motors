@@ -30,6 +30,7 @@
     "dotenv": "^17.2.0",
     "jose": "^6.0.12",
     "jsonwebtoken": "^9.0.2",
+    "jspdf": "^4.2.0",
     "merge-deep": "^3.0.3",
     "next": "^15.4.2",
     "next-auth": "^4.24.5",
@@ -76,7 +77,7 @@
     },
     "new_apis_integrated": [
       "Edmunds API - Official vehicle specifications and pricing",
-      "MarketCheck API - Real-time market data and listings", 
+      "MarketCheck API - Real-time market data and listings",
       "CIS Automotive API - Dealer information and inventory",
       "Car Data API - Comprehensive vehicle database"
     ],

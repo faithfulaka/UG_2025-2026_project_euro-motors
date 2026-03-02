@@ -8,6 +8,9 @@ import Link from 'next/link';
 import CarDetailSlideshow from '@/components/ui/CarDetailSlideshow';
 import TermSlider from '@/components/ui/TermSlider';
 import { BuyCar } from '@/types/cars';  
+import TradeInModal, { TradeInQuoteSummary } from '@/components/trade-in/TradeInModal';
+import TradeInStatus from '@/components/trade-in/TradeInStatus';
+import { downloadQuotePdf } from '@/lib/quote-pdf';
 
 export default function CarDetailsPage() {  // Removed the return type
   const params = useParams();
@@ -21,6 +24,11 @@ export default function CarDetailsPage() {  // Removed the return type
   const [monthlyPayment, setMonthlyPayment] = useState<string>('');
   const [canInputMonthly, setCanInputMonthly] = useState<boolean>(false);
   const [termMonths, setTermMonths] = useState<number>(12);
+  const [paymentMode, setPaymentMode] = useState<'trade-in' | 'direct'>('trade-in');
+  const [showTradeInModal, setShowTradeInModal] = useState(false);
+  const [tradeInSummary, setTradeInSummary] = useState<TradeInQuoteSummary | null>(null);
+  const [quoteError, setQuoteError] = useState('');
+  const [isQuoteLoading, setIsQuoteLoading] = useState(false);
   
   // Functions to validate and handle numeric input
   const handleCashDepositChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -69,6 +77,66 @@ export default function CarDetailsPage() {  // Removed the return type
         });
     }
   }, [carId]);
+
+  useEffect(() => {
+    if (!car) return;
+    const depositValue = parseFloat(cashDeposit || '0') || 0;
+    const remaining = Math.max(0, car.price - depositValue);
+    const calculated = termMonths > 0 ? (remaining / termMonths).toFixed(2) : '';
+    setMonthlyPayment(calculated);
+  }, [cashDeposit, termMonths, car]);
+
+  const handleDirectQuote = async () => {
+    if (!car) return;
+    setQuoteError('');
+    const depositValue = parseFloat(cashDeposit || '0') || 0;
+    const remaining = Math.max(0, car.price - depositValue);
+    const minimumDeposit = Math.round(car.price * 0.3); // 30% of car price for direct payment
+    if (depositValue < minimumDeposit) {
+      setQuoteError(`Down payment must be at least £${minimumDeposit.toLocaleString()} (30% of car price).`);
+      return;
+    }
+
+    setIsQuoteLoading(true);
+    try {
+      const response = await fetch('/api/quotes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          carId: car.id,
+          amount: car.price,
+          financingOption: true,
+          financingTerm: termMonths,
+          monthlyPayment: parseFloat(monthlyPayment || '0'),
+          cashDeposit: depositValue,
+          tradeInIncluded: false
+        })
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result?.error?.message || 'Failed to create quote');
+      }
+
+      downloadQuotePdf({
+        quoteId: result.data.id,
+        car,
+        quoteType: 'direct',
+        amount: car.price,
+        balanceDue: remaining,
+        cashDeposit: depositValue,
+        termMonths,
+        monthlyPayment: parseFloat(monthlyPayment || '0')
+      });
+    } catch (err) {
+      setQuoteError(err instanceof Error ? err.message : 'Failed to create quote');
+    } finally {
+      setIsQuoteLoading(false);
+    }
+  };
 
 
   if (loading) {
@@ -230,62 +298,119 @@ export default function CarDetailsPage() {  // Removed the return type
         {/* Payment options */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6 text-black">
           <h2 className="text-2xl font-bold mb-4">How would you like to pay?</h2>
-          
+
           <div className="flex flex-wrap gap-4 mb-6">
-            <button className="px-6 py-3 border border-black rounded-md font-medium hover:bg-gray-200  hover:text-black ">Trade in</button>
+            <button
+              className={`px-6 py-3 border rounded-md font-medium ${paymentMode === 'trade-in' ? 'bg-black text-white' : 'border-black hover:bg-gray-200 hover:text-black'}`}
+              onClick={() => {
+                setPaymentMode('trade-in');
+                setShowTradeInModal(true);
+              }}
+            >
+              Trade In + Finance
+            </button>
+            <button
+              className={`px-6 py-3 border rounded-md font-medium ${paymentMode === 'direct' ? 'bg-black text-white' : 'border-black hover:bg-gray-200 hover:text-black'}`}
+              onClick={() => setPaymentMode('direct')}
+            >
+              Pay with Stripe (Down Payment)
+            </button>
           </div>
 
-          <div className="space-y-6">
-            <div>
-              <div className="bg-gray-50 border border-black p-3 rounded-md">
-                <div className="flex items-center">
-                  <div className="text-black mr-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
-                    </svg>
+          {tradeInSummary && (
+            <div className="mb-6">
+              <TradeInStatus summary={tradeInSummary} carPrice={car.price} />
+              {tradeInSummary.balanceDue > 0 && (
+                <div className="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="text-sm text-gray-700">
+                    Balance remaining: £{tradeInSummary.balanceDue.toLocaleString()}. Proceed to pay the down payment with Stripe.
                   </div>
-                  <input 
-                    type="text" 
-                    value={cashDeposit} 
-                    onChange={handleCashDepositChange} 
-                    className="flex-1 w-full bg-transparent border-none outline-none text-black placeholder-black"
-                    placeholder="Cash Deposit"
-                  />
+                  <button
+                    className="px-5 py-2 bg-black text-white rounded-md font-medium hover:bg-gray-800"
+                    onClick={() => alert('Stripe checkout placeholder: integrate Stripe here.')}
+                  >
+                    Proceed to Stripe
+                  </button>
                 </div>
-              </div>
+              )}
             </div>
-            
-            <div>
-              <div className="bg-gray-50 border border-black p-3 rounded-md">
-                <div className="flex items-center">
-                  <div className="text-black mr-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <input 
-                    type="text" 
-                    value={monthlyPayment} 
-                    onChange={handleMonthlyPaymentChange} 
-                    className="flex-1 w-full bg-transparent border-none outline-none text-black placeholder-black"
-                    placeholder="Monthly Payment"
-                    disabled={!canInputMonthly}
-                  />
-                </div>
-              </div>
-            </div>
-  
-            <TermSlider termMonths={termMonths} setTermMonths={setTermMonths} />
+          )}
 
-            <div className="flex justify-center mt-8">
-              <button className="px-8 py-3 bg-black text-white rounded-md font-medium hover:bg-gray-800">
-                Get a Quote
-              </button>
+          {paymentMode === 'direct' && (
+            <div className="space-y-6">
+              {quoteError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                  {quoteError}
+                </div>
+              )}
+
+              <div>
+                <div className="bg-gray-50 border border-black p-3 rounded-md">
+                  <div className="flex items-center">
+                    <div className="text-black mr-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <input
+                      type="text"
+                      value={cashDeposit}
+                      onChange={handleCashDepositChange}
+                      className="flex-1 w-full bg-transparent border-none outline-none text-black placeholder-black"
+                      placeholder="Down Payment"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-600 mt-1">Minimum down payment: £{Math.round(car.price * 0.3).toLocaleString()} (30% of car price)</p>
+              </div>
+
+              <div>
+                <div className="bg-gray-50 border border-black p-3 rounded-md">
+                  <div className="flex items-center">
+                    <div className="text-black mr-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <input
+                      type="text"
+                      value={monthlyPayment}
+                      onChange={handleMonthlyPaymentChange}
+                      className="flex-1 w-full bg-transparent border-none outline-none text-black placeholder-black"
+                      placeholder="Monthly Payment"
+                      disabled={!canInputMonthly}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <TermSlider termMonths={termMonths} setTermMonths={setTermMonths} />
+
+              <div className="flex justify-center mt-8">
+                <button
+                  className="px-8 py-3 bg-black text-white rounded-md font-medium hover:bg-gray-800 disabled:opacity-60"
+                  onClick={handleDirectQuote}
+                  disabled={isQuoteLoading}
+                >
+                  {isQuoteLoading ? 'Generating...' : 'Get a Quote + Download PDF'}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
+
+        <TradeInModal
+          isOpen={showTradeInModal}
+          onClose={() => setShowTradeInModal(false)}
+          car={car}
+          onTradeInComplete={(summary) => {
+            setTradeInSummary(summary);
+            setShowTradeInModal(false);
+            setPaymentMode('trade-in');
+          }}
+        />
 
         {/* Tabbed content */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden text-black">

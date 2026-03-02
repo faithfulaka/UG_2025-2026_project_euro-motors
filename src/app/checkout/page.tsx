@@ -44,7 +44,7 @@ export default function CheckoutPage() {
           <h1 className="text-3xl font-bold mb-4 text-black">Shopping Cart</h1>
           <div className="bg-white border border-gray-300 rounded-lg p-8 text-center">
             <p className="text-gray-600 mb-4">Your cart is empty</p>
-            <Link href="/buy" className="inline-block bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700">
+            <Link href="/buy" className="inline-block bg-red-600 text-white px-6 py-3 rounded hover:bg-red-700">
               Continue Shopping
             </Link>
           </div>
@@ -125,7 +125,7 @@ export default function CheckoutPage() {
               <button
                 onClick={handleCheckout}
                 disabled={loading}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+                className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition disabled:opacity-50"
               >
                 {loading ? 'Processing...' : 'Complete Purchase'}
               </button>

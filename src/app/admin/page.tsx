@@ -26,23 +26,11 @@ export default function AdminPage() {
   });
 
   useEffect(() => {
-    // ADD THESE CONSOLE LOGS FOR DEBUGGING
-    console.log('🔍 Admin page check:');
-    console.log('  - User:', user?.email || 'none');
-    console.log('  - Role:', user?.role || 'none');
-    console.log('  - IsAdmin:', isAdmin);
-    console.log('  - Loading:', loading);
-    
     if (!loading) {
       if (!user) {
-        console.log('❌ No user, redirecting to login');
         router.push('/login');
       } else if (!isAdmin) {
-        console.log('❌ User is not admin, redirecting to dashboard');
-        console.log('  - User role is:', user.role);
         router.push('/dashboard');
-      } else {
-        console.log('✅ Admin access granted for:', user.email);
       }
     }
   }, [user, loading, isAdmin, router]);
