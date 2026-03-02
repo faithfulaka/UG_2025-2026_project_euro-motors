@@ -128,7 +128,7 @@ export default function CarImageManager({
             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition flex items-center justify-center gap-2">
               {/* Main Badge */}
               {image.isMain && (
-                <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                <div className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
                   <StarIcon className="w-3 h-3" />
                   Main
                 </div>
@@ -141,7 +141,7 @@ export default function CarImageManager({
                   <button
                     onClick={() => handleSetMainImage(image.url)}
                     disabled={isUpdatingMain === image.url}
-                    className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition disabled:bg-blue-400 shadow-lg"
+                    className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition disabled:bg-red-400 shadow-lg"
                     title="Set as main image"
                   >
                     <StarIcon className="w-5 h-5" />

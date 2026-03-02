@@ -153,7 +153,7 @@ export default function APITestDashboard() {
       case 'error':
         return <XCircleIcon className="w-5 h-5 text-red-500" />;
       case 'loading':
-        return <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>;
+        return <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>;
       default:
         return <ClockIcon className="w-5 h-5 text-gray-400" />;
     }
@@ -161,7 +161,7 @@ export default function APITestDashboard() {
 
   const getColorClasses = (color: string) => {
     const colors: { [key: string]: string } = {
-      blue: 'border-blue-200 bg-blue-50 text-blue-700',
+      blue: 'border-red-200 bg-red-50 text-red-700',
       green: 'border-green-200 bg-green-50 text-green-700',
       purple: 'border-purple-200 bg-purple-50 text-purple-700',
       orange: 'border-orange-200 bg-orange-50 text-orange-700'

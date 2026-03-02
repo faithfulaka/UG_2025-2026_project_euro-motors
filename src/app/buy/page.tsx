@@ -128,7 +128,7 @@ export default function BuyPage() {
               <p className="text-gray-500 text-lg">No cars match your filters.</p>
               <button
                 onClick={() => setFilters({})}
-                className="mt-4 text-blue-600 hover:text-blue-700 underline"
+                className="mt-4 text-red-600 hover:text-red-700 underline"
               >
                 Clear all filters
               </button>

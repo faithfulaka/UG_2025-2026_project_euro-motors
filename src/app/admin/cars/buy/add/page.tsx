@@ -68,7 +68,7 @@ export default function AdminAddCarPage() {
 
   return (
     <div>
-      <Link href="/admin/cars/buy" className="text-blue-600 hover:underline mb-6 inline-block text-sm">
+      <Link href="/admin/cars/buy" className="text-red-600 hover:underline mb-6 inline-block text-sm">
         ← Back to Cars List
       </Link>
       

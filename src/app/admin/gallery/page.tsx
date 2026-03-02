@@ -235,7 +235,7 @@ export default function GalleryManagementPage() {
                     <button
                       onClick={() => handleMoveUp(index)}
                       disabled={index === 0}
-                      className="p-2 hover:bg-blue-100 disabled:opacity-30 disabled:cursor-not-allowed rounded transition text-blue-600"
+                      className="p-2 hover:bg-red-100 disabled:opacity-30 disabled:cursor-not-allowed rounded transition text-red-600"
                       title="Move up"
                     >
                       <ChevronUpIcon className="w-5 h-5" />
@@ -243,7 +243,7 @@ export default function GalleryManagementPage() {
                     <button
                       onClick={() => handleMoveDown(index)}
                       disabled={index === images.length - 1}
-                      className="p-2 hover:bg-blue-100 disabled:opacity-30 disabled:cursor-not-allowed rounded transition text-blue-600"
+                      className="p-2 hover:bg-red-100 disabled:opacity-30 disabled:cursor-not-allowed rounded transition text-red-600"
                       title="Move down"
                     >
                       <ChevronDownIcon className="w-5 h-5" />

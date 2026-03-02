@@ -158,7 +158,7 @@ export default function AdminTradeInsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
   }
@@ -167,7 +167,7 @@ export default function AdminTradeInsPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <Link href="/admin" className="text-blue-600 hover:text-blue-700 mb-2 inline-block text-sm">
+          <Link href="/admin" className="text-red-600 hover:text-red-700 mb-2 inline-block text-sm">
             ← Back to Dashboard
           </Link>
           <h1 className="text-2xl font-bold text-gray-900">Trade-In Management</h1>
@@ -198,9 +198,9 @@ export default function AdminTradeInsPage() {
           <div className="text-2xl font-bold text-green-700">{stats.approved}</div>
           <div className="text-xs text-green-600">Approved</div>
         </div>
-        <div className="bg-blue-50 rounded-lg shadow-sm border border-blue-200 p-3 text-center">
-          <div className="text-2xl font-bold text-blue-700">{stats.completed}</div>
-          <div className="text-xs text-blue-600">Completed</div>
+        <div className="bg-red-50 rounded-lg shadow-sm border border-red-200 p-3 text-center">
+          <div className="text-2xl font-bold text-red-700">{stats.completed}</div>
+          <div className="text-xs text-red-600">Completed</div>
         </div>
         <div className="bg-red-50 rounded-lg shadow-sm border border-red-200 p-3 text-center">
           <div className="text-2xl font-bold text-red-700">{stats.rejected}</div>
@@ -395,9 +395,9 @@ export default function AdminTradeInsPage() {
                             <span className="text-gray-500">Cash Deposit:</span>
                             <span className="font-medium">- £{(tradeIn.cashDeposit || 0).toLocaleString()}</span>
                           </div>
-                          <div className="flex justify-between py-1 border-b border-dashed bg-blue-50 px-2 rounded">
+                          <div className="flex justify-between py-1 border-b border-dashed bg-red-50 px-2 rounded">
                             <span className="text-gray-700 font-medium">Amount to Finance:</span>
-                            <span className="font-bold text-blue-700">
+                            <span className="font-bold text-red-700">
                               £{(tradeIn.remainingAfterDeposit !== null && tradeIn.remainingAfterDeposit !== undefined ? tradeIn.remainingAfterDeposit : 
                                 Math.max(0, (tradeIn.balanceDue || Math.max(0, targetPrice - (tradeIn.estimatedValue || 0))) - (tradeIn.cashDeposit || 0))
                               ).toLocaleString()}
@@ -461,13 +461,13 @@ export default function AdminTradeInsPage() {
                                   updateTradeIn(tradeIn.id, { actualValue: val });
                                 }
                               }}
-                              className="px-3 py-2 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700"
+                              className="px-3 py-2 bg-red-600 text-white text-xs rounded-md hover:bg-red-700"
                             >
                               Set
                             </button>
                           </div>
                           {tradeIn.actualValue && (
-                            <div className="text-xs text-blue-600 mt-1">
+                            <div className="text-xs text-red-600 mt-1">
                               Current: £{tradeIn.actualValue.toLocaleString()}
                               {tradeIn.estimatedValue && tradeIn.actualValue !== tradeIn.estimatedValue && (
                                 <span className={tradeIn.actualValue > tradeIn.estimatedValue ? ' text-green-600' : ' text-red-600'}>

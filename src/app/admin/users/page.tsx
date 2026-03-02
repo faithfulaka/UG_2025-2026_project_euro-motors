@@ -79,7 +79,7 @@ export default function AdminUsersPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
   }
@@ -87,7 +87,7 @@ export default function AdminUsersPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <Link href="/admin" className="text-blue-600 hover:text-blue-700 mb-2 inline-block text-sm">
+        <Link href="/admin" className="text-red-600 hover:text-red-700 mb-2 inline-block text-sm">
           ← Back to Dashboard
         </Link>
       </div>

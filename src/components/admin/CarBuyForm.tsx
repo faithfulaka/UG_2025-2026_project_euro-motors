@@ -366,7 +366,7 @@ export default function CarBuyForm({ car, mode, onSubmit, onCancel }: CarFormPro
                 type="button"
                 onClick={loadScraperData}
                 disabled={loadingScraperData || !scraperMake || !scraperModel}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300"
+                className="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-red-500 focus:ring-offset-2 disabled:bg-red-300"
               >
                 {loadingScraperData ? 'Loading...' : 'Load Data'}
               </button>
@@ -734,7 +734,7 @@ export default function CarBuyForm({ car, mode, onSubmit, onCancel }: CarFormPro
             <button
               type="button"
               onClick={addInteriorFeature}
-              className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-blue-500 focus:ring-offset-2"
+              className="px-4 py-2 bg-red-600 text-white rounded-r-md hover:bg-red-700 focus:outline-none focus:ring-red-500 focus:ring-offset-2"
             >
               Add
             </button>
@@ -776,7 +776,7 @@ export default function CarBuyForm({ car, mode, onSubmit, onCancel }: CarFormPro
             <button
               type="button"
               onClick={addExteriorFeature}
-              className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-blue-500 focus:ring-offset-2"
+              className="px-4 py-2 bg-red-600 text-white rounded-r-md hover:bg-red-700 focus:outline-none focus:ring-red-500 focus:ring-offset-2"
             >
               Add
             </button>
@@ -818,7 +818,7 @@ export default function CarBuyForm({ car, mode, onSubmit, onCancel }: CarFormPro
             <button
               type="button"
               onClick={addSafetyFeature}
-              className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-blue-500 focus:ring-offset-2"
+              className="px-4 py-2 bg-red-600 text-white rounded-r-md hover:bg-red-700 focus:outline-none focus:ring-red-500 focus:ring-offset-2"
             >
               Add
             </button>
@@ -860,7 +860,7 @@ export default function CarBuyForm({ car, mode, onSubmit, onCancel }: CarFormPro
             <button
               type="button"
               onClick={addStandardEquipmentItem}
-              className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-blue-500 focus:ring-offset-2"
+              className="px-4 py-2 bg-red-600 text-white rounded-r-md hover:bg-red-700 focus:outline-none focus:ring-red-500 focus:ring-offset-2"
             >
               Add
             </button>
@@ -902,7 +902,7 @@ export default function CarBuyForm({ car, mode, onSubmit, onCancel }: CarFormPro
             <button
               type="button"
               onClick={addOption}
-              className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-blue-500 focus:ring-offset-2"
+              className="px-4 py-2 bg-red-600 text-white rounded-r-md hover:bg-red-700 focus:outline-none focus:ring-red-500 focus:ring-offset-2"
             >
               Add
             </button>
@@ -984,7 +984,7 @@ export default function CarBuyForm({ car, mode, onSubmit, onCancel }: CarFormPro
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300"
+            className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-red-500 focus:ring-offset-2 disabled:bg-red-300"
           >
             {isSubmitting ? 'Saving...' : mode === 'add' ? 'Add Car' : 'Save Changes'}
           </button>

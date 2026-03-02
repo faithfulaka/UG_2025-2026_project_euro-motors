@@ -146,7 +146,7 @@ export async function getMakes(): Promise<string[]> {
         .sort();
     }
   } catch {
-    console.log('CarQuery unavailable, using fallback makes');
+    // CarQuery unavailable, using fallback makes
   }
   
   // Return empty array to avoid duplicates - the new API will handle fallback
@@ -169,7 +169,7 @@ export async function getModels(make: string): Promise<string[]> {
         .sort();
     }
   } catch {
-    console.log('CarQuery unavailable for models');
+    // CarQuery unavailable for models
   }
   
   // Return empty array to avoid duplicates - the new API will handle fallback
@@ -200,7 +200,7 @@ export async function getYears(make: string, model: string): Promise<number[]> {
       return Array.from(years).sort((a, b) => b - a);
     }
   } catch {
-    console.log('CarQuery unavailable for years');
+    // CarQuery unavailable for years
   }
   
   // Return empty array to avoid duplicates - the new API will handle fallback
@@ -245,7 +245,7 @@ export async function getCarData(make: string, model: string, year: string | num
       }));
     }
   } catch {
-    console.log('CarQuery unavailable for detailed data');
+    // CarQuery unavailable for detailed data
   }
   
   return [];

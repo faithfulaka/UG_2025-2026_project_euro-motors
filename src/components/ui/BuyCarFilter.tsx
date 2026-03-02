@@ -164,7 +164,7 @@ export default function BuyCarFilter({ onFilter, className = '' }: BuyCarFilterP
             <select
               value={filters.make || ''}
               onChange={(e) => handleFilterChange('make', e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-black bg-white"
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm text-black bg-white"
             >
               <option value="">All Makes</option>
               {suggestions.makes.map((make, index) => (
@@ -183,7 +183,7 @@ export default function BuyCarFilter({ onFilter, className = '' }: BuyCarFilterP
             <select
               value={filters.model || ''}
               onChange={(e) => handleFilterChange('model', e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-black bg-white"
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm text-black bg-white"
               disabled={!filters.make}
             >
               <option value="">All Models</option>
@@ -203,7 +203,7 @@ export default function BuyCarFilter({ onFilter, className = '' }: BuyCarFilterP
             <select
               value={filters.year || ''}
               onChange={(e) => handleFilterChange('year', e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-black bg-white"
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm text-black bg-white"
               disabled={!filters.model}
             >
               <option value="">All Years</option>
@@ -223,7 +223,7 @@ export default function BuyCarFilter({ onFilter, className = '' }: BuyCarFilterP
             <select
               value={filters.bodyType || ''}
               onChange={(e) => handleFilterChange('bodyType', e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-black bg-white"
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm text-black bg-white"
             >
               <option value="">All Body Types</option>
               {suggestions.bodyTypes.map((type, index) => (
@@ -242,7 +242,7 @@ export default function BuyCarFilter({ onFilter, className = '' }: BuyCarFilterP
             <select
               value={filters.fuelType || ''}
               onChange={(e) => handleFilterChange('fuelType', e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-black bg-white"
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm text-black bg-white"
             >
               <option value="">All Fuel Types</option>
               {suggestions.fuelTypes.map((type, index) => (
@@ -261,7 +261,7 @@ export default function BuyCarFilter({ onFilter, className = '' }: BuyCarFilterP
             <select
               value={filters.transmission || ''}
               onChange={(e) => handleFilterChange('transmission', e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-black bg-white"
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm text-black bg-white"
             >
               <option value="">All Transmissions</option>
               {suggestions.transmissions.map((type, index) => (
@@ -283,7 +283,7 @@ export default function BuyCarFilter({ onFilter, className = '' }: BuyCarFilterP
               type="number"
               value={filters.minPrice || ''}
               onChange={(e) => handleFilterChange('minPrice', e.target.value ? parseInt(e.target.value) : undefined)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-black bg-white"
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm text-black bg-white"
               placeholder="No minimum"
             />
           </div>

@@ -98,7 +98,7 @@ export default function AdminEditRentalCarPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
           <div className="text-xl">Loading car details...</div>
         </div>
       </div>
@@ -113,7 +113,7 @@ export default function AdminEditRentalCarPage() {
           <p className="text-gray-700 mb-6">{error}</p>
           <Link
             href="/admin/cars/rent"
-            className="block w-full text-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
+            className="block w-full text-center bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition"
           >
             Back to Rental Cars List
           </Link>
@@ -128,7 +128,7 @@ export default function AdminEditRentalCarPage() {
 
   return (
     <div>
-      <Link href="/admin/cars/rent" className="text-blue-600 hover:underline mb-6 inline-block text-sm">
+      <Link href="/admin/cars/rent" className="text-red-600 hover:underline mb-6 inline-block text-sm">
         ← Back to Rental Cars List
       </Link>
       

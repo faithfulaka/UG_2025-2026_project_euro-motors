@@ -95,7 +95,7 @@ export default function AdminEditCarPage() {
           <p className="text-gray-700 mb-6">{error}</p>
           <Link
             href="/admin/cars/buy"
-            className="block w-full text-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
+            className="block w-full text-center bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition"
           >
             Back to Cars List
           </Link>

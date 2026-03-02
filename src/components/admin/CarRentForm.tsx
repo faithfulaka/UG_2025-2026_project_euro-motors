@@ -211,7 +211,7 @@ export default function CarRentForm({ car, mode, onSubmit, onCancel }: CarFormPr
             <input
               type="text"
               {...register('make', { required: 'Make is required' })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white"
               list="make-suggestions"
               onFocus={() => setShowMakeSuggestions(true)}
               onBlur={() => setTimeout(() => setShowMakeSuggestions(false), 200)}
@@ -231,7 +231,7 @@ export default function CarRentForm({ car, mode, onSubmit, onCancel }: CarFormPr
             <input
               type="text"
               {...register('model', { required: 'Model is required' })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white"
               list="model-suggestions"
               onFocus={() => setShowModelSuggestions(true)}
               onBlur={() => setTimeout(() => setShowModelSuggestions(false), 200)}
@@ -251,7 +251,7 @@ export default function CarRentForm({ car, mode, onSubmit, onCancel }: CarFormPr
             <input
               type="text"
               {...register('trim')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white"
             />
           </div>
 
@@ -260,7 +260,7 @@ export default function CarRentForm({ car, mode, onSubmit, onCancel }: CarFormPr
             <input
               type="number"
               {...register('year', { required: 'Year is required' })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white"
             />
             {errors.year && <p className="mt-1 text-sm text-red-600">{errors.year.message}</p>}
           </div>
@@ -271,7 +271,7 @@ export default function CarRentForm({ car, mode, onSubmit, onCancel }: CarFormPr
               type="number"
               step="0.01"
               {...register('hourlyRate', { required: 'Hourly rate is required' })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white"
             />
             {errors.hourlyRate && <p className="mt-1 text-sm text-red-600">{errors.hourlyRate.message}</p>}
           </div>
@@ -282,7 +282,7 @@ export default function CarRentForm({ car, mode, onSubmit, onCancel }: CarFormPr
               type="number"
               step="0.01"
               {...register('dailyRate', { required: 'Daily rate is required' })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white"
             />
             {errors.dailyRate && <p className="mt-1 text-sm text-red-600">{errors.dailyRate.message}</p>}
           </div>
@@ -293,7 +293,7 @@ export default function CarRentForm({ car, mode, onSubmit, onCancel }: CarFormPr
               type="number"
               step="0.01"
               {...register('weeklyRate', { required: 'Weekly rate is required' })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white"
             />
             {errors.weeklyRate && <p className="mt-1 text-sm text-red-600">{errors.weeklyRate.message}</p>}
           </div>
@@ -302,7 +302,7 @@ export default function CarRentForm({ car, mode, onSubmit, onCancel }: CarFormPr
             <label className="block text-sm font-medium text-gray-700 mb-1">Available</label>
             <select
               {...register('isAvailable')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white"
             >
               <option value="true">Yes</option>
               <option value="false">No</option>
@@ -315,58 +315,58 @@ export default function CarRentForm({ car, mode, onSubmit, onCancel }: CarFormPr
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Color*</label>
-            <input type="text" {...register('color', { required: 'Color is required' })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white" />
+            <input type="text" {...register('color', { required: 'Color is required' })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white" />
             {errors.color && <p className="mt-1 text-sm text-red-600">{errors.color.message}</p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Interior Color*</label>
-            <input type="text" {...register('interiorColor', { required: 'Interior color is required' })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white" />
+            <input type="text" {...register('interiorColor', { required: 'Interior color is required' })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white" />
             {errors.interiorColor && <p className="mt-1 text-sm text-red-600">{errors.interiorColor.message}</p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Engine*</label>
-            <input type="text" {...register('engine', { required: 'Engine is required' })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white" />
+            <input type="text" {...register('engine', { required: 'Engine is required' })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white" />
             {errors.engine && <p className="mt-1 text-sm text-red-600">{errors.engine.message}</p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Fuel Type*</label>
-            <input type="text" {...register('fuelType', { required: 'Fuel type is required' })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white" />
+            <input type="text" {...register('fuelType', { required: 'Fuel type is required' })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white" />
             {errors.fuelType && <p className="mt-1 text-sm text-red-600">{errors.fuelType.message}</p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Transmission*</label>
-            <input type="text" {...register('transmission', { required: 'Transmission is required' })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white" />
+            <input type="text" {...register('transmission', { required: 'Transmission is required' })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white" />
             {errors.transmission && <p className="mt-1 text-sm text-red-600">{errors.transmission.message}</p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Drive Type*</label>
-            <input type="text" {...register('driveType', { required: 'Drive type is required' })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white" />
+            <input type="text" {...register('driveType', { required: 'Drive type is required' })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white" />
             {errors.driveType && <p className="mt-1 text-sm text-red-600">{errors.driveType.message}</p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Body Type*</label>
-            <input type="text" {...register('bodyType', { required: 'Body type is required' })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white" />
+            <input type="text" {...register('bodyType', { required: 'Body type is required' })} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white" />
             {errors.bodyType && <p className="mt-1 text-sm text-red-600">{errors.bodyType.message}</p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Horsepower</label>
-            <input type="number" {...register('horsePower')} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white" />
+            <input type="number" {...register('horsePower')} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Doors</label>
-            <input type="number" {...register('doors')} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white" />
+            <input type="number" {...register('doors')} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Seats</label>
-            <input type="number" {...register('seats')} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white" />
+            <input type="number" {...register('seats')} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Mileage</label>
-            <input type="number" {...register('mileage')} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white" />
+            <input type="number" {...register('mileage')} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Torque</label>
-            <input type="text" {...register('torque')} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white" />
+            <input type="text" {...register('torque')} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white" />
           </div>
         </div>
 
@@ -386,12 +386,12 @@ export default function CarRentForm({ car, mode, onSubmit, onCancel }: CarFormPr
                 }
               }}
               placeholder="e.g., Leather seats"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white"
             />
             <button
               type="button"
               onClick={addInteriorFeature}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
             >
               Add
             </button>
@@ -430,12 +430,12 @@ export default function CarRentForm({ car, mode, onSubmit, onCancel }: CarFormPr
                 }
               }}
               placeholder="e.g., Alloy wheels"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white"
             />
             <button
               type="button"
               onClick={addExteriorFeature}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
             >
               Add
             </button>
@@ -474,12 +474,12 @@ export default function CarRentForm({ car, mode, onSubmit, onCancel }: CarFormPr
                 }
               }}
               placeholder="e.g., ABS brakes"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white"
             />
             <button
               type="button"
               onClick={addSafetyFeature}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
             >
               Add
             </button>
@@ -509,7 +509,7 @@ export default function CarRentForm({ car, mode, onSubmit, onCancel }: CarFormPr
           <textarea
             {...register('description', { required: 'Description is required' })}
             rows={6}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 text-gray-900 bg-white"
           ></textarea>
           {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>}
         </div>
@@ -563,7 +563,7 @@ export default function CarRentForm({ car, mode, onSubmit, onCancel }: CarFormPr
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300"
+            className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-red-500 focus:ring-offset-2 disabled:bg-red-300"
           >
             {isSubmitting ? 'Saving...' : mode === 'add' ? 'Add Rental Car' : 'Save Changes'}
           </button>

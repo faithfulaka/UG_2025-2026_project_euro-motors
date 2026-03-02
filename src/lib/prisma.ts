@@ -29,7 +29,7 @@ if (process.env.NODE_ENV !== 'production') {
 async function disconnectDatabase(): Promise<void> {
   try {
     await prisma.$disconnect();
-    console.log('✅ Database disconnected');
+    // Database disconnected successfully
   } catch (err) {
     console.error('❌ Disconnect error:', err);
   }

@@ -100,7 +100,7 @@ export default function AdminPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-2xl font-semibold mb-4">Loading Admin Dashboard...</div>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
         </div>
       </div>
     );
@@ -114,7 +114,7 @@ export default function AdminPage() {
             {!user ? 'Please Login' : 'Access Denied'}
           </div>
           {!user ? (
-            <Link href="/login" className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700">
+            <Link href="/login" className="bg-red-600 text-white px-6 py-3 rounded-md hover:bg-red-700">
               Go to Login
             </Link>
           ) : (
