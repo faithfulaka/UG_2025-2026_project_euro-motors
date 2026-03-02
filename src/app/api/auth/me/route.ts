@@ -18,8 +18,6 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_change_in_producti
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔍 [AUTH ME] Endpoint called');
-    
     // Try to get token from cookie first
     const cookieToken = request.cookies.get('token')?.value;
     // Fallback to Authorization header
@@ -27,11 +25,7 @@ export async function GET(request: NextRequest) {
     const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
     const token = cookieToken || headerToken;
     
-    console.log('🍪 [AUTH ME] Cookie token exists:', !!cookieToken);
-    console.log('📋 [AUTH ME] Header token exists:', !!headerToken);
-    
     if (!token) {
-      console.log('❌ [AUTH ME] No token found');
       return NextResponse.json({ error: 'No token provided' }, { status: 401 });
     }
 
@@ -39,10 +33,8 @@ export async function GET(request: NextRequest) {
     let decoded: JWTPayload;
     try {
       decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
-      console.log('🔓 [AUTH ME] Token decoded for userId:', decoded.userId);
     } catch (jwtError: unknown) {
       const error = jwtError as CustomJWTError;
-      console.log('❌ [AUTH ME] JWT verification failed:', error.message);
       
       let errorMessage = 'Invalid token';
       if (error.name === 'TokenExpiredError') errorMessage = 'Token expired';
@@ -62,7 +54,6 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      console.log('❌ [AUTH ME] User not found:', decoded.userId);
       const response = NextResponse.json({ error: 'User not found' }, { status: 401 });
       response.cookies.set({
         name: 'token',
@@ -86,9 +77,6 @@ export async function GET(request: NextRequest) {
       include: { car: true },
       orderBy: { createdAt: 'desc' }
     });
-
-    console.log('✅ [AUTH ME] Authenticated:', user.email, 'Role:', user.role);
-    console.log('🎯 [AUTH ME] Is Admin:', user.role === 'ADMIN');
 
     return NextResponse.json({ user, buyInterests, rentInterests });
   } catch (error: unknown) {

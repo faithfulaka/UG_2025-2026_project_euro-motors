@@ -172,7 +172,7 @@ export default function APITestDashboard() {
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex items-center gap-2 mb-6">
-        <CpuChipIcon className="w-6 h-6 text-blue-600" />
+        <CpuChipIcon className="w-6 h-6 text-red-600" />
         <h2 className="text-2xl font-bold text-gray-800">API Test Dashboard</h2>
         <div className="text-sm text-gray-500 bg-green-50 px-2 py-1 rounded">
           Live Testing
@@ -180,16 +180,16 @@ export default function APITestDashboard() {
       </div>
 
       {/* Overview Card */}
-      <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <h3 className="font-medium text-blue-800 mb-2">Reliable API Integration</h3>
-        <p className="text-blue-700 text-sm mb-3">
+      <div className="mb-6 p-4 bg-red-50 rounded-lg border border-red-200">
+        <h3 className="font-medium text-red-800 mb-2">Reliable API Integration</h3>
+        <p className="text-red-700 text-sm mb-3">
           Test the new reliable APIs that replaced all scrapers and unreliable services. 
           Each API provides specific functionality with high uptime and consistent data formats.
         </p>
         <button
           onClick={testAllAPIs}
           disabled={loading}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-400 flex items-center gap-2"
+          className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 disabled:bg-red-300 flex items-center gap-2"
         >
           {loading ? (
             <>

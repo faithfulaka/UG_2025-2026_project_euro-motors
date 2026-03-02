@@ -147,7 +147,7 @@ export default function VehicleSearch({ onResults, showDemo = false }: VehicleSe
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex items-center gap-2 mb-6">
-        <MagnifyingGlassIcon className="w-6 h-6 text-blue-600" />
+        <MagnifyingGlassIcon className="w-6 h-6 text-red-600" />
         <h2 className="text-2xl font-bold text-gray-800">Vehicle Search</h2>
         <div className="text-sm text-gray-500 bg-green-50 px-2 py-1 rounded">
           Using Reliable APIs
@@ -155,17 +155,17 @@ export default function VehicleSearch({ onResults, showDemo = false }: VehicleSe
       </div>
 
       {showDemo && (
-        <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="mb-4 p-4 bg-red-50 rounded-lg border border-red-200">
           <div className="flex items-center gap-2 mb-2">
-            <InformationCircleIcon className="w-5 h-5 text-blue-600" />
-            <span className="font-medium text-blue-800">Demo Mode</span>
+            <InformationCircleIcon className="w-5 h-5 text-red-600" />
+            <span className="font-medium text-red-800">Demo Mode</span>
           </div>
-          <p className="text-blue-700 text-sm mb-3">
+          <p className="text-red-700 text-sm mb-3">
             Try our new reliable API integration with a sample search.
           </p>
           <button
             onClick={runDemo}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm"
+            className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 text-sm"
             disabled={loading}
           >
             Run Demo (BMW X5 2023)
@@ -182,7 +182,7 @@ export default function VehicleSearch({ onResults, showDemo = false }: VehicleSe
           <select
             value={formData.make}
             onChange={(e) => handleInputChange('make', e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
             disabled={loading}
           >
             <option value="">Select Make</option>
@@ -202,7 +202,7 @@ export default function VehicleSearch({ onResults, showDemo = false }: VehicleSe
           <select
             value={formData.model}
             onChange={(e) => handleInputChange('model', e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
             disabled={loading || !formData.make}
           >
             <option value="">Select Model</option>
@@ -222,7 +222,7 @@ export default function VehicleSearch({ onResults, showDemo = false }: VehicleSe
           <select
             value={formData.year}
             onChange={(e) => handleInputChange('year', e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
             disabled={loading || !formData.model}
           >
             <option value="">Select Year</option>
@@ -244,7 +244,7 @@ export default function VehicleSearch({ onResults, showDemo = false }: VehicleSe
       <button
         onClick={handleSearch}
         disabled={loading || !formData.make || !formData.model}
-        className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="w-full bg-red-600 text-white py-3 px-4 rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {loading ? (
           <>

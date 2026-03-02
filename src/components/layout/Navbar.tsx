@@ -269,8 +269,8 @@ export default function Navbar() {
                   </div>
                 ))}
                 <Link 
-                  href="/buy/checkout"
-                  className="block text-center bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition mt-3"
+                  href="/checkout"
+                  className="block text-center bg-red-600 text-white py-2 rounded hover:bg-red-700 transition mt-3"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Checkout

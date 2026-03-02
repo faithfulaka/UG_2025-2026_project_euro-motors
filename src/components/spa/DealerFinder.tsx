@@ -105,7 +105,7 @@ export default function DealerFinder({ make: initialMake = '', onDealerSelect }:
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex items-center gap-2 mb-6">
-        <BuildingStorefrontIcon className="w-6 h-6 text-blue-600" />
+        <BuildingStorefrontIcon className="w-6 h-6 text-red-600" />
         <h2 className="text-2xl font-bold text-gray-800">Dealer Finder</h2>
         <div className="text-sm text-gray-500 bg-green-50 px-2 py-1 rounded">
           CIS Automotive API
@@ -113,13 +113,13 @@ export default function DealerFinder({ make: initialMake = '', onDealerSelect }:
       </div>
 
       {/* Demo Button */}
-      <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <p className="text-blue-700 text-sm mb-3">
+      <div className="mb-4 p-4 bg-red-50 rounded-lg border border-red-200">
+        <p className="text-red-700 text-sm mb-3">
           Find dealers using the CIS Automotive API with real dealer data.
         </p>
         <button
           onClick={runDemo}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm"
+          className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 text-sm"
           disabled={loading}
         >
           Demo: Find BMW Dealers in California
@@ -137,7 +137,7 @@ export default function DealerFinder({ make: initialMake = '', onDealerSelect }:
             value={formData.make}
             onChange={(e) => setFormData(prev => ({ ...prev, make: e.target.value }))}
             placeholder="e.g., BMW, Mercedes, Audi"
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
           />
         </div>
 
@@ -150,7 +150,7 @@ export default function DealerFinder({ make: initialMake = '', onDealerSelect }:
             value={formData.location}
             onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
             placeholder="e.g., CA, NY, TX"
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
           />
         </div>
 
@@ -161,7 +161,7 @@ export default function DealerFinder({ make: initialMake = '', onDealerSelect }:
           <select
             value={formData.radius}
             onChange={(e) => setFormData(prev => ({ ...prev, radius: parseInt(e.target.value) }))}
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
           >
             <option value={10}>10 miles</option>
             <option value={25}>25 miles</option>
@@ -180,7 +180,7 @@ export default function DealerFinder({ make: initialMake = '', onDealerSelect }:
       <button
         onClick={handleSearch}
         disabled={loading || !formData.make || !formData.location}
-        className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-6"
+        className="w-full bg-red-600 text-white py-3 px-4 rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-6"
       >
         {loading ? (
           <>
@@ -245,7 +245,7 @@ export default function DealerFinder({ make: initialMake = '', onDealerSelect }:
                       {dealer.services.slice(0, 3).map((service: string, idx: number) => (
                         <span
                           key={idx}
-                          className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded"
+                          className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded"
                         >
                           {service}
                         </span>
@@ -285,7 +285,7 @@ export default function DealerFinder({ make: initialMake = '', onDealerSelect }:
                 {selectedDealer.website && (
                   <p>
                     <a href={selectedDealer.website} target="_blank" rel="noopener noreferrer" 
-                       className="text-blue-600 hover:underline">
+                       className="text-red-600 hover:underline">
                       Visit Website
                     </a>
                   </p>

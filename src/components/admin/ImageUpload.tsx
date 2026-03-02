@@ -19,7 +19,6 @@ export default function ImageUpload({ carId, carType = 'buy', existingImages = [
 
   // Update displayed images when existingImages prop changes
   useEffect(() => {
-    console.log('ImageUpload: existingImages changed', existingImages);
     setDisplayedImages(existingImages);
   }, [existingImages]);
 
@@ -167,7 +166,6 @@ export default function ImageUpload({ carId, carType = 'buy', existingImages = [
       }
 
       const data = await response.json();
-      console.log('Upload response:', data);
       
       if (data.success && data.images) {
         alert(`Successfully uploaded ${data.images.length} image(s)!`);
@@ -220,7 +218,7 @@ export default function ImageUpload({ carId, carType = 'buy', existingImages = [
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-blue-500 focus:ring-offset-2"
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-red-500 focus:ring-offset-2"
           >
             Select Images
           </button>
@@ -237,7 +235,7 @@ export default function ImageUpload({ carId, carType = 'buy', existingImages = [
               {images.map((img, index) => (
                 <div key={index} className="relative">
                   <div className={`aspect-square relative border-2 rounded-lg overflow-hidden ${
-                    img.isMain ? 'border-blue-600' : 'border-gray-300'
+                    img.isMain ? 'border-red-600' : 'border-gray-300'
                   }`}>
                     <Image
                       src={img.preview}
@@ -246,7 +244,7 @@ export default function ImageUpload({ carId, carType = 'buy', existingImages = [
                       className="object-cover"
                     />
                     {img.isMain && (
-                      <div className="absolute top-1 left-1 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                      <div className="absolute top-1 left-1 bg-red-600 text-white text-xs px-2 py-1 rounded">
                         Main
                       </div>
                     )}

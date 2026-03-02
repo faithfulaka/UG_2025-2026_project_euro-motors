@@ -295,7 +295,7 @@ export default function BuyCarFilter({ onFilter, className = '' }: BuyCarFilterP
               type="number"
               value={filters.maxPrice || ''}
               onChange={(e) => handleFilterChange('maxPrice', e.target.value ? parseInt(e.target.value) : undefined)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-black bg-white"
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm text-black bg-white"
               placeholder="No maximum"
             />
           </div>
@@ -305,7 +305,7 @@ export default function BuyCarFilter({ onFilter, className = '' }: BuyCarFilterP
         <div className="flex gap-2 pt-2">
           <button
             onClick={applyFilters}
-            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition text-sm font-medium"
+            className="flex-1 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition text-sm font-medium"
           >
             Apply Filters
           </button>
