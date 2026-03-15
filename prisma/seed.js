@@ -8,27 +8,35 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🚀 Starting database seed with complete SPA data...');
 
+  const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@euromotors.com';
+  const adminName = process.env.SEED_ADMIN_NAME || 'Admin User';
+  const adminPlainPassword = process.env.SEED_ADMIN_PASSWORD || 'Admin123!';
+
+  const userEmail = process.env.SEED_USER_EMAIL || 'user@example.com';
+  const userName = process.env.SEED_USER_NAME || 'Test User';
+  const userPlainPassword = process.env.SEED_USER_PASSWORD || 'User123!';
+
   // Create admin user
-  const adminPassword = await hash('Admin123!', 10);
+  const adminPassword = await hash(adminPlainPassword, 10);
   await prisma.user.upsert({
-    where: { email: 'admin@euromotors.com' },
+    where: { email: adminEmail },
     update: {},
     create: {
-      email: 'admin@euromotors.com',
-      name: 'Admin User',
+      email: adminEmail,
+      name: adminName,
       password: adminPassword,
       role: 'ADMIN',
     },
   });
 
   // Create regular user
-  const userPassword = await hash('User123!', 10);
+  const userPassword = await hash(userPlainPassword, 10);
   await prisma.user.upsert({
-    where: { email: 'user@example.com' },
+    where: { email: userEmail },
     update: {},
     create: {
-      email: 'user@example.com',
-      name: 'Test User',
+      email: userEmail,
+      name: userName,
       password: userPassword,
       role: 'USER',
     },
@@ -881,6 +889,8 @@ async function main() {
   console.log('✅ Database seeding completed successfully!');
   console.log('📊 Summary:');
   console.log('  - Created 2 users (admin & regular)');
+  console.log(`  - Admin user: ${adminEmail}`);
+  console.log(`  - Regular user: ${userEmail}`);
   console.log('  - Created 3 buy cars with COMPLETE SPA data');
   console.log('  - Created 3 rental cars with COMPLETE SPA data');
   console.log('  - Created 66 car images (33 for buy, 33 for rental)');

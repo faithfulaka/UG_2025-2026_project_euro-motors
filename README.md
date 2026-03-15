@@ -1,137 +1,160 @@
-<<<<<<< HEAD
-# Your project name here
-
-## Information about this repository
-
-This is the repository that you are going to use **individually** for developing your project. Please use the resources provided in the module to learn about **plagiarism** and how plagiarism awareness can foster your learning.
-
-Regarding the use of this repository, once a feature (or part of it) is developed and **working** or parts of your system are integrated and **working**, define a commit and push it to the remote repository. You may find yourself making a commit after a productive hour of work (or even after 20 minutes!), for example. Choose commit message wisely and be concise.
-
-Please choose the structure of the contents of this repository that suits the needs of your project but do indicate in this file where the main software artefacts are located.
-=======
 # Euro Motors
 
-## API-Only Car Data Architecture (2025 Update)
+A full-stack Next.js 15 app for luxury car buy, rental, trade-in, and admin management workflows.
 
-All core car data endpoints (makes, models, years, specs) now aggregate live data **exclusively from free public APIs**:
-- [CarQuery API](https://www.carqueryapi.com/) for makes, models, trims, years, and specs
-- [NHTSA Vehicle API](https://vpic.nhtsa.dot.gov/api/) for makes, models, years, and vehicle types
-- (Planned) Wikipedia/Wikidata for enrichment
+## Tech Stack
 
-**No scrapers or Puppeteer code remain in any production endpoint.** All legacy scraping logic has been removed except for optional/experimental market data modules (pricing, inventory, auctions).
+- Next.js 15 (App Router)
+- React 18
+- Prisma ORM
+- SQLite (default local database)
+- TypeScript
+- JWT-based auth
 
-### Type Safety & Error Handling
-- All API responses are strongly typed with TypeScript interfaces
-- Robust error handling: endpoints return clear errors if APIs fail or data is missing
-- No static fallback or DB fallback in webbase endpoints
+## Prerequisites
 
-### Endpoint Structure
-- `/api/live/makes` — Get all car makes (CarQuery + NHTSA, deduplicated)
-- `/api/live/models?make=...` — Get all models for a make (CarQuery + NHTSA, deduplicated)
-- `/api/live/years?make=...&model=...` — Get all years for a make/model (CarQuery + NHTSA, deduplicated)
-- `/api/live/specs?make=...&model=...&year=...` — Get specs for a car (CarQuery + NHTSA, deduplicated)
+- Node.js 18+ (Node.js 20 LTS recommended)
+- npm 8+
 
-All endpoints are designed for robust, live dropdowns and search in the frontend.
+## Quick Start (Clone to Running)
 
-### Developer Notes
-- No environment variables or secrets are required for car data endpoints
-- Admin/database endpoints are unchanged and remain protected
-- See `/src/app/api/live/` for endpoint code
+1. Clone and enter the project:
 
----
-
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://campus.cs.le.ac.uk/gitlab/fane1/euro-motors.git
-git branch -M main
-git push -uf origin main
+```bash
+git clone <your-repo-url>
+cd euro-motors-fresh
 ```
 
-## Integrate with your tools
+2. Install dependencies:
 
-- [ ] [Set up project integrations](https://campus.cs.le.ac.uk/gitlab/fane1/euro-motors/-/settings/integrations)
+```bash
+npm install
+```
 
-## Collaborate with your team
+3. Create your environment file:
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+```bash
+cp .env.example .env
+```
 
-## Test and Deploy
+If you are on Windows PowerShell:
 
-Use the built-in continuous integration in GitLab.
+```powershell
+Copy-Item .env.example .env
+```
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+4. Initialize Prisma client and database schema:
 
-***
+```bash
+npm run db:generate
+npm run db:push
+```
 
-# Editing this README
+5. Seed sample data:
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+```bash
+npm run db:seed
+```
 
-## Suggestions for a good README
+6. Start the app:
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+```bash
+npm run dev
+```
 
-## Name
-Choose a self-explaining name for your project.
+7. Open:
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+- App: `http://localhost:3000`
+- Admin: `http://localhost:3000/admin`
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+## Default Local Environment
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+The default `.env.example` is enough for local development:
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+```env
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+JWT_SECRET=dev-secret-key-change-this-in-production-min-32-chars
+DATABASE_URL="file:./dev.db"
+NODE_ENV=development
+```
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+Notes:
+- `DATABASE_URL="file:./dev.db"` resolves to `prisma/dev.db`.
+- Change `JWT_SECRET` for any shared/staging/production environment.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+## Seed Credentials
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+By default, `npm run db:seed` creates:
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+- Admin: `admin@euromotors.com` / `Admin123!`
+- User: `user@example.com` / `User123!`
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+You can override these without editing code:
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+```bash
+SEED_ADMIN_EMAIL=admin@yourdomain.com SEED_ADMIN_PASSWORD=StrongPassword123! npm run db:seed
+```
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+PowerShell example:
 
-## License
-For open source projects, say how it is licensed.
+```powershell
+$env:SEED_ADMIN_EMAIL="admin@yourdomain.com"
+$env:SEED_ADMIN_PASSWORD="StrongPassword123!"
+npm run db:seed
+```
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
->>>>>>> ac67f32 (django projected recommited in correct repository)
+## Build and Production Run
 
+`next build` is configured to skip lint blocking because the repository currently has legacy lint debt. Use `npm run lint` separately to track and reduce lint issues over time.
 
+Create a production build:
 
-Week 2
-I am still sticking with recat fro my frontend but due to serious difficulties while working with Django and contious break in code and issue with databse connections. I have decided to switch to the NEXT.js for my backend instead bacuse i'm alot more familiar with the language than Django. This will increase my work speed amke me more consistent since i know my way around the language. This is the setup process Next.js and React. My first commit on the revamped project
+```bash
+npm run build
+```
+
+Run production server:
+
+```bash
+npm run start
+```
+
+## Useful Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Production build
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run db:generate` - Generate Prisma client
+- `npm run db:push` - Sync Prisma schema to DB
+- `npm run db:seed` - Seed database
+- `npm run db:studio` - Open Prisma Studio
+
+## Common Troubleshooting
+
+1. Prisma client error after fresh clone:
+- Run `npm run db:generate`.
+
+2. Database tables missing:
+- Run `npm run db:push` then `npm run db:seed`.
+
+3. Login/session issues locally:
+- Ensure `JWT_SECRET` is set in `.env`.
+- Restart dev server after changing environment variables.
+
+4. Build works but stale browser data causes odd behavior:
+- Stop server, clear `.next` if needed, then rerun `npm run dev`.
+
+## Project Layout (High Level)
+
+- `src/app` - App Router pages and API routes
+- `src/components` - UI and feature components
+- `src/lib` - Core helpers (auth, db, utilities)
+- `prisma/schema.prisma` - Database schema
+- `prisma/seed.js` - Seed data
+
+## Security Notes
+
+- Do not use default seed passwords outside local development.
+- Rotate `JWT_SECRET` for non-local deployments.
+- Keep `.env` out of version control.
