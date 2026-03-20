@@ -872,11 +872,10 @@ async function main() {
     { title: 'BMW M8', alt: 'BMW M8', url: '/images/gallery/component12.jpg', order: 12 }
   ];
 
+  await prisma.galleryImage.deleteMany({});
   for (const img of galleryImages) {
-    await prisma.galleryImage.upsert({
-      where: { url: img.url },
-      update: {},
-      create: {
+    await prisma.galleryImage.create({
+      data: {
         title: img.title,
         alt: img.alt,
         url: img.url,

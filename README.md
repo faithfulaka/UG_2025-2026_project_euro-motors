@@ -20,9 +20,12 @@ A full-stack Next.js 15 app for luxury car buy, rental, trade-in, and admin mana
 
 1. Clone and enter the project:
 
+Git automatically creates a folder named after the repository name on GitLab/GitHub not what you call your local working folder. So whoever clones it gets a folder called: UG_2025-2026_project_euro-motors
+Clone orject your repo in your dev or work environment
+
 ```bash
-git clone <your-repo-url>
-cd euro-motors-fresh
+git clone <your-repo-url> 
+cd UG_2025-2026_project_euro-motors
 ```
 
 2. Install dependencies:
@@ -121,6 +124,10 @@ npm run start
 
 ## Useful Scripts
 
+> **Note:** All commands should be run using the `npm` scripts.
+> Equivalent `npx` alternatives exist but use the above for consistency.
+
+npm script
 - `npm run dev` - Start development server
 - `npm run build` - Production build
 - `npm run start` - Start production server
@@ -129,6 +136,17 @@ npm run start
 - `npm run db:push` - Sync Prisma schema to DB
 - `npm run db:seed` - Seed database
 - `npm run db:studio` - Open Prisma Studio
+
+
+Alternative
+- `npx next dev` - Start development server
+- `npx next build` - Production build
+- `npx next start` - Start production server
+- `npx next lint` - Run ESLint
+- `npx prisma generate`  - Generate Prisma client
+- `npx prisma db push` - Sync Prisma schema to DB
+- `npx prisma db seed` - Seed database
+- `npx prisma studio`  - Open Prisma Studio
 
 ## Common Troubleshooting
 

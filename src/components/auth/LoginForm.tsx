@@ -33,8 +33,12 @@ export default function LoginForm() {
         throw new Error(data.message || 'Login failed');
       }
 
-      // Redirect to homepage or callback URL
-      router.push(callbackUrl);
+      // Redirect based on role
+      if (data.user?.role === 'ADMIN') {
+        router.push('/admin');
+      } else {
+        router.push(callbackUrl);
+      }
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);

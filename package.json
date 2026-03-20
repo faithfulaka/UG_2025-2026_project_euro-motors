@@ -58,6 +58,9 @@
     "typescript": "^5.8.3",
     "webpack": "^5.101.0"
   },
+  "prisma": {
+    "seed": "node --experimental-vm-modules prisma/seed.js"
+  },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
