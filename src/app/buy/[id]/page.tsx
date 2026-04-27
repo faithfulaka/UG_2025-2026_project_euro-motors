@@ -121,6 +121,7 @@ export default function CarDetailsPage() {  // Removed the return type
         throw new Error(result?.error?.message || 'Failed to create quote');
       }
 
+      // Download PDF summary
       downloadQuotePdf({
         quoteId: result.data.id,
         car,
@@ -131,6 +132,22 @@ export default function CarDetailsPage() {  // Removed the return type
         termMonths,
         monthlyPayment: parseFloat(monthlyPayment || '0')
       });
+
+      // Redirect to Stripe to pay the deposit
+      const sessionRes = await fetch('/api/payments/create-quote-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          amount: depositValue,
+          description: `${car.make} ${car.model} (${car.year}) - Down Payment`,
+          quoteId: result.data.id,
+        }),
+      });
+      const sessionData = await sessionRes.json();
+      if (sessionData.success && sessionData.url) {
+        window.location.href = sessionData.url;
+      }
     } catch (err) {
       setQuoteError(err instanceof Error ? err.message : 'Failed to create quote');
     } finally {
@@ -327,7 +344,25 @@ export default function CarDetailsPage() {  // Removed the return type
                   </div>
                   <button
                     className="px-5 py-2 bg-black text-white rounded-md font-medium hover:bg-gray-800"
-                    onClick={() => alert('Stripe checkout placeholder: integrate Stripe here.')}
+                    onClick={async () => {
+                      if (!tradeInSummary || !car) return;
+                      const res = await fetch('/api/payments/create-quote-session', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                          amount: tradeInSummary.balanceDue,
+                          description: `${car.make} ${car.model} (${car.year}) - Trade-In Balance`,
+                          quoteId: tradeInSummary.quoteId,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (data.success && data.url) {
+                        window.location.href = data.url;
+                      } else {
+                        alert(data.error?.message || 'Failed to start payment');
+                      }
+                    }}
                   >
                     Proceed to Stripe
                   </button>

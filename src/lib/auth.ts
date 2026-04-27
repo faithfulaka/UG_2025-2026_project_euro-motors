@@ -6,6 +6,9 @@ import { prisma } from './prisma';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_change_in_production';
 
+export function generateToken(payload: { userId: string; email: string }) {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+}
 export function verifyToken(token: string) {
   try {
     return jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
@@ -14,11 +17,6 @@ export function verifyToken(token: string) {
     throw new Error('Invalid token');
   }
 }
-
-export function generateToken(payload: { userId: string; email: string }) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
-}
-
 export async function hashPassword(password: string) {
   return bcrypt.hash(password, 10);
 }
@@ -27,7 +25,7 @@ export async function comparePasswords(plainPassword: string, hashedPassword: st
   return bcrypt.compare(plainPassword, hashedPassword);
 }
 
-// ADD THIS MISSING FUNCTION
+
 export async function verifyAdmin(request: NextRequest) {
   try {
     const cookieToken = request.cookies.get('token')?.value;

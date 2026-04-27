@@ -3,7 +3,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCar } from '@/context/CarContext';
 
@@ -78,12 +77,11 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         {/* Logo - Increased Size */}
         <Link href="/" className="flex items-center">
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src="/logos/logo.svg"
             alt="Euro Motors Logo"
-            width={240}
-            height={110}
-            priority
+            style={{ height: '48px', width: 'auto' }}
             className="hover:opacity-80 transition-opacity"
           />
         </Link>

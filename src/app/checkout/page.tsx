@@ -127,7 +127,7 @@ export default function CheckoutPage() {
                 disabled={loading}
                 className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition disabled:opacity-50"
               >
-                {loading ? 'Processing...' : 'Complete Purchase'}
+                {loading ? 'Redirecting to payment...' : 'Pay with Stripe'}
               </button>
 
               <button
