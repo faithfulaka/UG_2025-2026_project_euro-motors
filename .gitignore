@@ -10,6 +10,17 @@
 
 # Ignore logs
 #debug.log source myenv/bin/activate
+build.log
+*.log
+
+# Word lock files
+~$*
+
+# Test/temp files
+public/test.html
+
+# Dissertation files
+*.docx
 
 
 # Ignore dependencies and build output
